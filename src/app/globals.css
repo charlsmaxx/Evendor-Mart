@@ -1,0 +1,127 @@
+@import "tailwindcss";
+
+@theme inline {
+  /* Blended-inspired palette: warm cream, wine burgundy, stone neutrals */
+  --color-background: #faf9f7;
+  --color-foreground: #1f1b18;
+  --color-card: #ffffff;
+  --color-card-foreground: #1f1b18;
+  --color-primary: #7a2e3d;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #f0ebe6;
+  --color-secondary-foreground: #1f1b18;
+  --color-muted: #f5f2ef;
+  --color-muted-foreground: #6b635c;
+  --color-accent: #7a2e3d;
+  --color-accent-foreground: #ffffff;
+  --color-border: #e5dfd9;
+  --color-input: #ffffff;
+  --color-ring: #7a2e3d;
+  --font-sans: ui-sans-serif, system-ui, sans-serif;
+  --font-display: ui-sans-serif, system-ui, sans-serif;
+}
+
+* {
+  border-color: var(--color-border);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+}
+
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.03em;
+}
+
+.gradient-text {
+  color: var(--color-primary);
+  background: none;
+  -webkit-text-fill-color: currentColor;
+}
+
+.glass {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 1px 3px rgba(31, 27, 24, 0.06);
+}
+
+.glow-purple {
+  box-shadow: 0 4px 24px rgba(122, 46, 61, 0.12);
+}
+
+.gradient-blob {
+  display: none;
+}
+
+.badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 9999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-card);
+  padding: 0.375rem 0.875rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-muted-foreground);
+}
+
+.badge-pill strong {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.link-arrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.link-arrow:hover {
+  text-decoration: underline;
+}
+
+.platform-card {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  overflow: hidden;
+  transition: box-shadow 0.2s ease;
+}
+
+.platform-card:hover {
+  box-shadow: 0 8px 30px rgba(31, 27, 24, 0.08);
+}
+
+.tab-pill {
+  border-radius: 9999px;
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-muted-foreground);
+  background: transparent;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.tab-pill:hover {
+  color: var(--color-foreground);
+}
+
+.tab-pill-active {
+  background: var(--color-card);
+  border-color: var(--color-border);
+  color: var(--color-foreground);
+  box-shadow: 0 1px 3px rgba(31, 27, 24, 0.06);
+}

@@ -1,0 +1,693 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  CUSTOMER
+  VENDOR
+  ADMIN
+}
+
+enum AdminRole {
+  SUPER_ADMIN
+  FINANCE
+  SUPPORT
+  MODERATOR
+}
+
+enum VendorCategory {
+  EVENT_PLANNER
+  VENUE
+  CATERER
+  DECORATOR
+  BAKER
+  PHOTOGRAPHER
+  VIDEOGRAPHER
+  MAKEUP_ARTIST
+  GELE_BRIDAL_ARTIST
+  FASHION_DESIGNER
+  MC
+  DJ
+  FLORIST
+  LIGHTING_SOUND
+  RENTAL
+  BRIDAL_RENTAL
+  TRANSPORTATION
+  SECURITY
+  BAR_COCKTAIL
+  WAITERS_USHERS
+  EVENT_RENTAL
+  PRINTING_BRANDING
+  GIFT_SOUVENIR
+  SMALL_CHOPS_CATERING
+  BALLOON_BACKDROP
+  WEDDING_VENDOR
+  CORPORATE
+}
+
+enum ListingType {
+  SERVICE
+  VENUE
+}
+
+enum ListingStatus {
+  DRAFT
+  PENDING_REVIEW
+  PUBLISHED
+  REJECTED
+  ARCHIVED
+}
+
+enum BookingStatus {
+  RESERVED
+  PENDING_PAYMENT
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  DECLINED
+  EXPIRED
+}
+
+enum BookingSource {
+  MARKETPLACE
+  MANUAL
+  ADMIN
+  API
+}
+
+enum VendorStaffRole {
+  MANAGER
+  RECEPTIONIST
+  ASSISTANT
+  OPERATIONS
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+enum EscrowStatus {
+  NONE
+  HELD
+  RELEASED
+  DISPUTED
+  REFUNDED
+}
+
+enum SubscriptionTier {
+  FREE
+  PREMIUM
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  EXPIRED
+  PENDING
+}
+
+enum QuoteStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  DOCUMENT
+  SYSTEM
+  ADMIN
+}
+
+enum DisputeStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED_REFUND
+  RESOLVED_PAYOUT
+  RESOLVED_PARTIAL
+  CLOSED
+}
+
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
+  REVERSED
+}
+
+enum ReconciliationStatus {
+  PENDING
+  MATCHED
+  MISMATCH
+  UNVERIFIABLE
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum RewardTransactionType {
+  EARNED
+  REDEEMED
+  EXPIRED
+  ADJUSTMENT
+}
+
+enum RewardTransactionStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+model User {
+  id                 String   @id @default(uuid())
+  email              String   @unique
+  fullName           String?
+  avatarUrl          String?
+  phone              String?
+  city               String?
+  role               UserRole  @default(CUSTOMER)
+  adminRole          AdminRole?
+  onboardingComplete Boolean  @default(false)
+  termsAcceptedAt    DateTime?
+  preferences        Json?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  vendorProfile         VendorProfile?
+  favorites             Favorite[]
+  reviews               Review[]
+  quoteRequests         QuoteRequest[]    @relation("CustomerQuotes")
+  bookings              Booking[]         @relation("CustomerBookings")
+  conversations         Conversation[]    @relation("CustomerConversations")
+  messages              Message[]
+  notifications         Notification[]
+  auditLogs             AuditLog[]        @relation("ActorAuditLogs")
+  rewardsWallet         RewardsWallet?
+  disputesRaised        Dispute[]         @relation("DisputeRaiser")
+  disputesResolved      Dispute[]         @relation("DisputeResolver")
+  evidenceUploaded      DisputeEvidence[] @relation("EvidenceUploader")
+  verificationsReviewed VerificationRequest[] @relation("VerificationReviewer")
+  vendorStaffMemberships VendorStaff[]
+  manualBookingsCreated  Booking[]         @relation("ManualBookingCreator")
+}
+
+model VendorProfile {
+  id               String           @id @default(uuid())
+  userId           String           @unique
+  businessName     String
+  slug             String           @unique
+  bio              String?
+  category         VendorCategory
+  city             String
+  country          String           @default("Nigeria")
+  verified              Boolean            @default(false)
+  featured              Boolean            @default(false)
+  verificationStatus    VerificationStatus @default(UNVERIFIED)
+  subscriptionTier      SubscriptionTier   @default(FREE)
+  paystackSubaccount    String?
+  availability          Json?
+  ratingAvg             Float              @default(0)
+  reviewCount           Int                @default(0)
+  responseRate          Float?
+  cancellationRate      Float?
+  completionRate        Float?
+  disputeRate           Float?
+  metadata              Json?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listings            Listing[]
+  portfolioMedia      PortfolioMedia[]
+  quoteRequests       QuoteRequest[]
+  bookings            Booking[]            @relation("VendorBookings")
+  conversations       Conversation[]
+  subscriptions       Subscription[]
+  analyticsEvents     AnalyticsEvent[]
+  blockedDates        BlockedDate[]
+  payouts             Payout[]
+  verificationRequest VerificationRequest?
+  businessCustomers   BusinessCustomer[]
+  staff               VendorStaff[]
+}
+
+model Category {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  description String?
+  icon        String?
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  listings Listing[]
+}
+
+model Listing {
+  id            String         @id @default(uuid())
+  vendorId      String
+  categoryId    String
+  type          ListingType
+  title         String
+  slug          String         @unique
+  description   String
+  city          String
+  priceMin      Int
+  priceMax      Int
+  currency      String         @default("NGN")
+  status        ListingStatus  @default(DRAFT)
+  featured      Boolean        @default(false)
+  verified      Boolean        @default(false)
+  coverImage    String?
+  images        String[]
+  ratingAvg     Float          @default(0)
+  reviewCount   Int            @default(0)
+  embeddingId   String?
+  metadata      Json?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  vendor         VendorProfile  @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  category       Category       @relation(fields: [categoryId], references: [id])
+  venueDetails   VenueDetails?
+  portfolioMedia PortfolioMedia[]
+  reviews        Review[]
+  favorites      Favorite[]
+  quoteRequests  QuoteRequest[]
+  bookings       Booking[]
+  conversations  Conversation[]
+
+  @@index([vendorId])
+  @@index([city, status, featured])
+  @@index([categoryId, status])
+}
+
+model VenueDetails {
+  id        String   @id @default(uuid())
+  listingId String   @unique
+  capacity  Int
+  amenities String[]
+  address   String?
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+}
+
+model PortfolioMedia {
+  id        String   @id @default(uuid())
+  vendorId  String
+  listingId String?
+  url       String
+  publicId  String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  vendor  VendorProfile @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  listing Listing?      @relation(fields: [listingId], references: [id], onDelete: SetNull)
+}
+
+model Review {
+  id          String    @id @default(uuid())
+  listingId   String
+  userId      String
+  bookingId   String?   @unique
+  rating      Int
+  comment     String?
+  vendorReply String?
+  repliedAt   DateTime?
+  moderated   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+
+  listing Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  booking Booking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+
+  @@unique([listingId, userId])
+  @@index([listingId, createdAt])
+}
+
+model Favorite {
+  id        String   @id @default(uuid())
+  userId    String
+  listingId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, listingId])
+}
+
+model QuoteRequest {
+  id          String      @id @default(uuid())
+  customerId  String
+  vendorId    String
+  listingId   String?
+  eventDate   DateTime?
+  budget      Int?
+  message     String
+  status      QuoteStatus @default(PENDING)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  customer User          @relation("CustomerQuotes", fields: [customerId], references: [id], onDelete: Cascade)
+  vendor   VendorProfile @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  listing  Listing?      @relation(fields: [listingId], references: [id], onDelete: SetNull)
+
+  @@index([vendorId, status])
+}
+
+model Booking {
+  id                    String        @id @default(uuid())
+  customerId            String?
+  businessCustomerId    String?
+  vendorId              String
+  listingId             String
+  source                BookingSource @default(MARKETPLACE)
+  eventDate             DateTime
+  startTime             DateTime?
+  endTime               DateTime?
+  eventType             String?
+  guestCount            Int?
+  totalAmount           Int
+  depositAmount         Int
+  depositPercent        Int           @default(30)
+  depositReceived       Int?
+  outstandingBalance    Int?
+  status                BookingStatus @default(RESERVED)
+  reservationExpiresAt  DateTime?
+  notes                 String?
+  attachments           Json?
+  bookingSnapshot       Json?
+  createdById           String?
+  completionConfirmedAt DateTime?
+  completionConfirmedBy String?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  customer           User?               @relation("CustomerBookings", fields: [customerId], references: [id], onDelete: Cascade)
+  businessCustomer   BusinessCustomer?   @relation(fields: [businessCustomerId], references: [id], onDelete: SetNull)
+  vendor             VendorProfile       @relation("VendorBookings", fields: [vendorId], references: [id], onDelete: Cascade)
+  listing            Listing             @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  createdBy          User?               @relation("ManualBookingCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  payments           Payment[]
+  rewardTransactions RewardTransaction[]
+  dispute            Dispute?
+  payout             Payout?
+  review             Review?
+
+  @@index([vendorId, status])
+  @@index([vendorId, eventDate])
+  @@index([vendorId, source])
+  @@index([customerId, status])
+  @@index([customerId, createdAt])
+  @@index([businessCustomerId])
+}
+
+model BusinessCustomer {
+  id                String    @id @default(uuid())
+  vendorId          String
+  fullName          String
+  phone             String
+  email             String?
+  totalSpend        Int       @default(0)
+  internalNotes     String?
+  favoriteListingId String?
+  lastBookingAt     DateTime?
+  metadata          Json?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  vendor   VendorProfile @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  bookings Booking[]
+
+  @@unique([vendorId, phone])
+  @@index([vendorId, fullName])
+}
+
+model VendorStaff {
+  id          String          @id @default(uuid())
+  vendorId    String
+  userId      String?
+  email       String
+  fullName    String
+  role        VendorStaffRole @default(ASSISTANT)
+  permissions Json            @default("{}")
+  invitedAt   DateTime        @default(now())
+  acceptedAt  DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  vendor VendorProfile @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  user   User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([vendorId, email])
+  @@index([userId])
+}
+
+model Payment {
+  id              String        @id @default(uuid())
+  bookingId       String
+  amount          Int
+  currency        String        @default("NGN")
+  paystackRef     String?       @unique
+  status          PaymentStatus @default(PENDING)
+  escrowStatus    EscrowStatus  @default(NONE)
+  heldAmount      Int?
+  metadata        Json?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+}
+
+model Conversation {
+  id              String    @id @default(uuid())
+  customerId      String
+  vendorId        String
+  listingId       String?
+  adminLastReadAt DateTime?
+  customerPinnedAt DateTime?
+  vendorPinnedAt   DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  customer User          @relation("CustomerConversations", fields: [customerId], references: [id], onDelete: Cascade)
+  vendor   VendorProfile @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  listing  Listing?      @relation(fields: [listingId], references: [id], onDelete: SetNull)
+  messages Message[]
+
+  @@unique([customerId, vendorId])
+  @@index([vendorId, updatedAt])
+  @@index([customerId, updatedAt])
+}
+
+model Message {
+  id             String      @id @default(uuid())
+  conversationId String
+  senderId       String
+  body           String      @default("")
+  type           MessageType @default(TEXT)
+  mediaUrl       String?
+  mediaPublicId  String?
+  readAt         DateTime?
+  createdAt      DateTime    @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@index([conversationId, readAt])
+  @@index([senderId, readAt])
+}
+
+model Subscription {
+  id                 String             @id @default(uuid())
+  vendorId           String
+  tier               SubscriptionTier   @default(PREMIUM)
+  status             SubscriptionStatus @default(PENDING)
+  paystackSubCode    String?
+  amount             Int                @default(5000)
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  vendor VendorProfile @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+}
+
+model BlockedDate {
+  id        String   @id @default(uuid())
+  vendorId  String
+  date      DateTime
+  reason    String?
+  createdAt DateTime @default(now())
+
+  vendor VendorProfile @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, date])
+}
+
+model RewardsWallet {
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  availableBalance Int    @default(0)
+  totalEarned    Int      @default(0)
+  totalRedeemed  Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions RewardTransaction[]
+}
+
+model RewardTransaction {
+  id              String                  @id @default(uuid())
+  userId          String
+  walletId        String
+  bookingId       String?
+  amount          Int
+  type            RewardTransactionType
+  status          RewardTransactionStatus @default(CONFIRMED)
+  expiresAt       DateTime?
+  description     String?
+  createdAt       DateTime                @default(now())
+
+  wallet  RewardsWallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  booking Booking?      @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+
+  @@index([userId, type, status])
+  @@index([expiresAt])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  body      String
+  read      Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String?
+  action     String
+  entityType String
+  entityId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  actor User? @relation("ActorAuditLogs", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+}
+
+model AnalyticsEvent {
+  id        String   @id @default(uuid())
+  vendorId  String
+  eventType String
+  listingId String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  vendor VendorProfile @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, eventType, createdAt])
+}
+
+model Dispute {
+  id           String        @id @default(uuid())
+  bookingId    String        @unique
+  raisedById   String
+  reason       String
+  status       DisputeStatus @default(OPEN)
+  adminNotes   String?
+  resolution   String?
+  resolvedAt   DateTime?
+  resolvedById String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  booking    Booking          @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  raisedBy   User             @relation("DisputeRaiser", fields: [raisedById], references: [id], onDelete: Cascade)
+  resolvedBy User?            @relation("DisputeResolver", fields: [resolvedById], references: [id], onDelete: SetNull)
+  evidence   DisputeEvidence[]
+
+  @@index([status, createdAt])
+}
+
+model DisputeEvidence {
+  id           String   @id @default(uuid())
+  disputeId    String
+  uploadedById String
+  url          String
+  publicId     String?
+  caption      String?
+  createdAt    DateTime @default(now())
+
+  dispute    Dispute @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+  uploadedBy User    @relation("EvidenceUploader", fields: [uploadedById], references: [id], onDelete: Cascade)
+}
+
+model Payout {
+  id                   String               @id @default(uuid())
+  vendorId             String
+  bookingId            String               @unique
+  amount               Int
+  status               PayoutStatus         @default(PENDING)
+  reference            String               @unique
+  paystackTransferCode String?
+  reconciliationStatus ReconciliationStatus @default(PENDING)
+  reconciledAt         DateTime?
+  reconciliationNote   String?
+  processedAt          DateTime?
+  notes                String?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+
+  vendor  VendorProfile @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  booking Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, status])
+}
+
+model VerificationRequest {
+  id           String             @id @default(uuid())
+  vendorId     String             @unique
+  documents    String[]
+  notes        String?
+  adminNotes   String?
+  status       VerificationStatus @default(PENDING)
+  reviewedById String?
+  reviewedAt   DateTime?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  vendor     VendorProfile @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  reviewedBy User?         @relation("VerificationReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+}
