@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BrandLogo } from "@/components/brand-logo";
+import { NewsletterForm } from "@/components/marketing/newsletter-form";
 
 const footerLinks = {
   Product: [
@@ -45,18 +46,7 @@ export function SiteFooter() {
           <div>
             <h4 className="font-semibold">Newsletter</h4>
             <p className="mt-2 text-sm text-muted-foreground">Event tips & vendor spotlights.</p>
-            <form action="/api/newsletter" method="POST" className="mt-4 flex gap-2">
-              <input
-                type="email"
-                name="email"
-                placeholder="you@email.com"
-                className="flex-1 rounded-lg border border-border bg-card px-3 py-2 text-sm"
-                required
-              />
-              <button type="submit" className="rounded-lg bg-primary px-4 py-2 text-sm font-medium">
-                Join
-              </button>
-            </form>
+            <NewsletterForm />
           </div>
         </div>
         <p className="mt-12 text-center text-xs text-muted-foreground">

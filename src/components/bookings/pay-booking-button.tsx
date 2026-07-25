@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { reportClientError } from "@/lib/client-error";
 
-export function PayDepositButton({ bookingId }: { bookingId: string }) {
+export function PayBookingButton({ bookingId }: { bookingId: string }) {
   const [loading, setLoading] = useState(false);
 
   async function handlePay() {
@@ -16,6 +16,10 @@ export function PayDepositButton({ bookingId }: { bookingId: string }) {
         body: JSON.stringify({ bookingId }),
       });
       const json = await res.json();
+      if (json.data?.already_paid) {
+        window.location.href = `/bookings/${bookingId}?payment=success`;
+        return;
+      }
       if (json.data?.authorization_url) {
         window.location.href = json.data.authorization_url;
         return;
@@ -30,7 +34,7 @@ export function PayDepositButton({ bookingId }: { bookingId: string }) {
 
   return (
     <Button variant="gradient" onClick={handlePay} disabled={loading}>
-      {loading ? "Redirecting to Paystack…" : "Pay deposit"}
+      {loading ? "Redirecting to Paystack…" : "Pay now"}
     </Button>
   );
 }

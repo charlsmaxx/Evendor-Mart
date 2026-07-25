@@ -1,15 +1,24 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
+  applicationName: "Evendor",
   title: {
     default: "Evendor — Africa's Premium Event Marketplace",
     template: "%s | Evendor",
   },
   description:
     "Find venues, hire trusted vendors, and manage your event seamlessly — all in one place.",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Evendor",
+  },
+  formatDetection: {
+    telephone: false,
+  },
   openGraph: {
     title: "Evendor — Africa's Premium Event Marketplace",
     description: "Discover, compare, and book event vendors across Africa.",
@@ -24,9 +33,18 @@ export const metadata: Metadata = {
   },
   robots: { index: true, follow: true },
   icons: {
-    icon: [{ url: "/logo-icon.png", type: "image/png" }],
-    apple: [{ url: "/logo-icon.png", type: "image/png" }],
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
   },
+};
+
+/** Theme color drives the browser UI / splash chrome when installed as a PWA. */
+export const viewport: Viewport = {
+  themeColor: "#A12A4A",
+  colorScheme: "light",
 };
 
 const jsonLd = {

@@ -1,45 +1,32 @@
 import { NextRequest } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { jsonOk, jsonError } from "@/lib/api-response";
-import { redeemReward, getWalletSummary } from "@/lib/rewards";
-import { calcCashback, maxRedeemable } from "@/lib/rewards-utils";
-import { z } from "zod";
+import { getWalletSummary } from "@/lib/rewards";
+import { calcCashback, redeemableAmount } from "@/lib/rewards-utils";
 
-const schema = z.object({
-  bookingId: z.string().uuid(),
-  bookingAmount: z.number().positive(),
-  redeemAmount: z.number().min(0),
-});
-
-export async function POST(req: NextRequest) {
-  const user = await requireAuth();
-  if (!user) return jsonError("Unauthorized", 401);
-
-  const parsed = schema.safeParse(await req.json());
-  if (!parsed.success) return jsonError(parsed.error.message, 400);
-
-  const { bookingId, bookingAmount, redeemAmount } = parsed.data;
-
-  const result = await redeemReward(user.id, bookingId, bookingAmount, redeemAmount);
-  return jsonOk(result);
-}
-
-/** Preview endpoint — returns what would happen without committing */
+/**
+ * Preview what applying rewards to a booking of `amount` would do.
+ *
+ * Read-only on purpose. Rewards are spent by the booking transaction itself
+ * (`POST /api/bookings` with `applyRewards`), which recomputes the figure from the wallet
+ * — this endpoint only prices the checkout screen and is never trusted for the charge.
+ */
 export async function GET(req: NextRequest) {
   const user = await requireAuth();
   if (!user) return jsonError("Unauthorized", 401);
 
-  const amount = Number(new URL(req.url).searchParams.get("amount") ?? 0);
+  const raw = Number(new URL(req.url).searchParams.get("amount") ?? 0);
+  const amount = Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : 0;
+
   const wallet = await getWalletSummary(user.id);
-  const cashback = calcCashback(amount);
-  const maxRedeem = maxRedeemable(amount);
-  const redeemable = Math.min(wallet.availableBalance, maxRedeem);
+  const redeemable = redeemableAmount(wallet.availableBalance, amount);
 
   return jsonOk({
     bookingAmount: amount,
-    cashbackToEarn: cashback,
+    cashbackToEarn: calcCashback(amount),
     availableBalance: wallet.availableBalance,
     redeemable,
+    balanceAfterRedeem: wallet.availableBalance - redeemable,
     finalAmountIfRedeemed: amount - redeemable,
   });
 }

@@ -5,8 +5,12 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 import { jsonOk, jsonError } from "@/lib/api-response";
 import { createBookingSchema } from "@/lib/validations/booking";
-import { reserveSlot, BookingConflictError } from "@/lib/booking-engine";
-import { BOOKING_DEPOSIT_PERCENT } from "@/core/shared/config";
+import {
+  reserveSlot,
+  BookingConflictError,
+  BookingAvailabilityError,
+} from "@/lib/booking-engine";
+import { BOOKING_CHARGE_PERCENT } from "@/core/shared/config";
 import { emitDomainEvent } from "@/core/events";
 import { buildPaginationMeta, paginationQuerySchema } from "@/lib/pagination";
 import { apiLimiter, checkRateLimit } from "@/lib/rate-limit";
@@ -15,8 +19,6 @@ import {
   countVendorBookingsByFilter,
   VENDOR_BOOKING_FILTERS,
 } from "@/lib/booking-list-filters";
-
-const DEPOSIT_PERCENT = BOOKING_DEPOSIT_PERCENT;
 
 const vendorBookingListSelect = {
   id: true,
@@ -81,7 +83,37 @@ export async function POST(req: NextRequest) {
   }
 
   const totalAmount = parsed.data.totalAmount;
-  const depositAmount = Math.round(totalAmount * (DEPOSIT_PERCENT / 100));
+  const priceFloor = listing.priceMin;
+  const priceCeiling = Math.max(listing.priceMax, listing.priceMin) * 2;
+  if (totalAmount < priceFloor) {
+    return jsonError(
+      `Amount is below this listing's starting price (₦${priceFloor.toLocaleString()}).`,
+      400
+    );
+  }
+  if (totalAmount > priceCeiling) {
+    return jsonError(
+      `Amount is far above this listing's listed range. Contact the vendor for a custom quote.`,
+      400
+    );
+  }
+
+  const eventDate = new Date(parsed.data.eventDate);
+  const todayUtc = new Date();
+  todayUtc.setUTCHours(0, 0, 0, 0);
+  if (eventDate < todayUtc) {
+    return jsonError("Event date cannot be in the past.", 400);
+  }
+
+  if (parsed.data.startTime && parsed.data.endTime) {
+    const start = new Date(parsed.data.startTime);
+    const end = new Date(parsed.data.endTime);
+    if (!(start < end)) {
+      return jsonError("End time must be after start time.", 400);
+    }
+  }
+
+  const chargeAmount = totalAmount;
 
   const snapshot = {
     listingId: listing.id,
@@ -101,15 +133,16 @@ export async function POST(req: NextRequest) {
       customerId: user.id,
       vendorId: listing.vendorId,
       source: "MARKETPLACE",
-      eventDate: new Date(parsed.data.eventDate),
+      eventDate,
       startTime: parsed.data.startTime ? new Date(parsed.data.startTime) : undefined,
       endTime: parsed.data.endTime ? new Date(parsed.data.endTime) : undefined,
       eventType: parsed.data.eventType,
       guestCount: parsed.data.guestCount,
       totalAmount,
-      depositAmount,
-      depositPercent: DEPOSIT_PERCENT,
+      depositAmount: chargeAmount,
+      depositPercent: BOOKING_CHARGE_PERCENT,
       notes: parsed.data.notes,
+      applyRewards: parsed.data.applyRewards,
     });
 
     prisma.booking
@@ -136,6 +169,9 @@ export async function POST(req: NextRequest) {
         "Booking Conflict Detected. This venue is not available for the selected date/time.",
         409
       );
+    }
+    if (err instanceof BookingAvailabilityError) {
+      return jsonError(err.message, 409);
     }
     throw err;
   }

@@ -180,7 +180,7 @@ export function ListingDetailView({ listing }: { listing: ListingData }) {
                 {formatPriceRange(listing.priceMin, listing.priceMax)}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                {isVenue ? "Per event · 30% deposit to book" : "Custom packages available"}
+                {isVenue ? "Per event · paid in full to book" : "Custom packages available"}
               </p>
             </div>
 

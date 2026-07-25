@@ -56,7 +56,7 @@ export function UnifiedDashboard({
         id: string;
         status: string;
         listing: { title: string };
-        depositAmount: number;
+        totalAmount: number;
       }>, hasMore: Boolean(json.meta?.hasMore) };
     },
   });
@@ -107,7 +107,7 @@ export function UnifiedDashboard({
               >
                 <p className="font-medium">{b.listing?.title}</p>
                 <p className="text-sm text-muted-foreground">
-                  {b.status} · {formatCurrency(b.depositAmount)} deposit
+                  {b.status} · {formatCurrency(b.totalAmount)}
                 </p>
               </Link>
             ))}

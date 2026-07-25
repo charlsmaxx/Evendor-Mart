@@ -9,7 +9,7 @@ import { useCompareStore } from "@/stores/compare-store";
 import { GitCompare, Heart, MessageSquare, Calendar } from "lucide-react";
 import { startVendorConversation } from "@/lib/start-conversation";
 import { formatCurrency, formatPriceRange } from "@/lib/utils";
-import { calcCashback, maxRedeemable } from "@/lib/rewards-utils";
+import { calcCashback } from "@/lib/rewards-utils";
 import { reportClientError } from "@/lib/client-error";
 import { ShareListingButton } from "@/components/marketplace/share-listing-button";
 
@@ -27,6 +27,7 @@ interface ListingActionsProps {
 interface RewardsPreview {
   availableBalance: number;
   redeemable: number;
+  balanceAfterRedeem: number;
   cashbackToEarn: number;
   finalAmountIfRedeemed: number;
 }
@@ -70,9 +71,7 @@ export function ListingActions({
   }, [showBook, totalInput]);
 
   const cashbackToEarn = calcCashback(totalInput);
-  const redeemable = rewardsPreview
-    ? Math.min(rewardsPreview.availableBalance, maxRedeemable(totalInput))
-    : 0;
+  const redeemable = rewardsPreview?.redeemable ?? 0;
   const finalAmount = applyRewards && redeemable > 0 ? totalInput - redeemable : totalInput;
 
   async function toggleFavorite() {
@@ -104,6 +103,7 @@ export function ListingActions({
         guestCount: guestCountInput ? Number(guestCountInput) : undefined,
         totalAmount: total,
         notes: fd.get("notes"),
+        applyRewards,
       }),
     });
     const json = await res.json();
@@ -118,13 +118,6 @@ export function ListingActions({
       setLoading(false);
       return;
     }
-    if (applyRewards && redeemable > 0) {
-      await fetch("/api/rewards/redeem", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ bookingId: json.data.id, bookingAmount: total, redeemAmount: redeemable }),
-      });
-    }
 
     const payRes = await fetch("/api/payments/initialize", {
       method: "POST",
@@ -132,7 +125,9 @@ export function ListingActions({
       body: JSON.stringify({ bookingId: json.data.id }),
     });
     const payJson = await payRes.json();
-    if (payJson.data?.authorization_url) {
+    if (payJson.data?.already_paid) {
+      router.push(`/bookings/${json.data.id}?payment=success`);
+    } else if (payJson.data?.authorization_url) {
       window.location.href = payJson.data.authorization_url;
     } else {
       router.push(`/bookings/${json.data.id}`);
@@ -268,19 +263,37 @@ export function ListingActions({
                         type="button"
                         role="switch"
                         aria-checked={applyRewards}
+                        disabled={redeemable <= 0}
                         onClick={() => setApplyRewards((v) => !v)}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-visible:outline-none ${applyRewards ? "bg-primary" : "bg-border"}`}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 ${applyRewards && redeemable > 0 ? "bg-primary" : "bg-border"}`}
                       >
                         <span
                           className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${applyRewards ? "translate-x-6" : "translate-x-1"}`}
                         />
                       </button>
                     </div>
-                    {applyRewards && redeemable > 0 && (
-                      <div className="flex justify-between font-medium text-emerald-700">
-                        <span>Rewards Applied</span>
-                        <span>−{formatCurrency(redeemable)}</span>
-                      </div>
+                    {redeemable > 0 ? (
+                      applyRewards ? (
+                        <>
+                          <div className="flex justify-between font-medium text-emerald-700">
+                            <span>Rewards Applied</span>
+                            <span>−{formatCurrency(redeemable)}</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {formatCurrency(rewardsPreview.balanceAfterRedeem)} stays in your
+                            wallet for future bookings.
+                          </p>
+                        </>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">
+                          {formatCurrency(redeemable)} of your balance can go toward this
+                          booking.
+                        </p>
+                      )
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        Your balance can&apos;t be used on a booking this size yet.
+                      </p>
                     )}
                   </div>
                 )}
@@ -298,9 +311,12 @@ export function ListingActions({
               </div>
             )}
 
-            <p className="text-xs text-muted-foreground">30% deposit charged via Paystack</p>
+            <p className="text-xs text-muted-foreground">
+              Paid in full via Paystack and held in Evendor Escrow until you confirm the job
+              is done.
+            </p>
             <Button type="submit" variant="gradient" className="w-full" disabled={loading}>
-              {loading ? "Processing…" : "Confirm & Pay Deposit"}
+              {loading ? "Processing…" : "Confirm & Pay"}
             </Button>
           </div>
         </form>

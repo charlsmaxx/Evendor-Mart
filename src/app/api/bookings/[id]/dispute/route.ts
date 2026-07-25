@@ -2,10 +2,15 @@ import { NextRequest } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { jsonOk, jsonError } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
-import { openDispute } from "@/lib/escrow";
+import { EscrowRuleError, openDispute } from "@/lib/escrow";
 import { z } from "zod";
 
-const schema = z.object({ reason: z.string().min(10).max(1000) });
+const schema = z.object({
+  reason: z
+    .string()
+    .min(10, "Please describe the issue in at least 10 characters.")
+    .max(1000),
+});
 
 export async function POST(
   req: NextRequest,
@@ -15,13 +20,30 @@ export async function POST(
   const user = await requireAuth();
   if (!user) return jsonError("Unauthorized", 401);
 
-  const parsed = schema.safeParse(await req.json());
-  if (!parsed.success) return jsonError(parsed.error.message, 400);
+  const parsed = schema.safeParse(await req.json().catch(() => null));
+  if (!parsed.success) {
+    return jsonError(parsed.error.issues[0]?.message ?? "Invalid input", 400);
+  }
 
-  const booking = await prisma.booking.findUnique({ where: { id } });
+  const booking = await prisma.booking.findUnique({
+    where: { id },
+    select: { customerId: true, dispute: { select: { status: true } } },
+  });
   if (!booking) return jsonError("Booking not found", 404);
   if (booking.customerId !== user.id) return jsonError("Forbidden", 403);
+  if (booking.dispute) {
+    return jsonError("A dispute is already open for this booking.", 409);
+  }
 
-  await openDispute(id, user.id, parsed.data.reason);
-  return jsonOk({ message: "Dispute opened. Our team will review within 24–48 hours." });
+  try {
+    await openDispute(id, user.id, parsed.data.reason);
+  } catch (err) {
+    if (err instanceof EscrowRuleError) return jsonError(err.message, 409);
+    throw err;
+  }
+
+  return jsonOk({
+    message:
+      "Dispute opened. Your payment stays locked in escrow until our team resolves it, usually within 24–48 hours.",
+  });
 }

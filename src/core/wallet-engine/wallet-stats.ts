@@ -1,9 +1,11 @@
 import { prisma } from "@/core/infrastructure/prisma";
 import { startOfMonth, endOfMonth, startOfDay, endOfDay } from "date-fns";
 
-import { vendorShareAmount } from "@/core/shared/config";
+import { MIN_WITHDRAWAL_AMOUNT, vendorShareAmount } from "@/core/shared/config";
+import { computeVendorBalance } from "./ledger";
 
 const PAYOUT_HISTORY_LIMIT = 50;
+const WITHDRAWAL_HISTORY_LIMIT = 50;
 
 export async function getVendorWalletStats(vendorId: string) {
   const now = new Date();
@@ -12,19 +14,9 @@ export async function getVendorWalletStats(vendorId: string) {
   const todayStart = startOfDay(now);
   const todayEnd = endOfDay(now);
 
-  const [heldPayments, paidAgg, pendingAgg, recentPayouts, monthBookings, yearBookings, withdrawnAgg] =
+  const [balance, pendingAgg, recentPayouts, recentWithdrawals, monthBookings, yearBookings] =
     await Promise.all([
-      prisma.payment.findMany({
-        where: {
-          escrowStatus: "HELD",
-          booking: { vendorId, status: { in: ["CONFIRMED", "IN_PROGRESS"] } },
-        },
-        select: { heldAmount: true, amount: true },
-      }),
-      prisma.payout.aggregate({
-        where: { vendorId, status: "PAID" },
-        _sum: { amount: true },
-      }),
+      computeVendorBalance(vendorId),
       prisma.payout.aggregate({
         where: { vendorId, status: { in: ["PROCESSING", "PENDING"] } },
         _sum: { amount: true },
@@ -48,6 +40,22 @@ export async function getVendorWalletStats(vendorId: string) {
           },
         },
       }),
+      prisma.withdrawal.findMany({
+        where: { vendorId },
+        orderBy: { createdAt: "desc" },
+        take: WITHDRAWAL_HISTORY_LIMIT,
+        select: {
+          id: true,
+          reference: true,
+          amount: true,
+          status: true,
+          bankName: true,
+          accountNumberLast4: true,
+          failureReason: true,
+          processedAt: true,
+          createdAt: true,
+        },
+      }),
       prisma.booking.aggregate({
         where: {
           vendorId,
@@ -64,30 +72,21 @@ export async function getVendorWalletStats(vendorId: string) {
         },
         _sum: { totalAmount: true },
       }),
-      prisma.payout.aggregate({
-        where: { vendorId, status: "PAID" },
-        _sum: { amount: true },
-      }),
     ]);
-
-  const pendingEarnings = heldPayments.reduce(
-    (sum, p) => sum + (p.heldAmount ?? p.amount),
-    0
-  );
-
-  const availableBalance = paidAgg._sum.amount ?? 0;
-  const pendingRelease = pendingAgg._sum.amount ?? 0;
 
   const vendorShare = vendorShareAmount;
 
   return {
-    availableBalance,
-    pendingEarnings,
-    escrowBalance: pendingEarnings,
-    pendingRelease,
+    availableBalance: balance.availableBalance,
+    pendingEarnings: balance.escrowHeld,
+    escrowBalance: balance.escrowHeld,
+    pendingRelease: pendingAgg._sum.amount ?? 0,
+    releasedTotal: balance.releasedTotal,
+    withdrawnAmount: balance.withdrawnTotal,
+    withdrawalsInFlight: balance.inFlightTotal,
+    minWithdrawal: MIN_WITHDRAWAL_AMOUNT,
     monthEarnings: vendorShare(monthBookings._sum.totalAmount ?? 0),
     yearEarnings: vendorShare(yearBookings._sum.totalAmount ?? 0),
-    withdrawnAmount: withdrawnAgg._sum.amount ?? 0,
     payouts: recentPayouts.map((p) => ({
       id: p.id,
       reference: p.reference,
@@ -97,6 +96,17 @@ export async function getVendorWalletStats(vendorId: string) {
       createdAt: p.createdAt.toISOString(),
       bookingTitle: p.booking.listing.title,
       eventDate: p.booking.eventDate.toISOString(),
+    })),
+    withdrawals: recentWithdrawals.map((w) => ({
+      id: w.id,
+      reference: w.reference,
+      amount: w.amount,
+      status: w.status,
+      bankName: w.bankName,
+      accountNumberLast4: w.accountNumberLast4,
+      failureReason: w.failureReason,
+      processedAt: w.processedAt?.toISOString() ?? null,
+      createdAt: w.createdAt.toISOString(),
     })),
     payoutHistoryLimit: PAYOUT_HISTORY_LIMIT,
     todayStart: todayStart.toISOString(),

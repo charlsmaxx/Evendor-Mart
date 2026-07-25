@@ -16,7 +16,7 @@ function isRedisConfigured() {
   return true;
 }
 
-function createLimiter(requests: number, window: `${number} s` | `${number} m`) {
+function createLimiter(requests: number, window: `${number} s` | `${number} m` | `${number} h`) {
   if (!isRedisConfigured()) return null;
   const redis = new Redis({
     url: process.env.UPSTASH_REDIS_REST_URL!,
@@ -33,6 +33,8 @@ export const authLimiter = createLimiter(10, "1 m");
 export const apiLimiter = createLimiter(60, "1 m");
 export const searchLimiter = createLimiter(30, "1 m");
 export const messageLimiter = createLimiter(20, "1 m");
+/** Money-moving endpoints — deliberately tight to limit abuse and accidental retries. */
+export const payoutLimiter = createLimiter(5, "1 h");
 
 export async function checkRateLimit(
   limiter: Ratelimit | null,

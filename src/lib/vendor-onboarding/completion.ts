@@ -78,7 +78,7 @@ export function calculateBusinessHealth(draft: VendorOnboardingDraft): BusinessH
     {
       id: "preferences",
       label: "Set booking preferences",
-      done: draft.step7.depositPercent > 0,
+      done: draft.step7.minimumNoticeHours > 0,
       weight: 6,
     },
     {

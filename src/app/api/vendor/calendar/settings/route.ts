@@ -51,7 +51,9 @@ export async function PATCH(req: NextRequest) {
   if (!parsed.success) return jsonError(parsed.error.message, 400);
 
   const current = parseAvailabilitySettings(vendor.availability);
+  // Preserve vacationMode / unavailableDates — this route only edits hours/vacations.
   const nextSettings = {
+    ...current,
     workingHours: parsed.data.workingHours ?? current.workingHours,
     vacations: parsed.data.vacations ?? current.vacations,
   };

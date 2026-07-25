@@ -70,14 +70,10 @@ export type Step5BusinessDetails = {
   website: string;
 };
 
-export type Step6Availability = VendorAvailabilitySettings & {
-  vacationMode: boolean;
-  unavailableDates: string[];
-};
+export type Step6Availability = VendorAvailabilitySettings;
 
 export type Step7Preferences = {
   bookingApproval: "instant" | "approval_required";
-  depositPercent: number;
   minimumNoticeHours: number;
   maxAdvanceBookingDays: number;
   cancellationPolicy: string;
@@ -212,7 +208,6 @@ export function defaultDraft(businessKind: BusinessKind): VendorOnboardingDraft 
     },
     step7: {
       bookingApproval: "approval_required",
-      depositPercent: 30,
       minimumNoticeHours: 48,
       maxAdvanceBookingDays: 365,
       cancellationPolicy: "",

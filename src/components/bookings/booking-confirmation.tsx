@@ -19,36 +19,49 @@ export function BookingConfirmation({
   const [showDispute, setShowDispute] = useState(false);
   const [disputeReason, setDisputeReason] = useState("");
   const [done, setDone] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const confirmMutation = useMutation({
     mutationFn: async () => {
       const res = await fetch(`/api/bookings/${bookingId}/confirm`, { method: "POST" });
-      if (!res.ok) throw new Error("Failed to confirm");
-      return res.json();
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error?.message ?? "Failed to confirm");
+      return json.data as { message?: string };
     },
+    onMutate: () => setError(null),
     onSuccess: () => {
       setDone(true);
       router.refresh();
     },
-    onError: (e) => reportClientError("booking-confirm", e),
+    onError: (e: Error) => {
+      setError(e.message);
+      reportClientError("booking-confirm", e);
+    },
   });
 
   const disputeMutation = useMutation({
     mutationFn: async () => {
-      if (disputeReason.trim().length < 10) throw new Error("Please describe the issue in more detail.");
+      if (disputeReason.trim().length < 10) {
+        throw new Error("Please describe the issue in at least 10 characters.");
+      }
       const res = await fetch(`/api/bookings/${bookingId}/dispute`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reason: disputeReason }),
       });
-      if (!res.ok) throw new Error("Failed to open dispute");
-      return res.json();
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error?.message ?? "Failed to open dispute");
+      return json.data as { message?: string };
     },
+    onMutate: () => setError(null),
     onSuccess: () => {
       setDone(true);
       router.refresh();
     },
-    onError: (e) => reportClientError("booking-dispute", e),
+    onError: (e: Error) => {
+      setError(e.message);
+      reportClientError("booking-dispute", e);
+    },
   });
 
   if (done) return null;
@@ -61,7 +74,8 @@ export function BookingConfirmation({
       <div>
         <p className="font-display font-semibold text-base">Did the event take place successfully?</p>
         <p className="mt-1 text-sm text-muted-foreground">
-          Confirming will release the vendor&apos;s payment from escrow. If there was an issue, report it and our team will investigate.
+          Approving releases the vendor&apos;s payment from escrow immediately. Reporting a
+          problem keeps your money locked until our team resolves it.
         </p>
       </div>
 
@@ -74,7 +88,7 @@ export function BookingConfirmation({
             onClick={() => confirmMutation.mutate()}
           >
             <CheckCircle2 className="h-4 w-4" />
-            {confirmMutation.isPending ? "Confirming…" : "Yes, it went well"}
+            {confirmMutation.isPending ? "Releasing payment…" : "Approve — the job is done"}
           </Button>
           {canDispute && (
             <Button
@@ -83,12 +97,16 @@ export function BookingConfirmation({
               onClick={() => setShowDispute(true)}
             >
               <AlertTriangle className="h-4 w-4" />
-              Report an issue
+              Report a problem
             </Button>
           )}
         </div>
       ) : (
         <div className="space-y-3">
+          <p className="text-sm text-amber-800">
+            Your payment stays locked in escrow while we review. The vendor cannot be paid
+            until the dispute is resolved.
+          </p>
           <Textarea
             placeholder="Describe the issue in detail (minimum 10 characters)…"
             rows={4}
@@ -110,6 +128,11 @@ export function BookingConfirmation({
         </div>
       )}
 
+      {error && (
+        <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

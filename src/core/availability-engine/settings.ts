@@ -25,6 +25,8 @@ export type VacationPeriod = {
 export type VendorAvailabilitySettings = {
   workingHours: WorkingHours;
   vacations: VacationPeriod[];
+  vacationMode: boolean;
+  unavailableDates: string[];
 };
 
 const DAY_KEYS: DayKey[] = [
@@ -75,7 +77,52 @@ export function parseAvailabilitySettings(raw: unknown): VendorAvailabilitySetti
         }))
     : [];
 
-  return { workingHours, vacations };
+  const vacationMode = base.vacationMode === true;
+  const unavailableDates = Array.isArray(base.unavailableDates)
+    ? base.unavailableDates.map((d) => String(d).slice(0, 10)).filter(Boolean)
+    : [];
+
+  return { workingHours, vacations, vacationMode, unavailableDates };
+}
+
+const DAY_BY_UTC_INDEX: DayKey[] = [
+  "sunday",
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+];
+
+/**
+ * Pure check against vendor calendar settings (not BlockedDate rows).
+ * `eventDay` is YYYY-MM-DD in the same UTC calendar the booking engine uses.
+ */
+export function reasonVendorClosedOnDay(
+  settings: VendorAvailabilitySettings,
+  eventDay: string
+): string | null {
+  if (settings.vacationMode && settings.unavailableDates.includes(eventDay)) {
+    return "Vendor is unavailable on this date.";
+  }
+
+  for (const vac of settings.vacations) {
+    const start = vac.start.slice(0, 10);
+    const end = vac.end.slice(0, 10);
+    if (eventDay >= start && eventDay <= end) {
+      return vac.label
+        ? `Vendor is on leave (${vac.label}).`
+        : "Vendor is on leave for this date.";
+    }
+  }
+
+  const day = DAY_BY_UTC_INDEX[new Date(`${eventDay}T00:00:00.000Z`).getUTCDay()];
+  if (day && settings.workingHours[day] && !settings.workingHours[day].enabled) {
+    return "Vendor is closed on this day of the week.";
+  }
+
+  return null;
 }
 
 export function eachDayInRange(start: string, end: string): Date[] {

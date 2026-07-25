@@ -1,4 +1,6 @@
 import type { NextConfig } from "next";
+import { randomUUID } from "node:crypto";
+import withSerwistInit from "@serwist/next";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 let supabaseConnect = "https://*.supabase.co wss://*.supabase.co wss://*.supabase.io";
@@ -22,11 +24,14 @@ const securityHeaders = [
     value: [
       "default-src 'self'",
       "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://js.paystack.co",
+      // Service workers are same-origin scripts; explicit worker-src keeps CSP precise.
+      "worker-src 'self'",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://*.supabase.co",
       "font-src 'self' data:",
       `connect-src 'self' ${supabaseConnect} https://accounts.google.com https://api.paystack.co https://api.cloudinary.com`,
       "frame-src https://js.paystack.co https://accounts.google.com",
+      "manifest-src 'self'",
     ].join("; "),
   },
 ];
@@ -42,8 +47,29 @@ const nextConfig: NextConfig = {
     ],
   },
   async headers() {
-    return [{ source: "/(.*)", headers: securityHeaders }];
+    return [
+      { source: "/(.*)", headers: securityHeaders },
+      {
+        source: "/sw.js",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=0, must-revalidate" },
+          { key: "Service-Worker-Allowed", value: "/" },
+        ],
+      },
+    ];
   },
 };
 
-export default nextConfig;
+/**
+ * Serwist (modern next-pwa successor, recommended in Next.js PWA docs).
+ * Disabled in development so hot reload is not fighting a stale cache.
+ */
+const withSerwist = withSerwistInit({
+  swSrc: "src/app/sw.ts",
+  swDest: "public/sw.js",
+  disable: process.env.NODE_ENV === "development",
+  reloadOnOnline: false,
+  additionalPrecacheEntries: [{ url: "/offline", revision: randomUUID() }],
+});
+
+export default withSerwist(nextConfig);

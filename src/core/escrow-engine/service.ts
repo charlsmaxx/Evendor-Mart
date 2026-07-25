@@ -14,14 +14,30 @@ function payoutReference(): string {
   return `payout_${crypto.randomBytes(10).toString("hex")}`;
 }
 
+/** Raised when escrow rules forbid an action. Routes map this to a 409. */
+export class EscrowRuleError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "EscrowRuleError";
+  }
+}
+
 export async function releaseEscrow(bookingId: string, confirmedByUserId?: string) {
   const booking = await prisma.booking.findUnique({
     where: { id: bookingId },
-    include: { vendor: true, payments: true, customer: true },
+    include: { vendor: true, payments: true, customer: true, dispute: true },
   });
   if (!booking) throw new Error("Booking not found");
   if (!["CONFIRMED", "IN_PROGRESS"].includes(booking.status)) {
     throw new Error("Booking is not in a releasable state");
+  }
+
+  // Last line of defence: an open dispute locks the funds no matter which caller
+  // asks for a release (customer confirm, admin action, or the auto-release cron).
+  if (booking.dispute && booking.dispute.status === "OPEN") {
+    throw new EscrowRuleError(
+      "Funds are locked while a dispute is open. Resolve the dispute first."
+    );
   }
 
   const payoutAmount = vendorShareAmount(booking.totalAmount);
@@ -42,14 +58,16 @@ export async function releaseEscrow(bookingId: string, confirmedByUserId?: strin
       data: { escrowStatus: "RELEASED" },
     });
 
+    // PAID means "escrow released into the vendor's Evendor balance". Moving that
+    // balance to a bank account is a separate Withdrawal.
     await tx.payout.upsert({
       where: { bookingId },
-      update: { status: "PROCESSING", processedAt: new Date() },
+      update: { status: "PAID", processedAt: new Date() },
       create: {
         bookingId,
         vendorId: booking.vendorId,
         amount: payoutAmount,
-        status: "PROCESSING",
+        status: "PAID",
         reference: payoutReference(),
         processedAt: new Date(),
       },
@@ -94,10 +112,22 @@ export async function releaseEscrow(bookingId: string, confirmedByUserId?: strin
 export async function openDispute(bookingId: string, raisedById: string, reason: string) {
   const booking = await prisma.booking.findUnique({
     where: { id: bookingId },
-    include: { vendor: true },
+    include: { vendor: true, payments: true, payout: true },
   });
   if (!booking) throw new Error("Booking not found");
   if (booking.customerId !== raisedById) throw new Error("Only the customer can raise a dispute");
+
+  // Once escrow is released the vendor may already have withdrawn, so a dispute can no
+  // longer lock anything. Without this guard opening one would also reopen a COMPLETED
+  // booking while leaving the payout intact.
+  const escrowLockable = booking.payments.some((p) =>
+    ["HELD", "DISPUTED"].includes(p.escrowStatus)
+  );
+  if (booking.payout || !escrowLockable) {
+    throw new EscrowRuleError(
+      "This booking's payment has already been released. Please contact support instead."
+    );
+  }
 
   await prisma.$transaction(async (tx) => {
     await tx.booking.update({
@@ -194,12 +224,12 @@ export async function resolveDispute(
     if (payoutAmount > 0) {
       await tx.payout.upsert({
         where: { bookingId: booking.id },
-        update: { amount: payoutAmount, status: "PROCESSING", processedAt: new Date() },
+        update: { amount: payoutAmount, status: "PAID", processedAt: new Date() },
         create: {
           bookingId: booking.id,
           vendorId: booking.vendorId,
           amount: payoutAmount,
-          status: "PROCESSING",
+          status: "PAID",
           reference: payoutReference(),
           notes: `Dispute resolution: ${resolution}`,
           processedAt: new Date(),
@@ -275,25 +305,33 @@ export async function resolveDispute(
 export async function autoReleaseExpiredEscrows(): Promise<number> {
   const cutoff = new Date(Date.now() - AUTO_RELEASE_HOURS * 60 * 60 * 1000);
 
+  // Release window starts at vendorCompletedAt when the vendor marks the job done,
+  // otherwise at eventDate. Using eventDate alone would release a past-dated booking
+  // on the next cron tick, and would ignore the customer's confirm window after delivery.
   const releasable = await prisma.booking.findMany({
     where: {
       status: { in: ["CONFIRMED", "IN_PROGRESS"] },
-      eventDate: { lte: cutoff },
       completionConfirmedAt: null,
       dispute: null,
+      OR: [
+        { vendorCompletedAt: { lte: cutoff } },
+        { vendorCompletedAt: null, eventDate: { lte: cutoff } },
+      ],
     },
     select: { id: true },
   });
 
+  let released = 0;
   for (const b of releasable) {
     try {
       await releaseEscrow(b.id, undefined);
+      released++;
     } catch {
       /* continue */
     }
   }
 
-  return releasable.length;
+  return released;
 }
 
 const REMINDER_TITLE = "Confirm your booking";
@@ -306,10 +344,16 @@ export async function sendCompletionReminders(): Promise<number> {
   const candidates = await prisma.booking.findMany({
     where: {
       status: { in: ["CONFIRMED", "IN_PROGRESS"] },
-      eventDate: { lte: now, gt: autoReleaseCutoff },
       completionConfirmedAt: null,
       customerId: { not: null },
       dispute: null,
+      OR: [
+        { vendorCompletedAt: { lte: now, gt: autoReleaseCutoff } },
+        {
+          vendorCompletedAt: null,
+          eventDate: { lte: now, gt: autoReleaseCutoff },
+        },
+      ],
     },
     include: {
       customer: { select: { id: true, email: true, fullName: true } },
@@ -330,7 +374,9 @@ export async function sendCompletionReminders(): Promise<number> {
     await notifyUser({
       userId: booking.customerId,
       title: REMINDER_TITLE,
-      body: `Your event for "${booking.listing.title}" has passed. Confirm completion or open a dispute within ${AUTO_RELEASE_HOURS} hours before funds auto-release.`,
+      body: booking.vendorCompletedAt
+        ? `The vendor marked "${booking.listing.title}" as delivered. Confirm completion or open a dispute within ${AUTO_RELEASE_HOURS} hours before funds auto-release.`
+        : `Your event for "${booking.listing.title}" has passed. Confirm completion or open a dispute within ${AUTO_RELEASE_HOURS} hours before funds auto-release.`,
       link,
     });
 

@@ -9,7 +9,7 @@
 - **Escrow lifecycle:** `src/core/escrow-engine/` (separate bounded context, coordinates with payment records)
 - **Vendor wallet:** `src/core/wallet-engine/`
 - **Customer rewards:** `src/core/rewards-engine/`
-- **Shared constants:** `src/core/shared/config.ts` (`VENDOR_PAYOUT_PERCENT`, `BOOKING_DEPOSIT_PERCENT`)
+- **Shared constants:** `src/core/shared/config.ts` (`PLATFORM_COMMISSION_PERCENT`, `VENDOR_PAYOUT_PERCENT`, `BOOKING_CHARGE_PERCENT`)
 
 ## Why
 

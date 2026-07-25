@@ -243,6 +243,7 @@ model VendorProfile {
   analyticsEvents     AnalyticsEvent[]
   blockedDates        BlockedDate[]
   payouts             Payout[]
+  withdrawals         Withdrawal[]
   verificationRequest VerificationRequest?
   businessCustomers   BusinessCustomer[]
   staff               VendorStaff[]
@@ -387,7 +388,12 @@ model Booking {
   guestCount            Int?
   totalAmount           Int
   depositAmount         Int
-  depositPercent        Int           @default(30)
+  /// Marketplace bookings are charged in full (100). Manual/offline bookings may record
+  /// a partial figure the vendor collected themselves.
+  depositPercent        Int           @default(100)
+  /// Reward naira taken off this booking's charge. Funded from Evendor's commission —
+  /// the vendor is still paid their share of the full totalAmount.
+  rewardsRedeemed       Int           @default(0)
   depositReceived       Int?
   outstandingBalance    Int?
   status                BookingStatus @default(RESERVED)
@@ -396,6 +402,9 @@ model Booking {
   attachments           Json?
   bookingSnapshot       Json?
   createdById           String?
+  /// Vendor asserted the job is done. Starts the customer confirmation window;
+  /// escrow is not released until the customer confirms or the window lapses.
+  vendorCompletedAt     DateTime?
   completionConfirmedAt DateTime?
   completionConfirmedBy String?
   createdAt             DateTime      @default(now())
@@ -672,6 +681,31 @@ model Payout {
   booking Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
   @@index([vendorId, status])
+}
+
+/// A vendor-initiated cash-out of released escrow to their bank account.
+/// `reference` doubles as the Paystack transfer reference, so it must stay unique.
+model Withdrawal {
+  id                   String       @id @default(uuid())
+  vendorId             String
+  amount               Int
+  status               PayoutStatus @default(PENDING)
+  reference            String       @unique
+  paystackTransferCode String?
+  recipientCode        String?
+  bankName             String?
+  accountNumberLast4   String?
+  failureReason        String?
+  attempts             Int          @default(0)
+  requestedById        String?
+  processedAt          DateTime?
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+
+  vendor VendorProfile @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId, status])
+  @@index([status, createdAt])
 }
 
 model VerificationRequest {

@@ -24,7 +24,6 @@ type Booking = {
   status: string;
   eventDate: string;
   totalAmount: number;
-  depositAmount: number;
   eventType?: string;
   guestCount?: number;
   bookingSnapshot?: unknown;
@@ -140,7 +139,8 @@ export function AdminBookingsPanel() {
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-[#E5DFD9]/30">Payment</p>
                     <p className="text-[#E5DFD9]/80">
-                      Deposit: {formatCurrency(b.depositAmount)} · {b.payments[0]?.status ?? "—"}
+                      Paid: {formatCurrency(b.payments[0]?.amount ?? b.totalAmount)} ·{" "}
+                      {b.payments[0]?.status ?? "—"}
                     </p>
                     <p className="text-xs text-[#E5DFD9]/40">Escrow: {b.payments[0]?.escrowStatus ?? "—"}</p>
                   </div>

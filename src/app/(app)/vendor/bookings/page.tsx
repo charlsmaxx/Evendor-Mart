@@ -33,7 +33,6 @@ type Booking = {
   eventType?: string;
   guestCount?: number;
   totalAmount: number;
-  depositAmount: number;
   status: string;
   reservationExpiresAt?: string;
   notes?: string;
@@ -102,7 +101,9 @@ export default function VendorBookingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
       });
-      if (!res.ok) throw new Error("Update failed");
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error?.message ?? "Update failed");
+      return json.data as { escrowMessage?: string };
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["vendor-bookings"] }),
   });
@@ -137,6 +138,17 @@ export default function VendorBookingsPage() {
           </button>
         ))}
       </div>
+
+      {updateStatus.data?.escrowMessage && (
+        <p className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3 text-sm text-emerald-700 dark:text-emerald-400">
+          {updateStatus.data.escrowMessage}
+        </p>
+      )}
+      {updateStatus.error && (
+        <p className="rounded-xl border border-red-500/20 bg-red-500/5 p-3 text-sm text-red-600">
+          {(updateStatus.error as Error).message}
+        </p>
+      )}
 
       {isLoading && <VendorBookingsListSkeleton />}
 
@@ -225,10 +237,10 @@ export default function VendorBookingsPage() {
                     </div>
                     <div>
                       <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                        Deposit
+                        Amount
                       </p>
                       <p>
-                        {formatCurrency(b.depositAmount)}{" "}
+                        {formatCurrency(b.totalAmount)}{" "}
                         {paymentStatus === "SUCCESS" ? "✓ Paid" : "· Pending"}
                       </p>
                     </div>

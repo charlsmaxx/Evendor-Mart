@@ -183,7 +183,7 @@ export function VenueOnboardingForm() {
         />
         <div>
           <Label htmlFor="termsAndConditions">Terms &amp; conditions (optional)</Label>
-          <Textarea id="termsAndConditions" name="termsAndConditions" rows={3} className="mt-1" placeholder="Cancellation and deposit policy…" />
+          <Textarea id="termsAndConditions" name="termsAndConditions" rows={3} className="mt-1" placeholder="Cancellation and refund policy…" />
         </div>
         <div className="flex gap-3">
           <Button type="button" variant="outline" className="flex-1" onClick={() => setStep(2)}>Back</Button>

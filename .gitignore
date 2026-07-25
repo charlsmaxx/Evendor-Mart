@@ -41,3 +41,8 @@ next-env.d.ts
 
 # prisma
 prisma/*.db
+
+# Serwist-generated service worker (built on `next build`)
+public/sw.js
+public/sw.js.map
+public/swe-worker-*.js

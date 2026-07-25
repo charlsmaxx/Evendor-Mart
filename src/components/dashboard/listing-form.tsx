@@ -223,7 +223,7 @@ export function ListingForm({
       <div className="space-y-2 border-t border-border pt-4">
         <Label>Terms &amp; conditions (optional)</Label>
         <p className="text-xs text-muted-foreground">
-          Cancellation policy, deposit rules, or booking terms customers should know before booking.
+          Cancellation policy, refund rules, or booking terms customers should know before booking.
         </p>
         <Textarea
           value={termsAndConditions}

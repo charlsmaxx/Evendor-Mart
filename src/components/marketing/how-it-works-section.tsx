@@ -7,7 +7,7 @@ import { Search, GitCompare, CalendarCheck } from "lucide-react";
 const steps = [
   { icon: Search, step: "01", title: "Discover", desc: "Browse verified vendors and luxury venues across African cities." },
   { icon: GitCompare, step: "02", title: "Compare", desc: "Compare ratings, pricing, and portfolios — then request quotes in-app." },
-  { icon: CalendarCheck, step: "03", title: "Book", desc: "Secure your date with Paystack deposits and track everything in one dashboard." },
+  { icon: CalendarCheck, step: "03", title: "Book", desc: "Secure your date with a Paystack payment held in escrow, and track everything in one dashboard." },
 ];
 
 export function HowItWorksSection() {

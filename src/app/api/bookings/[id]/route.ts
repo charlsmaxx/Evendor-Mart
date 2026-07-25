@@ -6,6 +6,10 @@ import { updateBookingSchema } from "@/lib/validations/booking";
 import { getVendorEvidence } from "@/lib/booking-evidence";
 import { writeAuditLog } from "@/core/audit-engine";
 import { emitDomainEvent } from "@/core/events";
+import { EscrowRuleError, releaseEscrow } from "@/lib/escrow";
+import { notifyUser } from "@/core/notification-engine";
+import { refundRedeemedRewards } from "@/core/rewards-engine";
+import { AUTO_RELEASE_HOURS } from "@/core/shared/config";
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -58,8 +62,7 @@ export async function GET(
     eventType: booking.eventType,
     guestCount: booking.guestCount,
     totalAmount: booking.totalAmount,
-    depositAmount: booking.depositAmount,
-    depositPercent: booking.depositPercent,
+    rewardsRedeemed: booking.rewardsRedeemed,
     status: booking.status,
     notes: booking.notes,
     bookingSnapshot: booking.bookingSnapshot,
@@ -112,20 +115,85 @@ export async function PATCH(
 
   const booking = await prisma.booking.findUnique({
     where: { id },
-    include: { vendor: true },
+    include: { vendor: true, payments: true, dispute: { select: { id: true, status: true } } },
   });
   if (!booking) return jsonError("Not found", 404);
 
   const isVendor = booking.vendor.userId === user.id;
   const isCustomer = booking.customerId === user.id;
-  if (!isVendor && !isCustomer && user.role !== "ADMIN") {
+  const isAdmin = user.role === "ADMIN";
+  if (!isVendor && !isCustomer && !isAdmin) {
     return jsonError("Forbidden", 403);
+  }
+
+  const escrowHeld = booking.payments.some(
+    (p) => p.status === "SUCCESS" && p.escrowStatus === "HELD"
+  );
+  const disputeOpen = booking.dispute && booking.dispute.status === "OPEN";
+
+  if (parsed.data.status === "COMPLETED" && escrowHeld) {
+    if (disputeOpen) {
+      return jsonError("Resolve the open dispute before completing this booking.", 409);
+    }
+
+    // A vendor cannot release their own escrow. Marking the job done opens the
+    // customer's confirmation window; funds move on confirmation or auto-release.
+    if (isVendor && !isAdmin) {
+      const updated = await prisma.booking.update({
+        where: { id },
+        data: { status: "IN_PROGRESS", vendorCompletedAt: new Date() },
+      });
+
+      await writeAuditLog({
+        actorId: user.id,
+        action: "BOOKING_VENDOR_COMPLETED",
+        entityType: "Booking",
+        entityId: id,
+        metadata: { escrowHeld: true },
+      });
+
+      if (booking.customerId) {
+        await notifyUser({
+          userId: booking.customerId,
+          title: "Approve your booking or report a problem",
+          body: `${booking.vendor.businessName} marked your booking as delivered. Approve to release their payment, or report a problem to keep it locked. Funds release automatically in ${AUTO_RELEASE_HOURS} hours.`,
+          link: `/bookings/${id}`,
+        });
+      }
+
+      return jsonOk({
+        ...updated,
+        escrowMessage: `Marked as delivered. Your payout releases once the customer confirms, or automatically after ${AUTO_RELEASE_HOURS} hours.`,
+      });
+    }
+
+    // Customer confirmation (or an admin acting on their behalf) releases escrow.
+    try {
+      await releaseEscrow(id, user.id);
+    } catch (err) {
+      if (err instanceof EscrowRuleError) return jsonError(err.message, 409);
+      throw err;
+    }
+    const released = await prisma.booking.findUnique({ where: { id } });
+    return jsonOk({
+      ...released,
+      escrowMessage: "Booking completed and payout released to the vendor.",
+    });
   }
 
   const updated = await prisma.booking.update({
     where: { id },
     data: { status: parsed.data.status },
   });
+
+  // Rewards spent on a booking that never got paid for go back to the customer. Paid
+  // cancellations are settled through the escrow refund path instead.
+  const abandoned =
+    (parsed.data.status === "CANCELLED" || parsed.data.status === "DECLINED") &&
+    !booking.payments.some((p) => p.status === "SUCCESS");
+  if (abandoned) {
+    await refundRedeemedRewards(id);
+  }
 
   if (user.role === "ADMIN" || isVendor) {
     await writeAuditLog({

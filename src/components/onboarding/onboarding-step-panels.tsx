@@ -506,10 +506,6 @@ export function Step7Preferences({ draft, update }: { draft: VendorOnboardingDra
           </select>
         </div>
         <div className="space-y-2">
-          <Label>Deposit %</Label>
-          <Input type="number" min={0} max={100} value={s.depositPercent} onChange={(e) => update({ step7: { ...s, depositPercent: Number(e.target.value) } })} />
-        </div>
-        <div className="space-y-2">
           <Label>Minimum notice (hours)</Label>
           <Input type="number" value={s.minimumNoticeHours} onChange={(e) => update({ step7: { ...s, minimumNoticeHours: Number(e.target.value) } })} />
         </div>

@@ -32,8 +32,6 @@ type BookingDetail = {
   eventType: string | null;
   guestCount: number | null;
   totalAmount: number;
-  depositAmount: number;
-  depositPercent: number;
   status: string;
   notes: string | null;
   reservationExpiresAt: string | null;
@@ -92,7 +90,9 @@ export default function VendorBookingDetailPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),
       });
-      if (!res.ok) throw new Error("Update failed");
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error?.message ?? "Update failed");
+      return json.data as { escrowMessage?: string };
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["vendor-booking", id] });
@@ -194,10 +194,9 @@ export default function VendorBookingDetailPage() {
           <Banknote className="h-4 w-4 text-primary" /> Payment & escrow
         </h3>
         <Row label="Total" value={formatCurrency(data.totalAmount)} bold />
-        <Row label="Deposit" value={formatCurrency(data.depositAmount)} />
         <Row
           label="Payment"
-          value={payment?.status === "SUCCESS" ? "✓ Paid" : "Pending"}
+          value={payment?.status === "SUCCESS" ? "✓ Paid in full" : "Pending"}
         />
         <Row label="Escrow" value={payment?.escrowStatus ?? "NONE"} />
         {data.payout && (
@@ -263,6 +262,17 @@ export default function VendorBookingDetailPage() {
           </Button>
         </Link>
       </div>
+
+      {updateStatus.data?.escrowMessage && (
+        <p className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3 text-sm text-emerald-700 dark:text-emerald-400">
+          {updateStatus.data.escrowMessage}
+        </p>
+      )}
+      {updateStatus.error && (
+        <p className="rounded-xl border border-red-500/20 bg-red-500/5 p-3 text-sm text-red-600">
+          {(updateStatus.error as Error).message}
+        </p>
+      )}
     </div>
   );
 }

@@ -8,6 +8,7 @@
  */
 import crypto from "crypto";
 import { PrismaClient } from "@prisma/client";
+import { BOOKING_CHARGE_PERCENT } from "../src/core/shared/config";
 
 const prisma = new PrismaClient();
 const BASE = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -93,9 +94,7 @@ async function testBookingWebhook() {
   });
   ok(`Test customer ${customerId.slice(0, 8)}…`);
 
-  const depositPercent = Number(process.env.BOOKING_DEPOSIT_PERCENT ?? 30);
   const totalAmount = listing.priceMin;
-  const depositAmount = Math.round(totalAmount * (depositPercent / 100));
 
   const booking = await prisma.booking.create({
     data: {
@@ -104,8 +103,8 @@ async function testBookingWebhook() {
       listingId: listing.id,
       eventDate: new Date(Date.now() + 30 * 86400000),
       totalAmount,
-      depositAmount,
-      depositPercent,
+      depositAmount: totalAmount,
+      depositPercent: BOOKING_CHARGE_PERCENT,
       status: "PENDING_PAYMENT",
     },
   });
@@ -115,11 +114,11 @@ async function testBookingWebhook() {
   await prisma.payment.create({
     data: {
       bookingId: booking.id,
-      amount: depositAmount,
+      amount: totalAmount,
       status: "PENDING",
       paystackRef: reference,
       escrowStatus: "HELD",
-      heldAmount: depositAmount,
+      heldAmount: totalAmount,
     },
   });
   ok(`Payment pending, ref ${reference}`);

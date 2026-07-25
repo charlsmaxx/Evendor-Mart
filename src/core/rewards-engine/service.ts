@@ -1,9 +1,15 @@
 import { prisma } from "@/core/infrastructure/prisma";
+import type { Prisma } from "@prisma/client";
 import { getRepeatCustomerStats } from "@/core/analytics-engine/repeat-customers";
-import { calcCashback, maxRedeemable } from "./utils";
+import { calcCashback, redeemableAmount } from "./utils";
 import { writeAuditLog } from "@/core/audit-engine";
 import { emitDomainEvent } from "@/core/events";
-export { CASHBACK_RATE, MAX_REDEEM_RATIO, calcCashback, maxRedeemable } from "./utils";
+export {
+  CASHBACK_RATE,
+  WALLET_REDEEM_RATIO,
+  calcCashback,
+  redeemableAmount,
+} from "./utils";
 
 export const REWARD_EXPIRY_MONTHS = 12;
 export const REWARD_EXPIRY_WARNING_DAYS = 30;
@@ -92,44 +98,141 @@ export async function earnReward(userId: string, bookingId: string, bookingAmoun
 }
 
 /**
- * Redeem rewards against a new booking.
- * Returns { redeemed, finalAmount } where finalAmount = bookingAmount - redeemed.
+ * Spend rewards against a booking, inside the caller's transaction.
+ *
+ * The amount is derived here from the wallet row read in the same transaction — never
+ * from anything the client sends — so a customer cannot ask for a bigger discount than
+ * their balance and the commission ceiling allow. Running inside the booking transaction
+ * means a slot conflict rolls the wallet debit back with everything else.
+ *
+ * Returns the amount actually redeemed.
  */
-export async function redeemReward(
+export async function redeemRewardsInTx(
+  tx: Prisma.TransactionClient,
   userId: string,
   bookingId: string,
-  bookingAmount: number,
-  requestedRedeem: number
-): Promise<{ redeemed: number; finalAmount: number }> {
-  const wallet = await getOrCreateWallet(userId);
-  const cap = maxRedeemable(bookingAmount);
-  const redeemed = Math.min(requestedRedeem, wallet.availableBalance, cap);
+  bookingAmount: number
+): Promise<number> {
+  const wallet =
+    (await tx.rewardsWallet.findUnique({ where: { userId } })) ??
+    (await tx.rewardsWallet.create({ data: { userId } }));
 
-  if (redeemed <= 0) return { redeemed: 0, finalAmount: bookingAmount };
+  const redeemed = redeemableAmount(wallet.availableBalance, bookingAmount);
+  if (redeemed <= 0) return 0;
 
-  await prisma.$transaction([
-    prisma.rewardTransaction.create({
+  await tx.rewardTransaction.create({
+    data: {
+      userId,
+      walletId: wallet.id,
+      bookingId,
+      amount: redeemed,
+      type: "REDEEMED",
+      status: "CONFIRMED",
+      description: "Rewards applied to booking",
+    },
+  });
+
+  await tx.rewardsWallet.update({
+    where: { id: wallet.id },
+    data: {
+      availableBalance: { decrement: redeemed },
+      totalRedeemed: { increment: redeemed },
+      updatedAt: new Date(),
+    },
+  });
+
+  return redeemed;
+}
+
+/**
+ * Put redeemed rewards back when a booking never got paid for.
+ *
+ * Idempotent: the redemption is marked CANCELLED as part of the same transaction, so a
+ * second call finds nothing to refund. Safe to call from the cancel route and from the
+ * reconciliation sweep without coordinating between them.
+ */
+/** Same as {@link refundRedeemedRewards} but joins the caller's transaction. */
+export async function refundRedeemedRewardsInTx(
+  tx: Prisma.TransactionClient,
+  bookingId: string
+): Promise<number> {
+  const redemptions = await tx.rewardTransaction.findMany({
+    where: { bookingId, type: "REDEEMED", status: "CONFIRMED" },
+    select: { id: true, userId: true, walletId: true, amount: true },
+  });
+  if (redemptions.length === 0) return 0;
+
+  let refunded = 0;
+  for (const redemption of redemptions) {
+    await tx.rewardTransaction.update({
+      where: { id: redemption.id },
+      data: { status: "CANCELLED" },
+    });
+    await tx.rewardTransaction.create({
       data: {
-        userId,
-        walletId: wallet.id,
+        userId: redemption.userId,
+        walletId: redemption.walletId,
         bookingId,
-        amount: redeemed,
-        type: "REDEEMED",
+        amount: redemption.amount,
+        type: "ADJUSTMENT",
         status: "CONFIRMED",
-        description: "Rewards applied to booking",
+        description: "Rewards returned — booking was not paid for",
       },
-    }),
-    prisma.rewardsWallet.update({
-      where: { id: wallet.id },
+    });
+    await tx.rewardsWallet.update({
+      where: { id: redemption.walletId },
       data: {
-        availableBalance: { decrement: redeemed },
-        totalRedeemed: { increment: redeemed },
+        availableBalance: { increment: redemption.amount },
+        totalRedeemed: { decrement: redemption.amount },
         updatedAt: new Date(),
       },
-    }),
-  ]);
+    });
+    refunded += redemption.amount;
+  }
 
-  return { redeemed, finalAmount: bookingAmount - redeemed };
+  return refunded;
+}
+
+export async function refundRedeemedRewards(bookingId: string): Promise<number> {
+  return prisma.$transaction((tx) => refundRedeemedRewardsInTx(tx, bookingId));
+}
+
+/**
+ * Sweep for rewards stranded on bookings that expired or were cancelled before payment.
+ *
+ * Reservations expire down several paths, including raw SQL inside another booking's
+ * conflict check, so rather than hooking every one of them this reconciles from the end
+ * state: a dead booking holding a live redemption.
+ */
+export async function reconcileAbandonedRedemptions(): Promise<{
+  bookings: number;
+  refunded: number;
+}> {
+  const stranded = await prisma.rewardTransaction.findMany({
+    where: {
+      type: "REDEEMED",
+      status: "CONFIRMED",
+      booking: {
+        status: { in: ["EXPIRED", "CANCELLED"] },
+        payments: { none: { status: "SUCCESS" } },
+      },
+    },
+    select: { bookingId: true },
+    distinct: ["bookingId"],
+  });
+
+  let refunded = 0;
+  let bookings = 0;
+  for (const { bookingId } of stranded) {
+    if (!bookingId) continue;
+    const amount = await refundRedeemedRewards(bookingId);
+    if (amount > 0) {
+      refunded += amount;
+      bookings++;
+    }
+  }
+
+  return { bookings, refunded };
 }
 
 /** Admin credit or debit. Amount in kobo; positive = credit, negative = debit. */
@@ -300,11 +403,17 @@ export async function notifyExpiringRewards(
   return sent;
 }
 
-/** Cron/maintenance: expire old rewards + send expiry warnings. */
+/** Cron/maintenance: expire old rewards, warn before expiry, return stranded redemptions. */
 export async function runRewardsMaintenance() {
   const expired = await expireOldRewards();
   const warned = await notifyExpiringRewards();
-  return { ...expired, expiryWarningsSent: warned };
+  const reconciled = await reconcileAbandonedRedemptions();
+  return {
+    ...expired,
+    expiryWarningsSent: warned,
+    redemptionsReturned: reconciled.bookings,
+    redemptionAmountReturned: reconciled.refunded,
+  };
 }
 
 export async function getRewardsPlatformAnalytics() {

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { Gift, ArrowUpRight, TrendingDown, TrendingUp, Clock } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
-import { CASHBACK_RATE, MAX_REDEEM_RATIO } from "@/lib/rewards-utils";
+import { CASHBACK_RATE, WALLET_REDEEM_RATIO } from "@/lib/rewards-utils";
 import { Button } from "@/components/ui/button";
 
 export type RewardTransaction = {
@@ -65,7 +65,7 @@ export function RewardsWalletView({
             {formatCurrency(data.availableBalance)}
           </p>
           <p className="mt-2 text-xs text-muted-foreground">
-            Use up to {MAX_REDEEM_RATIO * 100}% of any booking
+            Spend {WALLET_REDEEM_RATIO * 100}% of your balance per booking
           </p>
         </div>
         <StatCard label="Total earned" value={formatCurrency(data.totalEarned)} icon={TrendingUp} />
@@ -79,7 +79,12 @@ export function RewardsWalletView({
           </p>
           <ul className="mt-3 list-inside list-disc space-y-1">
             <li>Earn {CASHBACK_RATE * 100}% cashback when a booking is completed</li>
-            <li>Apply rewards at checkout on your next booking</li>
+            <li>
+              Each booking spends {WALLET_REDEEM_RATIO * 100}% of your balance, so a{" "}
+              {formatCurrency(1200)} balance takes {formatCurrency(240)} off and keeps{" "}
+              {formatCurrency(960)}
+            </li>
+            <li>Larger bookings unlock more of your balance at once</li>
             <li>Rewards expire after 12 months if unused</li>
           </ul>
         </div>

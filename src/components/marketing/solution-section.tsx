@@ -38,9 +38,9 @@ const features = [
     icon: Shield,
     tab: "Secure booking",
     title: "Secure booking",
-    desc: "Pay deposits with booking status tracking.",
+    desc: "Pay in full into escrow with booking status tracking.",
     bullets: [
-      "Pay deposits with booking status tracking.",
+      "Pay in full into escrow with booking status tracking.",
       "Escrow-ready architecture protects both parties.",
       "Track every booking from request to completion.",
     ],
