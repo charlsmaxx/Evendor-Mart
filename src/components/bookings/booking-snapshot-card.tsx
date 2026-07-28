@@ -16,6 +16,11 @@ export type BookingSnapshotData = {
   listingTitle?: string;
   source?: string;
   manualCustomer?: { fullName?: string; email?: string; phone?: string };
+  package?: { id?: string; name?: string; basePrice?: number };
+  selectedAddOns?: { name?: string; quantity?: number; lineTotal?: number }[];
+  cancellationPolicyLines?: string[];
+  categoryAnswers?: Record<string, unknown>;
+  pricing?: { totalAmount?: number };
 };
 
 export function parseBookingSnapshot(snapshot: unknown): BookingSnapshotData | null {
@@ -80,6 +85,39 @@ export function BookingSnapshotCard({ snapshot, className = "" }: BookingSnapsho
           </span>
         )}
       </div>
+
+      {data.package?.name && (
+        <div className="rounded-lg border border-border/60 bg-muted/20 px-3 py-2 text-sm">
+          <p className="font-medium">Package: {data.package.name}</p>
+          {data.package.basePrice != null && (
+            <p className="text-xs text-muted-foreground">
+              Base {formatCurrency(data.package.basePrice)}
+            </p>
+          )}
+          {!!data.selectedAddOns?.length && (
+            <ul className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+              {data.selectedAddOns.map((a, i) => (
+                <li key={`${a.name}-${i}`}>
+                  {a.name}
+                  {a.quantity && a.quantity > 1 ? ` ×${a.quantity}` : ""}
+                  {a.lineTotal != null ? ` · ${formatCurrency(a.lineTotal)}` : ""}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      {!!data.cancellationPolicyLines?.length && (
+        <div className="rounded-lg border border-border/60 px-3 py-2 text-sm">
+          <p className="font-medium">Cancellation policy (accepted at booking)</p>
+          <ul className="mt-1 list-inside list-disc space-y-0.5 text-xs text-muted-foreground">
+            {data.cancellationPolicyLines.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {data.snapshotAt && (
         <p className="text-xs text-muted-foreground">

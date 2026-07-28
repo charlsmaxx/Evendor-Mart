@@ -277,7 +277,7 @@ export default function AdminTrustPage() {
                     disabled={resolveDispute.isPending}
                     onClick={() => resolveDispute.mutate({ id: d.id, resolution: "FULL_REFUND", adminNotes: "Admin refund" })}
                   >
-                    <XCircle className="h-3.5 w-3.5" /> Full Refund
+                    <XCircle className="h-3.5 w-3.5" /> Refund customer
                   </Button>
                   <Button
                     size="sm"
@@ -286,7 +286,7 @@ export default function AdminTrustPage() {
                     disabled={resolveDispute.isPending}
                     onClick={() => resolveDispute.mutate({ id: d.id, resolution: "FULL_PAYOUT", adminNotes: "Admin payout" })}
                   >
-                    <CheckCircle2 className="h-3.5 w-3.5" /> Full Payout
+                    <CheckCircle2 className="h-3.5 w-3.5" /> Release to vendor
                   </Button>
                   <Button
                     size="sm"
@@ -294,7 +294,7 @@ export default function AdminTrustPage() {
                     disabled={resolveDispute.isPending}
                     onClick={() => setPartialDisputeId(d.id)}
                   >
-                    ½ Partial
+                    Partial split
                   </Button>
                 </div>
               </div>

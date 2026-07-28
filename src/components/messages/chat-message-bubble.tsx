@@ -17,7 +17,7 @@ export const ChatMessageBubble = memo(function ChatMessageBubble({
   message: MessagePayload;
   isMine: boolean;
 }) {
-  const isAdmin = m.type === "ADMIN" || m.sender?.role === "ADMIN";
+  const isAdmin = m.type === "ADMIN" || m.type === "SYSTEM" || m.sender?.role === "ADMIN";
   const isRead = !!m.readAt;
 
   return (

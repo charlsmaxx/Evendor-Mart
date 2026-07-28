@@ -5,7 +5,7 @@ export const VENUE_SHOWCASE = [
     city: "Lagos",
     capacity: 500,
     priceMin: 500000,
-    image: "https://images.unsplash.com/photo-1519167758481-83f29da8c4f5?w=900",
+    image: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=900",
     amenities: ["Parking", "AC", "Stage"],
   },
   {
@@ -23,7 +23,7 @@ export const VENUE_SHOWCASE = [
     city: "Accra",
     capacity: 400,
     priceMin: 420000,
-    image: "https://images.unsplash.com/photo-1478146896981-b5fe2796139f?w=900",
+    image: "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=900",
     amenities: ["Garden", "Valet", "Bridal suite"],
   },
   {
@@ -41,7 +41,7 @@ export const VENUE_SHOWCASE = [
     city: "Port Harcourt",
     capacity: 350,
     priceMin: 380000,
-    image: "https://images.unsplash.com/photo-1465495976277-4387d080b947?w=900",
+    image: "https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=900",
     amenities: ["Poolside", "AC", "Stage"],
   },
   {
@@ -50,7 +50,7 @@ export const VENUE_SHOWCASE = [
     city: "Kano",
     capacity: 800,
     priceMin: 650000,
-    image: "https://images.unsplash.com/photo-1505236858219-8359eb25e329?w=900",
+    image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=900",
     amenities: ["Parking", "VIP lounge", "AV"],
   },
   {
@@ -59,7 +59,7 @@ export const VENUE_SHOWCASE = [
     city: "Cape Town",
     capacity: 200,
     priceMin: 320000,
-    image: "https://images.unsplash.com/photo-1591604466377-1a63d972fade?w=900",
+    image: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=900",
     amenities: ["Ocean view", "Bar", "Dance floor"],
   },
   {

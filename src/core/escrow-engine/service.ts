@@ -34,7 +34,7 @@ export async function releaseEscrow(bookingId: string, confirmedByUserId?: strin
 
   // Last line of defence: an open dispute locks the funds no matter which caller
   // asks for a release (customer confirm, admin action, or the auto-release cron).
-  if (booking.dispute && booking.dispute.status === "OPEN") {
+  if (booking.dispute && ["OPEN", "UNDER_REVIEW"].includes(booking.dispute.status)) {
     throw new EscrowRuleError(
       "Funds are locked while a dispute is open. Resolve the dispute first."
     );
@@ -112,10 +112,11 @@ export async function releaseEscrow(bookingId: string, confirmedByUserId?: strin
 export async function openDispute(bookingId: string, raisedById: string, reason: string) {
   const booking = await prisma.booking.findUnique({
     where: { id: bookingId },
-    include: { vendor: true, payments: true, payout: true },
+    include: { vendor: true, payments: true, payout: true, dispute: true },
   });
   if (!booking) throw new Error("Booking not found");
   if (booking.customerId !== raisedById) throw new Error("Only the customer can raise a dispute");
+  if (!booking.customerId) throw new EscrowRuleError("This booking has no customer on file.");
 
   // Once escrow is released the vendor may already have withdrawn, so a dispute can no
   // longer lock anything. Without this guard opening one would also reopen a COMPLETED
@@ -127,6 +128,10 @@ export async function openDispute(bookingId: string, raisedById: string, reason:
     throw new EscrowRuleError(
       "This booking's payment has already been released. Please contact support instead."
     );
+  }
+
+  if (booking.dispute && ["OPEN", "UNDER_REVIEW"].includes(booking.dispute.status)) {
+    throw new EscrowRuleError("A dispute is already open for this booking.");
   }
 
   await prisma.$transaction(async (tx) => {
@@ -142,7 +147,16 @@ export async function openDispute(bookingId: string, raisedById: string, reason:
 
     await tx.dispute.upsert({
       where: { bookingId },
-      update: { reason, status: "OPEN", updatedAt: new Date() },
+      update: {
+        reason,
+        status: "OPEN",
+        raisedById,
+        adminNotes: null,
+        resolution: null,
+        resolvedAt: null,
+        resolvedById: null,
+        updatedAt: new Date(),
+      },
       create: { bookingId, raisedById, reason, status: "OPEN" },
     });
 
@@ -158,9 +172,154 @@ export async function openDispute(bookingId: string, raisedById: string, reason:
     );
   });
 
+  await postDisputeOpenedChatNotice({
+    bookingId,
+    customerId: booking.customerId,
+    vendorId: booking.vendorId,
+    listingId: booking.listingId,
+  });
+
   await emitDomainEvent({
     type: "DisputeOpened",
-    payload: { bookingId, vendorId: booking.vendorId, raisedById, reason },
+    payload: {
+      bookingId,
+      vendorId: booking.vendorId,
+      raisedById,
+      customerId: booking.customerId,
+      reason,
+    },
+  });
+}
+
+/**
+ * Customer withdraws their own open dispute. Escrow returns to HELD — still locked
+ * from the vendor until the customer confirms or auto-release runs.
+ */
+export async function cancelDispute(bookingId: string, customerId: string) {
+  const booking = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: { dispute: true, payments: true },
+  });
+  if (!booking) throw new Error("Booking not found");
+  if (booking.customerId !== customerId) {
+    throw new EscrowRuleError("Only the customer who opened this dispute can cancel it.");
+  }
+  if (!booking.dispute || booking.dispute.status !== "OPEN") {
+    throw new EscrowRuleError("There is no open dispute to cancel.");
+  }
+  if (booking.dispute.raisedById !== customerId) {
+    throw new EscrowRuleError("Only the customer who opened this dispute can cancel it.");
+  }
+
+  const restoreStatus = booking.vendorCompletedAt ? "IN_PROGRESS" : "CONFIRMED";
+
+  await prisma.$transaction(async (tx) => {
+    await tx.dispute.update({
+      where: { id: booking.dispute!.id },
+      data: {
+        status: "CLOSED",
+        adminNotes: "Cancelled by customer",
+        resolvedAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
+
+    await tx.payment.updateMany({
+      where: { bookingId, escrowStatus: "DISPUTED" },
+      data: { escrowStatus: "HELD" },
+    });
+
+    await tx.booking.update({
+      where: { id: bookingId },
+      data: { status: restoreStatus, updatedAt: new Date() },
+    });
+
+    await writeAuditLog(
+      {
+        actorId: customerId,
+        action: "DISPUTE_CANCELLED",
+        entityType: "Dispute",
+        entityId: booking.dispute!.id,
+        metadata: { bookingId },
+      },
+      tx
+    );
+  });
+
+  await postDisputeAdminChatMessage({
+    customerId,
+    vendorId: booking.vendorId,
+    listingId: booking.listingId,
+    body:
+      "Evendor notice: The customer cancelled this dispute. Funds remain in escrow until the customer confirms the job is done, or until the automatic release window ends.",
+  });
+}
+
+async function findPlatformAdminSenderId(): Promise<string | null> {
+  const admin = await prisma.user.findFirst({
+    where: {
+      OR: [{ role: "ADMIN" }, { adminRole: { not: null } }],
+    },
+    orderBy: { createdAt: "asc" },
+    select: { id: true },
+  });
+  return admin?.id ?? null;
+}
+
+async function postDisputeAdminChatMessage(input: {
+  customerId: string;
+  vendorId: string;
+  listingId?: string | null;
+  body: string;
+}) {
+  const senderId = await findPlatformAdminSenderId();
+  if (!senderId) return;
+
+  const conversation = await prisma.conversation.upsert({
+    where: {
+      customerId_vendorId: {
+        customerId: input.customerId,
+        vendorId: input.vendorId,
+      },
+    },
+    create: {
+      customerId: input.customerId,
+      vendorId: input.vendorId,
+      listingId: input.listingId ?? undefined,
+    },
+    update: { updatedAt: new Date() },
+  });
+
+  await prisma.message.create({
+    data: {
+      conversationId: conversation.id,
+      senderId,
+      body: input.body,
+      type: "ADMIN",
+    },
+  });
+
+  await prisma.conversation.update({
+    where: { id: conversation.id },
+    data: { updatedAt: new Date() },
+  });
+}
+
+async function postDisputeOpenedChatNotice(input: {
+  bookingId: string;
+  customerId: string;
+  vendorId: string;
+  listingId: string;
+}) {
+  await postDisputeAdminChatMessage({
+    customerId: input.customerId,
+    vendorId: input.vendorId,
+    listingId: input.listingId,
+    body:
+      "Evendor notice: This booking is now in dispute. Your payment is locked in escrow and cannot be released to the vendor until our team resolves the case.\n\n" +
+      "If you opened this dispute, please upload evidence (photos, videos, or documents) on your booking page so we can review it quickly:\n" +
+      `/bookings/${input.bookingId}#confirm\n\n` +
+      "Our team typically responds within 24–48 hours.",
   });
 }
 
@@ -251,8 +410,30 @@ export async function resolveDispute(
 
   await emitDomainEvent({
     type: "DisputeResolved",
-    payload: { disputeId, bookingId: booking.id, resolution, payoutAmount },
+    payload: {
+      disputeId,
+      bookingId: booking.id,
+      resolution,
+      payoutAmount,
+      customerId: booking.customerId,
+      vendorId: booking.vendorId,
+    },
   });
+
+  if (booking.customerId) {
+    const resolutionCopy =
+      resolution === "FULL_REFUND"
+        ? "Evendor notice: This dispute was resolved with a full refund to the customer. Escrow funds will not be released to the vendor."
+        : resolution === "FULL_PAYOUT"
+          ? "Evendor notice: This dispute was resolved in the vendor's favour. Escrow funds have been released to the vendor."
+          : "Evendor notice: This dispute was resolved with a partial outcome. Part of the escrow was released to the vendor and the remainder refunded to the customer.";
+    await postDisputeAdminChatMessage({
+      customerId: booking.customerId,
+      vendorId: booking.vendorId,
+      listingId: booking.listingId,
+      body: resolutionCopy,
+    });
+  }
 
   const successPayment = booking.payments.find(
     (p) => p.status === "SUCCESS" && p.paystackRef
@@ -312,10 +493,17 @@ export async function autoReleaseExpiredEscrows(): Promise<number> {
     where: {
       status: { in: ["CONFIRMED", "IN_PROGRESS"] },
       completionConfirmedAt: null,
-      dispute: null,
       OR: [
-        { vendorCompletedAt: { lte: cutoff } },
-        { vendorCompletedAt: null, eventDate: { lte: cutoff } },
+        { dispute: null },
+        { dispute: { is: { status: { notIn: ["OPEN", "UNDER_REVIEW"] } } } },
+      ],
+      AND: [
+        {
+          OR: [
+            { vendorCompletedAt: { lte: cutoff } },
+            { vendorCompletedAt: null, eventDate: { lte: cutoff } },
+          ],
+        },
       ],
     },
     select: { id: true },
@@ -346,12 +534,19 @@ export async function sendCompletionReminders(): Promise<number> {
       status: { in: ["CONFIRMED", "IN_PROGRESS"] },
       completionConfirmedAt: null,
       customerId: { not: null },
-      dispute: null,
       OR: [
-        { vendorCompletedAt: { lte: now, gt: autoReleaseCutoff } },
+        { dispute: null },
+        { dispute: { is: { status: { notIn: ["OPEN", "UNDER_REVIEW"] } } } },
+      ],
+      AND: [
         {
-          vendorCompletedAt: null,
-          eventDate: { lte: now, gt: autoReleaseCutoff },
+          OR: [
+            { vendorCompletedAt: { lte: now, gt: autoReleaseCutoff } },
+            {
+              vendorCompletedAt: null,
+              eventDate: { lte: now, gt: autoReleaseCutoff },
+            },
+          ],
         },
       ],
     },

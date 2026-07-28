@@ -6,7 +6,7 @@ import { Star, MapPin, TrendingUp, Users, Heart } from "lucide-react";
 
 const BG_IMAGES = [
   {
-    src: "https://images.unsplash.com/photo-1519167758481-83f29da8c4f5?w=800&q=80",
+    src: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=800&q=80",
     alt: "Luxury event hall",
     className: "left-[2%] top-[8%] z-0 h-[55%] w-[38%] -rotate-2",
   },

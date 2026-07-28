@@ -10,9 +10,11 @@ import { reportClientError } from "@/lib/client-error";
 
 export function BookingConfirmation({
   bookingId,
+  canConfirm = true,
   canDispute,
 }: {
   bookingId: string;
+  canConfirm?: boolean;
   canDispute: boolean;
 }) {
   const router = useRouter();
@@ -72,24 +74,29 @@ export function BookingConfirmation({
       style={{ background: "linear-gradient(135deg,rgba(122,46,61,0.06) 0%,rgba(229,223,217,0.14) 100%)" }}
     >
       <div>
-        <p className="font-display font-semibold text-base">Did the event take place successfully?</p>
+        <p className="font-display font-semibold text-base">
+          {canConfirm ? "Did the event take place successfully?" : "Need help with this booking?"}
+        </p>
         <p className="mt-1 text-sm text-muted-foreground">
-          Approving releases the vendor&apos;s payment from escrow immediately. Reporting a
-          problem keeps your money locked until our team resolves it.
+          {canConfirm
+            ? "Approving releases the vendor's payment from escrow immediately. Reporting a problem keeps your money locked until our team resolves it."
+            : "If something went wrong, report a problem to lock your payment in escrow while we investigate. You can confirm the job is done after the event or once the vendor marks it delivered."}
         </p>
       </div>
 
       {!showDispute ? (
         <div className="flex flex-wrap gap-3">
-          <Button
-            variant="gradient"
-            className="gap-2"
-            disabled={confirmMutation.isPending}
-            onClick={() => confirmMutation.mutate()}
-          >
-            <CheckCircle2 className="h-4 w-4" />
-            {confirmMutation.isPending ? "Releasing payment…" : "Approve — the job is done"}
-          </Button>
+          {canConfirm && (
+            <Button
+              variant="gradient"
+              className="gap-2"
+              disabled={confirmMutation.isPending}
+              onClick={() => confirmMutation.mutate()}
+            >
+              <CheckCircle2 className="h-4 w-4" />
+              {confirmMutation.isPending ? "Releasing payment…" : "Approve — the job is done"}
+            </Button>
+          )}
           {canDispute && (
             <Button
               variant="outline"

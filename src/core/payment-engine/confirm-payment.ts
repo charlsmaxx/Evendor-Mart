@@ -33,7 +33,7 @@ async function slotTakenByOther(opts: {
       SELECT id FROM "Booking"
       WHERE "listingId" = ${opts.listingId}
         AND id <> ${opts.bookingId}
-        AND status = ANY(ARRAY['RESERVED','CONFIRMED','IN_PROGRESS']::"BookingStatus"[])
+        AND status = ANY(ARRAY['RESERVED','PENDING_PAYMENT','CONFIRMED','IN_PROGRESS']::"BookingStatus"[])
         AND DATE("eventDate") = ${eventDay}::date
         AND "startTime" IS NOT NULL AND "endTime" IS NOT NULL
         AND "startTime" < ${opts.endTime}
@@ -47,7 +47,7 @@ async function slotTakenByOther(opts: {
     SELECT id FROM "Booking"
     WHERE "listingId" = ${opts.listingId}
       AND id <> ${opts.bookingId}
-      AND status = ANY(ARRAY['RESERVED','CONFIRMED','IN_PROGRESS']::"BookingStatus"[])
+      AND status = ANY(ARRAY['RESERVED','PENDING_PAYMENT','CONFIRMED','IN_PROGRESS']::"BookingStatus"[])
       AND DATE("eventDate") = ${eventDay}::date
     LIMIT 1
   `;

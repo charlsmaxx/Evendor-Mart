@@ -20,7 +20,8 @@ import {
   isToday,
   isSameMonth,
 } from "date-fns";
-import { ChevronLeft, ChevronRight, Lock, Unlock, CheckSquare, Square } from "lucide-react";
+import { ChevronLeft, ChevronRight, Lock, Unlock, CheckSquare, Square, ExternalLink } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
 import { ConfirmModal } from "@/components/vendor/vendor-ui";
@@ -29,15 +30,15 @@ import { CalendarSettingsPanel } from "@/components/vendor/calendar-settings-pan
 type BookingEntry = {
   id: string;
   eventDate: string;
-  startTime?: string;
-  endTime?: string;
+  startTime?: string | null;
+  endTime?: string | null;
   status: string;
   source?: string;
-  eventType?: string;
-  guestCount?: number;
+  eventType?: string | null;
+  guestCount?: number | null;
   totalAmount: number;
-  customer: { fullName?: string };
-  businessCustomer?: { fullName?: string };
+  customer: { fullName?: string | null; avatarUrl?: string | null } | null;
+  businessCustomer?: { fullName?: string | null } | null;
   listing: { title: string };
 };
 
@@ -45,6 +46,10 @@ type BlockedEntry = { id: string; date: string; reason?: string };
 
 type DayState = "available" | "marketplace" | "manual" | "pending" | "completed" | "blocked";
 type ViewMode = "day" | "week" | "month";
+
+function bookingCustomerName(b: BookingEntry) {
+  return b.customer?.fullName ?? b.businessCustomer?.fullName ?? "Customer";
+}
 
 function getDayState(date: Date, bookings: BookingEntry[], blocked: BlockedEntry[]): DayState {
   if (blocked.some((b) => isSameDay(new Date(b.date), date))) return "blocked";
@@ -102,6 +107,8 @@ export function VenueCalendar() {
       const json = await res.json();
       return json.data as { bookings: BookingEntry[]; blockedDates: BlockedEntry[] };
     },
+    refetchOnWindowFocus: true,
+    refetchInterval: 60_000,
   });
 
   const { data: settingsData } = useQuery({
@@ -319,35 +326,84 @@ export function VenueCalendar() {
           )}
 
           <div className="mt-6 flex flex-wrap gap-3 border-t border-border pt-4 text-xs text-muted-foreground">
-            {(["available", "pending", "confirmed", "blocked"] as DayState[]).map((s) => (
-              <span key={s} className="flex items-center gap-1.5">
-                <span className={`h-3 w-3 rounded-full border ${STATE_STYLES[s]}`} />
-                {STATE_LABELS[s]}
-              </span>
-            ))}
+            {(["available", "pending", "marketplace", "manual", "completed", "blocked"] as DayState[]).map(
+              (s) => (
+                <span key={s} className="flex items-center gap-1.5">
+                  <span className={`h-3 w-3 rounded-full border ${STATE_STYLES[s]}`} />
+                  {STATE_LABELS[s]}
+                </span>
+              )
+            )}
           </div>
         </div>
 
         <div className="rounded-2xl border border-border/80 bg-card/80 p-5 shadow-sm backdrop-blur-sm">
           {!selectedDate ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">Select a date to manage availability.</p>
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              Select a date to see bookings and manage availability.
+            </p>
           ) : (
             <div className="space-y-4">
               <div>
-                <p className="font-display text-lg font-bold">{format(selectedDate, "EEEE, MMM d")}</p>
-                <p className="text-xs capitalize text-muted-foreground">{selectedState}</p>
+                <p className="font-display text-lg font-bold">
+                  {format(selectedDate, "EEEE, MMM d")}
+                </p>
+                <p className="text-xs capitalize text-muted-foreground">
+                  {selectedState ? STATE_LABELS[selectedState] : ""}
+                </p>
               </div>
 
+              {selectedDayBookings.length === 0 && selectedDayBlocked.length === 0 && (
+                <p className="text-sm text-muted-foreground">No bookings on this date.</p>
+              )}
+
               {selectedDayBookings.map((b) => (
-                <div key={b.id} className="rounded-xl border border-border p-3 text-sm">
-                  <p className="font-semibold">{b.customer.fullName ?? "Customer"}</p>
-                  <p className="text-muted-foreground">{b.listing.title}</p>
-                  <p className="mt-1 font-medium text-primary">{formatCurrency(b.totalAmount)}</p>
-                </div>
+                <Link
+                  key={b.id}
+                  href={`/vendor/bookings/${b.id}`}
+                  className="block rounded-xl border border-border p-3 text-sm transition hover:border-primary/40 hover:bg-muted/40"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="font-semibold">{bookingCustomerName(b)}</p>
+                      <p className="truncate text-muted-foreground">{b.listing.title}</p>
+                      {(b.startTime || b.eventType) && (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {[
+                            b.startTime
+                              ? `${format(new Date(b.startTime), "h:mm a")}${
+                                  b.endTime ? ` – ${format(new Date(b.endTime), "h:mm a")}` : ""
+                                }`
+                              : null,
+                            b.eventType,
+                            b.guestCount ? `${b.guestCount} guests` : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </p>
+                      )}
+                      <p className="mt-1 font-medium text-primary">
+                        {formatCurrency(b.totalAmount)}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 flex-col items-end gap-1">
+                      <span className="rounded-full border px-2 py-0.5 text-[10px] font-medium">
+                        {b.status.replace(/_/g, " ")}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">
+                        {b.source === "MANUAL" ? "Manual" : "Marketplace"}
+                      </span>
+                      <ExternalLink className="mt-1 h-3.5 w-3.5 text-muted-foreground" />
+                    </div>
+                  </div>
+                </Link>
               ))}
 
               {selectedDayBlocked.map((b) => (
-                <div key={b.id} className="flex items-center justify-between rounded-xl bg-muted px-3 py-2 text-sm">
+                <div
+                  key={b.id}
+                  className="flex items-center justify-between rounded-xl bg-muted px-3 py-2 text-sm"
+                >
                   <span>Blocked{b.reason ? `: ${b.reason}` : ""}</span>
                   <button
                     type="button"

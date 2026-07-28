@@ -41,12 +41,51 @@ export function registerDomainEventHandlers(): void {
 
   onDomainEvent("DisputeOpened", async (event) => {
     const vendorId = String(event.payload.vendorId ?? "");
-    if (!vendorId) return;
-    await notifyVendorByProfileId(vendorId, {
-      title: "Dispute opened",
-      body: "A customer opened a dispute on a booking. Review it in your dashboard.",
-      link: "/vendor/disputes",
-    });
+    const customerId = String(event.payload.customerId ?? "");
+    const bookingId = String(event.payload.bookingId ?? "");
+    if (vendorId) {
+      await notifyVendorByProfileId(vendorId, {
+        title: "Dispute opened",
+        body: "A customer opened a dispute on a booking. Funds stay locked in escrow. Review it in your dashboard.",
+        link: "/vendor/disputes",
+      });
+    }
+    if (customerId && bookingId) {
+      await notifyUser({
+        userId: customerId,
+        title: "Dispute opened — upload evidence",
+        body: "Your payment is locked in escrow until we resolve this. Upload evidence on your booking page and check your vendor chat for an Evendor Admin notice.",
+        link: `/bookings/${bookingId}`,
+      });
+    }
+  });
+
+  onDomainEvent("DisputeResolved", async (event) => {
+    const customerId = String(event.payload.customerId ?? "");
+    const vendorId = String(event.payload.vendorId ?? "");
+    const bookingId = String(event.payload.bookingId ?? "");
+    const resolution = String(event.payload.resolution ?? "");
+    const bodyByResolution: Record<string, string> = {
+      FULL_REFUND: "The dispute was resolved with a full refund to the customer.",
+      FULL_PAYOUT: "The dispute was resolved and escrow was released to the vendor.",
+      PARTIAL: "The dispute was resolved with a partial refund and partial vendor payout.",
+    };
+    const body = bodyByResolution[resolution] ?? "The dispute on your booking has been resolved.";
+    if (customerId) {
+      await notifyUser({
+        userId: customerId,
+        title: "Dispute resolved",
+        body,
+        link: bookingId ? `/bookings/${bookingId}` : "/dashboard",
+      });
+    }
+    if (vendorId) {
+      await notifyVendorByProfileId(vendorId, {
+        title: "Dispute resolved",
+        body,
+        link: bookingId ? `/vendor/bookings/${bookingId}` : "/vendor/disputes",
+      });
+    }
   });
 
   onDomainEvent("BookingConfirmed", async (event) => {
@@ -58,6 +97,33 @@ export function registerDomainEventHandlers(): void {
       body: "A customer confirmed their booking.",
       link: `/vendor/bookings/${bookingId}`,
     });
+  });
+
+  onDomainEvent("BookingCancelled", async (event) => {
+    const vendorId = String(event.payload.vendorId ?? "");
+    const customerId = String(event.payload.customerId ?? "");
+    const bookingId = String(event.payload.bookingId ?? "");
+    const refundAmount = Number(event.payload.refundAmount ?? 0);
+    const listingTitle = String(event.payload.listingTitle ?? "your booking");
+    const refundCopy =
+      refundAmount > 0
+        ? ` A refund of ${formatCurrency(refundAmount)} has been initiated.`
+        : "";
+    if (vendorId && bookingId) {
+      await notifyVendorByProfileId(vendorId, {
+        title: "Booking cancelled",
+        body: `${listingTitle} was cancelled.${refundCopy}`,
+        link: `/vendor/bookings/${bookingId}`,
+      });
+    }
+    if (customerId && bookingId) {
+      await notifyUser({
+        userId: customerId,
+        title: "Booking cancelled",
+        body: `Your booking for ${listingTitle} was cancelled.${refundCopy}`,
+        link: `/bookings/${bookingId}`,
+      });
+    }
   });
 
   onDomainEvent("BookingStatusUpdated", async (event) => {

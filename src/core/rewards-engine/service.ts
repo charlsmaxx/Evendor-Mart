@@ -509,10 +509,27 @@ export async function getWalletTransactions(
 
 export async function getWalletSummary(userId: string) {
   const wallet = await getOrCreateWallet(userId);
-  const { transactions } = await getWalletTransactions(userId, { limit: 20 });
+  const [{ transactions }, pendingBookings] = await Promise.all([
+    getWalletTransactions(userId, { limit: 20 }),
+    prisma.booking.findMany({
+      where: {
+        customerId: userId,
+        status: { in: ["CONFIRMED", "IN_PROGRESS"] },
+        payments: { some: { status: "SUCCESS" } },
+        rewardTransactions: { none: { type: "EARNED" } },
+      },
+      select: { totalAmount: true },
+    }),
+  ]);
+
+  const pendingBalance = pendingBookings.reduce(
+    (sum, booking) => sum + calcCashback(booking.totalAmount),
+    0
+  );
 
   return {
     availableBalance: wallet.availableBalance,
+    pendingBalance,
     totalEarned: wallet.totalEarned,
     totalRedeemed: wallet.totalRedeemed,
     transactions,

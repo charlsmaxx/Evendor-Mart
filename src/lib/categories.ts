@@ -107,7 +107,7 @@ export const VENDOR_CATEGORIES: CategoryDefinition[] = [
     slug: "videographers",
     sortOrder: 7,
     description: "Cinematic event films, highlight reels, and live-stream coverage for your celebration.",
-    image: U("1492691290082-93253102142c"),
+    image: U("1492684223066-81342ee5ff30"),
   },
   {
     value: "MAKEUP_ARTIST",
@@ -123,7 +123,7 @@ export const VENDOR_CATEGORIES: CategoryDefinition[] = [
     slug: "gele-bridal-artists",
     sortOrder: 9,
     description: "Traditional gele styling, bridal headpieces, and cultural beauty for your ceremony.",
-    image: U("1522337360788-8bbb487af923"),
+    image: U("1519741497674-611481863552"),
   },
   {
     value: "FASHION_DESIGNER",
@@ -155,7 +155,7 @@ export const VENDOR_CATEGORIES: CategoryDefinition[] = [
     slug: "florists",
     sortOrder: 13,
     description: "Bouquets, centrepieces, and floral installations for weddings and special occasions.",
-    image: U("1487536270022-cf5f6831c327"),
+    image: U("1469371670807-013ccf25f16a"),
   },
   {
     value: "LIGHTING_SOUND",
@@ -187,7 +187,7 @@ export const VENDOR_CATEGORIES: CategoryDefinition[] = [
     slug: "transportation",
     sortOrder: 17,
     description: "Luxury cars, buses, and guest shuttle services for weddings and corporate events.",
-    image: U("1449965408869-eaa3f723e40d"),
+    image: U("1492144534655-ae79c964c9d7"),
   },
   {
     value: "SECURITY",
@@ -203,7 +203,7 @@ export const VENDOR_CATEGORIES: CategoryDefinition[] = [
     slug: "bar-cocktail",
     sortOrder: 19,
     description: "Mobile bars, mixologists, and cocktail stations for receptions and parties.",
-    image: U("1514362545857-3bc16c4c7d66"),
+    image: U("1551218808-94e220e084d2"),
   },
   {
     value: "WAITERS_USHERS",
@@ -211,7 +211,7 @@ export const VENDOR_CATEGORIES: CategoryDefinition[] = [
     slug: "waiters-ushers",
     sortOrder: 20,
     description: "Professional wait staff, ushers, and guest services for seamless event hospitality.",
-    image: U("1414235077428-338989a2714b"),
+    image: U("1504674900247-0877df9cc836"),
   },
   {
     value: "EVENT_RENTAL",
@@ -219,7 +219,7 @@ export const VENDOR_CATEGORIES: CategoryDefinition[] = [
     slug: "event-rentals",
     sortOrder: 21,
     description: "Chairs, tables, tents, linens, and furniture hire for indoor and outdoor events.",
-    image: U("1530103862673-de803c894a0d"),
+    image: U("1530103862676-de8c9debad1d"),
   },
   {
     value: "PRINTING_BRANDING",
@@ -227,7 +227,7 @@ export const VENDOR_CATEGORIES: CategoryDefinition[] = [
     slug: "printing-branding",
     sortOrder: 22,
     description: "Invitations, signage, programmes, and branded materials for your event.",
-    image: U("1586281380117-5a97127b903f"),
+    image: U("1429962714451-bb934ecdc4ec"),
   },
   {
     value: "GIFT_SOUVENIR",
@@ -235,7 +235,7 @@ export const VENDOR_CATEGORIES: CategoryDefinition[] = [
     slug: "gift-souvenir",
     sortOrder: 23,
     description: "Party favours, corporate gifts, and personalised souvenirs for guests.",
-    image: U("1549464218-9f1a27918c82"),
+    image: U("1519741497674-611481863552"),
   },
   {
     value: "SMALL_CHOPS_CATERING",
@@ -243,7 +243,7 @@ export const VENDOR_CATEGORIES: CategoryDefinition[] = [
     slug: "small-chops-catering",
     sortOrder: 24,
     description: "Small chops, finger foods, and snack catering for cocktails and receptions.",
-    image: U("1606755969252-67c0e0873a10"),
+    image: U("1555244162-803834f70033"),
   },
   {
     value: "BALLOON_BACKDROP",
@@ -251,7 +251,7 @@ export const VENDOR_CATEGORIES: CategoryDefinition[] = [
     slug: "balloon-backdrop",
     sortOrder: 25,
     description: "Balloon arches, photo backdrops, and creative installations for celebrations.",
-    image: U("1464347759843-97936a0930c2"),
+    image: U("1530103862676-de8c9debad1d"),
   },
   {
     value: "WEDDING_VENDOR",

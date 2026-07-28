@@ -113,7 +113,30 @@ export function ListingDetailView({ listing }: { listing: ListingData }) {
                   </span>
                 ) : null}
               </div>
-              <ShareListingButton title={listing.title} />
+              <ShareListingButton title={listing.title} className="hidden sm:inline-flex" />
+            </div>
+
+            {/* Mobile: price + actions under the title so customers don't scroll for them */}
+            <div
+              className="mt-5 rounded-2xl border border-border p-4 lg:hidden"
+              style={{
+                background:
+                  "linear-gradient(135deg,rgba(122,46,61,0.04) 0%,rgba(229,223,217,0.12) 100%)",
+              }}
+            >
+              <ListingActions
+                listingId={listing.id}
+                listingSlug={listing.slug}
+                listingTitle={listing.title}
+                vendorId={vendor.id}
+                slug={vendor.slug}
+                priceMin={listing.priceMin}
+                priceMax={listing.priceMax}
+                isVenue={isVenue}
+                showPrice
+                packages={packages}
+                vendorCategory={vendor.category}
+              />
             </div>
           </header>
 
@@ -165,10 +188,10 @@ export function ListingDetailView({ listing }: { listing: ListingData }) {
           />
         </div>
 
-        {/* Sticky booking sidebar — Hotels.ng-style price box */}
-        <aside className="lg:sticky lg:top-24">
+        {/* Sticky booking sidebar — desktop; mobile uses the block under the title */}
+        <aside className="hidden lg:sticky lg:top-24 lg:block">
           <div
-            className="rounded-2xl border border-border p-6 shadow-sm space-y-5"
+            className="space-y-5 rounded-2xl border border-border p-6 shadow-sm"
             style={{
               background:
                 "linear-gradient(135deg,rgba(122,46,61,0.04) 0%,rgba(229,223,217,0.12) 100%)",
@@ -193,6 +216,8 @@ export function ListingDetailView({ listing }: { listing: ListingData }) {
               priceMin={listing.priceMin}
               priceMax={listing.priceMax}
               isVenue={isVenue}
+              packages={packages}
+              vendorCategory={vendor.category}
             />
           </div>
         </aside>

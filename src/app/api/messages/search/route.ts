@@ -17,12 +17,14 @@ export async function GET(req: NextRequest) {
 
   const vendor = await prisma.vendorProfile.findUnique({ where: { userId: user.id } });
 
+  const conversationFilter = vendor
+    ? { OR: [{ customerId: user.id }, { vendorId: vendor.id }] }
+    : { customerId: user.id };
+
   const messages = await prisma.message.findMany({
     where: {
       body: { contains: q, mode: "insensitive" },
-      conversation: vendor
-        ? { vendorId: vendor.id }
-        : { customerId: user.id },
+      conversation: conversationFilter,
     },
     orderBy: { createdAt: "desc" },
     take: 30,

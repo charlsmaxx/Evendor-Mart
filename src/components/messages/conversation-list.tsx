@@ -9,6 +9,7 @@ export interface ConversationListItem {
   peerName: string;
   peerAvatar?: string | null;
   listing?: { title: string } | null;
+  asVendor?: boolean;
   updatedAt: string;
   pinnedAt?: string | null;
   lastMessage?: {

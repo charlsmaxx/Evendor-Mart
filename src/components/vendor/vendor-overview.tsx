@@ -206,7 +206,7 @@ export function VendorOverview({ businessName }: { businessName: string }) {
               {data.todaysJobs.map((j) => (
                 <Link
                   key={j.id}
-                  href={`/vendor/bookings?highlight=${j.id}`}
+                  href={`/vendor/bookings/${j.id}`}
                   className="flex items-center gap-3 rounded-xl p-2 transition hover:bg-muted/50"
                 >
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary">
@@ -236,7 +236,11 @@ export function VendorOverview({ businessName }: { businessName: string }) {
           ) : (
             <div className="space-y-3">
               {data.upcomingEvents.map((e) => (
-                <div key={e.id} className="flex items-center justify-between rounded-xl p-2 hover:bg-muted/50">
+                <Link
+                  key={e.id}
+                  href={`/vendor/bookings/${e.id}`}
+                  className="flex items-center justify-between rounded-xl p-2 hover:bg-muted/50"
+                >
                   <div>
                     <p className="text-sm font-medium">{e.customerName ?? "Customer"}</p>
                     <p className="text-xs text-muted-foreground">
@@ -248,7 +252,7 @@ export function VendorOverview({ businessName }: { businessName: string }) {
                   >
                     {e.status.replace("_", " ")}
                   </span>
-                </div>
+                </Link>
               ))}
             </div>
           )}
@@ -327,7 +331,11 @@ export function VendorOverview({ businessName }: { businessName: string }) {
           <VendorSection title="Recent Bookings" href="/vendor/bookings">
             <div className="space-y-3">
               {data.recentBookings.map((b) => (
-                <div key={b.id} className="flex items-center justify-between rounded-xl p-2 hover:bg-muted/50">
+                <Link
+                  key={b.id}
+                  href={`/vendor/bookings/${b.id}`}
+                  className="flex items-center justify-between rounded-xl p-2 hover:bg-muted/50"
+                >
                   <div>
                     <p className="text-sm font-medium">{b.customerName ?? "Customer"}</p>
                     <p className="text-xs text-muted-foreground">
@@ -342,7 +350,7 @@ export function VendorOverview({ businessName }: { businessName: string }) {
                       {b.status.replace("_", " ")}
                     </span>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           </VendorSection>

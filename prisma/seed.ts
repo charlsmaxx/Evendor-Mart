@@ -18,7 +18,7 @@ const demoVendors = [
     capacity: 500,
     verified: true,
     featured: true,
-    image: "https://images.unsplash.com/photo-1519167758481-83f29da8c4f5?w=800",
+    image: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=800",
   },
   {
     businessName: "DJ SpinMaster",
@@ -30,7 +30,7 @@ const demoVendors = [
     priceMax: 600000,
     verified: true,
     featured: true,
-    image: "https://images.unsplash.com/photo-1571266028243-e68f8574c9b9?w=800",
+    image: "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800",
   },
   {
     businessName: "Taste of Africa Catering",
@@ -78,7 +78,7 @@ const demoVendors = [
     priceMax: 900000,
     verified: true,
     featured: true,
-    image: "https://images.unsplash.com/photo-1492681290082-93253102142c?w=800",
+    image: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800",
   },
 ];
 
@@ -243,7 +243,7 @@ async function main() {
           {
             vendorId: firstVendor.id,
             listingId: firstVendor.listings[0].id,
-            url: "https://images.unsplash.com/photo-1519167758481-83f29da8c4f5?w=800",
+            url: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=800",
             publicId: "seed_portfolio_1",
             sortOrder: 0,
           },

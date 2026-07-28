@@ -21,6 +21,7 @@ export type RewardTransaction = {
 
 export type RewardsWalletData = {
   availableBalance: number;
+  pendingBalance?: number;
   totalEarned: number;
   totalRedeemed: number;
   transactions: RewardTransaction[];
@@ -67,6 +68,12 @@ export function RewardsWalletView({
           <p className="mt-2 text-xs text-muted-foreground">
             Spend {WALLET_REDEEM_RATIO * 100}% of your balance per booking
           </p>
+          {(data.pendingBalance ?? 0) > 0 && (
+            <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-amber-800">
+              <Clock className="h-3.5 w-3.5" />
+              {formatCurrency(data.pendingBalance!)} pending — credited when you confirm the job is done
+            </p>
+          )}
         </div>
         <StatCard label="Total earned" value={formatCurrency(data.totalEarned)} icon={TrendingUp} />
         <StatCard label="Total redeemed" value={formatCurrency(data.totalRedeemed)} icon={TrendingDown} />
@@ -78,7 +85,10 @@ export function RewardsWalletView({
             <Gift className="h-4 w-4 text-primary" /> How rewards work
           </p>
           <ul className="mt-3 list-inside list-disc space-y-1">
-            <li>Earn {CASHBACK_RATE * 100}% cashback when a booking is completed</li>
+            <li>
+              Earn {CASHBACK_RATE * 100}% cashback after you confirm a booking is completed (escrow
+              released)
+            </li>
             <li>
               Each booking spends {WALLET_REDEEM_RATIO * 100}% of your balance, so a{" "}
               {formatCurrency(1200)} balance takes {formatCurrency(240)} off and keeps{" "}
@@ -107,7 +117,7 @@ export function RewardsWalletView({
             <Gift className="mx-auto h-10 w-10 text-muted-foreground/40" />
             <p className="mt-3 font-medium">No rewards yet</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Complete a booking to start earning cashback.
+              Cashback is credited after you confirm a booking is completed.
             </p>
             {!compact && (
               <Button variant="gradient" className="mt-4" asChild>

@@ -129,7 +129,9 @@ export async function PATCH(
   const escrowHeld = booking.payments.some(
     (p) => p.status === "SUCCESS" && p.escrowStatus === "HELD"
   );
-  const disputeOpen = booking.dispute && booking.dispute.status === "OPEN";
+  const disputeOpen =
+    booking.dispute &&
+    (booking.dispute.status === "OPEN" || booking.dispute.status === "UNDER_REVIEW");
 
   if (parsed.data.status === "COMPLETED" && escrowHeld) {
     if (disputeOpen) {

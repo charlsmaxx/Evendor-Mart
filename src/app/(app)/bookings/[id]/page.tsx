@@ -9,8 +9,11 @@ import { calcCashback } from "@/lib/rewards-utils";
 import { BookingConfirmation } from "@/components/bookings/booking-confirmation";
 import { CustomerDisputeEvidence } from "@/components/bookings/customer-dispute-evidence";
 import { BookingSnapshotCard } from "@/components/bookings/booking-snapshot-card";
+import { CustomerCancelBooking } from "@/components/bookings/customer-cancel-booking";
 import { AUTO_RELEASE_HOURS } from "@/core/shared/config";
 import { settlePendingPaymentForBooking } from "@/core/payment-engine";
+import { getCustomerBookingActions } from "@/lib/booking-customer-actions";
+import { Download, MessageSquare } from "lucide-react";
 
 export default async function BookingDetailPage({
   params,
@@ -35,32 +38,38 @@ export default async function BookingDetailPage({
     else settleNote = "pending";
   }
 
-  const booking = await prisma.booking.findUnique({
-    where: { id },
-    include: {
-      listing: true,
-      vendor: true,
-      payments: true,
-      rewardTransactions: { where: { type: "EARNED" }, take: 1 },
-      dispute: true,
-    },
-  }).catch(() => null);
+  const [booking, conversationRows] = await Promise.all([
+    prisma.booking
+      .findUnique({
+        where: { id },
+        include: {
+          listing: true,
+          vendor: true,
+          payments: true,
+          rewardTransactions: { where: { type: "EARNED" }, take: 1 },
+          dispute: true,
+        },
+      })
+      .catch(() => null),
+    prisma.$queryRaw<{ id: string }[]>`
+      SELECT c.id
+      FROM "Conversation" c
+      INNER JOIN "Booking" b
+        ON b."customerId" = c."customerId"
+       AND b."vendorId" = c."vendorId"
+      WHERE b.id = ${id}
+      LIMIT 1
+    `.catch(() => [] as { id: string }[]),
+  ]);
 
   if (!booking || booking.customerId !== user.id) notFound();
 
+  const conversationId = conversationRows[0]?.id ?? null;
   const paymentSucceeded = ["CONFIRMED", "IN_PROGRESS", "COMPLETED"].includes(booking.status);
   const rewardEarned = booking.rewardTransactions[0]?.amount ?? calcCashback(booking.totalAmount);
-
-  const isPastEvent = new Date(booking.eventDate) < new Date();
-  const vendorMarkedDone = !!booking.vendorCompletedAt;
-  // The vendor asserting delivery is the strongest signal the job is finished, but the
-  // event date passing also opens the window so a silent vendor can't stall the customer.
-  const awaitingDecision =
-    (vendorMarkedDone || isPastEvent) &&
-    ["CONFIRMED", "IN_PROGRESS"].includes(booking.status) &&
-    !booking.completionConfirmedAt;
-  const canConfirm = awaitingDecision && !booking.dispute;
-  const canDispute = awaitingDecision && !booking.dispute;
+  const { canConfirm, canDispute, awaitingDecision, vendorMarkedDone } =
+    getCustomerBookingActions(booking);
+  const hasReceipt = booking.payments.some((p) => p.status === "SUCCESS") || paymentSucceeded;
 
   const autoReleaseAt = booking.vendorCompletedAt
     ? new Date(booking.vendorCompletedAt.getTime() + AUTO_RELEASE_HOURS * 60 * 60 * 1000)
@@ -128,17 +137,15 @@ export default async function BookingDetailPage({
         </div>
       )}
 
-      {booking.dispute && (
+      {booking.dispute && ["OPEN", "UNDER_REVIEW"].includes(booking.dispute.status) && (
         <div className="space-y-4">
           <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm">
             <p className="font-semibold text-amber-800">⚠️ Dispute Open</p>
             <p className="text-amber-700">{booking.dispute.reason}</p>
             <p className="mt-1 text-xs text-amber-600">Status: {booking.dispute.status.replace("_", " ")}</p>
-            {booking.dispute.status === "OPEN" && (
-              <p className="mt-2 text-xs font-medium text-amber-800">
-                🔒 Your payment is locked and cannot be released until this is resolved.
-              </p>
-            )}
+            <p className="mt-2 text-xs font-medium text-amber-800">
+              🔒 Your payment is locked and cannot be released until this is resolved or you cancel the dispute.
+            </p>
           </div>
           {booking.dispute.status === "OPEN" && (
             <CustomerDisputeEvidence bookingId={id} />
@@ -149,6 +156,8 @@ export default async function BookingDetailPage({
       {booking.bookingSnapshot != null && (
         <BookingSnapshotCard snapshot={booking.bookingSnapshot} />
       )}
+
+      <CustomerCancelBooking bookingId={id} />
 
       <div className="glass space-y-4 rounded-2xl p-6">
         <p><strong>Listing:</strong> {booking.listing.title}</p>
@@ -186,15 +195,45 @@ export default async function BookingDetailPage({
         </div>
       </div>
 
-      {/* Post-event confirmation */}
+      {/* Confirm / dispute — also reachable from chat via #confirm */}
       {(canConfirm || canDispute) && (
-        <BookingConfirmation bookingId={id} canDispute={canDispute} />
+        <div id="confirm">
+          <BookingConfirmation
+            bookingId={id}
+            canConfirm={canConfirm}
+            canDispute={canDispute}
+          />
+        </div>
       )}
 
-      <div className="flex gap-4">
-        <Link href={`/api/bookings/${id}/invoice`} target="_blank">
-          <Button variant="outline">Download invoice</Button>
-        </Link>
+      {!canConfirm &&
+        !canDispute &&
+        ["CONFIRMED", "IN_PROGRESS"].includes(booking.status) &&
+        !booking.dispute && (
+          <div className="rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+            After your event (or once the vendor marks the job delivered), you can confirm
+            completion here to release escrow — or report a problem from this page or your chat
+            with the vendor.
+          </div>
+        )}
+
+      <div className="flex flex-wrap gap-3">
+        {hasReceipt && (
+          <a href={`/api/bookings/${id}/invoice`} download={`evendor-receipt-${id.slice(0, 8)}.html`}>
+            <Button variant="outline" className="gap-2">
+              <Download className="h-4 w-4" />
+              Download receipt
+            </Button>
+          </a>
+        )}
+        {conversationId && (
+          <Link href={`/messages/${conversationId}`}>
+            <Button variant="outline" className="gap-2">
+              <MessageSquare className="h-4 w-4" />
+              Message vendor
+            </Button>
+          </Link>
+        )}
         {["RESERVED", "PENDING_PAYMENT"].includes(booking.status) && (
           <PayBookingButton bookingId={id} />
         )}

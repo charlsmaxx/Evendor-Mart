@@ -71,7 +71,7 @@ export function VendorProfileView({ data }: { data: ProfileData }) {
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2 pb-1">
+          <div className="hidden flex-wrap gap-2 pb-1 sm:flex">
             <VendorMessageButton
               vendorId={vendor.id}
               listingId={primaryListing?.id}
@@ -106,6 +106,31 @@ export function VendorProfileView({ data }: { data: ProfileData }) {
 
         {about?.tagline && (
           <p className="mt-4 text-lg font-medium text-foreground">{about.tagline}</p>
+        )}
+
+        {/* Mobile: price + book/chat/save/compare right under the name */}
+        {primaryListing && (
+          <div
+            className="mt-5 rounded-2xl border border-border p-4 sm:hidden"
+            style={{
+              background:
+                "linear-gradient(135deg,rgba(122,46,61,0.04) 0%,rgba(229,223,217,0.12) 100%)",
+            }}
+          >
+            <ListingActions
+              listingId={primaryListing.id}
+              listingSlug={primaryListing.slug}
+              listingTitle={primaryListing.title}
+              vendorId={vendor.id}
+              slug={vendor.slug}
+              priceMin={primaryListing.priceMin}
+              priceMax={primaryListing.priceMax}
+              isVenue={primaryListing.type === "VENUE"}
+              showPrice
+              packages={packages}
+              vendorCategory={vendor.category}
+            />
+          </div>
         )}
       </div>
 
@@ -151,6 +176,8 @@ export function VendorProfileView({ data }: { data: ProfileData }) {
               priceMin={primaryListing.priceMin}
               priceMax={primaryListing.priceMax}
               isVenue={primaryListing.type === "VENUE"}
+              packages={packages}
+              vendorCategory={vendor.category}
             />
           </div>
         </section>

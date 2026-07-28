@@ -16,6 +16,7 @@ import { parsePaginatedApiResponse } from "@/lib/parse-paginated-api-response";
 import type { ConversationListItem } from "@/components/messages/conversation-list";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import type { MessagePayload } from "@/lib/messages-access";
+import type { ChatRelatedBooking, ChatBookListing } from "@/components/messages/chat-booking-banner";
 
 const ChatPanel = dynamic(
   () => import("@/components/messages/chat-panel").then((m) => ({ default: m.ChatPanel })),
@@ -32,6 +33,8 @@ type ThreadData = {
   messages: MessagePayload[];
   hasMore: boolean;
   nextCursor: string | null;
+  relatedBooking?: ChatRelatedBooking | null;
+  bookListing?: ChatBookListing | null;
 };
 
 export function MessagesShell({ currentUserId }: { currentUserId: string }) {
@@ -149,6 +152,8 @@ export function MessagesShell({ currentUserId }: { currentUserId: string }) {
             initialMessages={thread.messages}
             initialHasMore={thread.hasMore}
             initialNextCursor={thread.nextCursor}
+            relatedBooking={thread.relatedBooking ?? null}
+            bookListing={thread.bookListing ?? null}
             backHref="/messages"
           />
         ) : activeId && threadLoading ? (

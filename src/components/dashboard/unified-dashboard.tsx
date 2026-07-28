@@ -15,9 +15,12 @@ import {
   LayoutGrid,
   Briefcase,
   Gift,
+  CheckCircle2,
+  AlertTriangle,
 } from "lucide-react";
 import { MessageNotificationBadge, useMessageBadgeCount } from "@/components/messages/message-notification-badge";
 import { RewardsWalletView, type RewardsWalletData } from "@/components/rewards/rewards-wallet-view";
+import { getCustomerBookingActions } from "@/lib/booking-customer-actions";
 
 export type DashboardUser = {
   id: string;
@@ -48,16 +51,23 @@ export function UnifiedDashboard({
   const unreadCount = useMessageBadgeCount();
 
   const bookings = useQuery({
-    queryKey: ["my-bookings"],
+    queryKey: ["my-bookings", "customer"],
     queryFn: async () => {
-      const res = await fetch("/api/bookings?limit=5");
+      const res = await fetch("/api/bookings?scope=customer&limit=5");
       const json = await res.json();
-      return { items: (json.data ?? []) as Array<{
-        id: string;
-        status: string;
-        listing: { title: string };
-        totalAmount: number;
-      }>, hasMore: Boolean(json.meta?.hasMore) };
+      return {
+        items: (json.data ?? []) as Array<{
+          id: string;
+          status: string;
+          eventDate: string;
+          vendorCompletedAt: string | null;
+          completionConfirmedAt: string | null;
+          listing: { title: string };
+          totalAmount: number;
+          dispute: { status: string } | null;
+        }>,
+        hasMore: Boolean(json.meta?.hasMore),
+      };
     },
   });
 
@@ -95,29 +105,47 @@ export function UnifiedDashboard({
       <section>
         <div className="mb-4 flex items-center gap-2">
           <Calendar className="h-5 w-5 text-primary" />
-          <h2 className="font-display text-xl font-semibold">Bookings</h2>
+          <h2 className="font-display text-xl font-semibold">My bookings</h2>
         </div>
-        {(bookings.data?.items ?? []).length > 0 ? (
+        {bookings.isLoading ? (
+          <Card className="border-dashed">
+            <CardContent className="py-10 text-center text-sm text-muted-foreground">
+              Loading your bookings…
+            </CardContent>
+          </Card>
+        ) : (bookings.data?.items ?? []).length > 0 ? (
           <div className="space-y-3">
-            {(bookings.data?.items ?? []).map((b) => (
-              <Link
-                key={b.id}
-                href={`/bookings/${b.id}`}
-                className="block rounded-xl border border-border bg-card p-4 transition hover:shadow-md"
-              >
-                <p className="font-medium">{b.listing?.title}</p>
-                <p className="text-sm text-muted-foreground">
-                  {b.status} · {formatCurrency(b.totalAmount)}
-                </p>
-              </Link>
-            ))}
-            {bookings.data?.hasMore && isVendor && (
-              <Link
-                href="/vendor/bookings"
-                className="block text-center text-sm font-medium text-primary hover:underline"
-              >
-                View all bookings
-              </Link>
+            {(bookings.data?.items ?? []).map((b) => {
+              const actions = getCustomerBookingActions(b);
+              return (
+                <Link
+                  key={b.id}
+                  href={actions.canConfirm || actions.canDispute ? `/bookings/${b.id}#confirm` : `/bookings/${b.id}`}
+                  className="block rounded-xl border border-border bg-card p-4 transition hover:shadow-md"
+                >
+                  <p className="font-medium">{b.listing?.title}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {b.status.replace("_", " ")} · {formatCurrency(b.totalAmount)}
+                  </p>
+                  {actions.canConfirm && (
+                    <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-primary">
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      Confirm delivery & release escrow
+                    </p>
+                  )}
+                  {!actions.canConfirm && actions.canDispute && (
+                    <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-amber-700">
+                      <AlertTriangle className="h-3.5 w-3.5" />
+                      Report a problem if needed
+                    </p>
+                  )}
+                </Link>
+              );
+            })}
+            {bookings.data?.hasMore && (
+              <p className="text-center text-sm text-muted-foreground">
+                Showing your 5 most recent bookings.
+              </p>
             )}
           </div>
         ) : (
@@ -167,9 +195,14 @@ export function UnifiedDashboard({
             <Gift className="h-5 w-5 text-primary" />
             <h2 className="font-display text-xl font-semibold">Rewards</h2>
           </div>
-          {rewards.data && rewards.data.availableBalance > 0 && (
+          {rewards.data && (rewards.data.availableBalance > 0 || (rewards.data.pendingBalance ?? 0) > 0) && (
             <span className="rounded-full bg-primary/10 px-3 py-1 text-sm font-semibold text-primary">
               {formatCurrency(rewards.data.availableBalance)}
+              {(rewards.data.pendingBalance ?? 0) > 0 && (
+                <span className="ml-1 font-normal text-muted-foreground">
+                  · {formatCurrency(rewards.data.pendingBalance ?? 0)} pending
+                </span>
+              )}
             </span>
           )}
         </div>
@@ -180,7 +213,7 @@ export function UnifiedDashboard({
             <CardContent className="py-8 text-center">
               <Gift className="mx-auto mb-2 h-8 w-8 text-muted-foreground/50" />
               <p className="text-sm text-muted-foreground">
-                Earn 2% cashback on every completed booking.
+                Earn 2% cashback after you confirm a completed booking.
               </p>
               <Button variant="outline" className="mt-4" asChild>
                 <Link href="/rewards">View rewards wallet</Link>

@@ -25,7 +25,10 @@ export async function GET(req: NextRequest) {
 
     const vendor = await prisma.vendorProfile.findUnique({ where: { userId: user.id } });
 
-    const where = vendor ? { vendorId: vendor.id } : { customerId: user.id };
+    // Dual-role users (vendor who also books) need both customer and vendor inboxes.
+    const where = vendor
+      ? { OR: [{ customerId: user.id }, { vendorId: vendor.id }] }
+      : { customerId: user.id };
 
     const [conversations, total] = await Promise.all([
       prisma.conversation.findMany({
@@ -52,6 +55,7 @@ export async function GET(req: NextRequest) {
           peerName: getConversationPeerName(user, c),
           peerAvatar: getConversationPeerAvatar(user, c),
           listing: c.listing,
+          asVendor: isVendorViewer,
           updatedAt: c.updatedAt.toISOString(),
           pinnedAt: pinnedAt?.toISOString() ?? null,
           lastMessage: c.messages[0]
@@ -125,7 +129,8 @@ export async function POST(req: NextRequest) {
 
       const recipientId = conv.customerId === user.id ? conv.vendor.userId : conv.customerId;
       const senderName = message.sender.fullName ?? "Someone";
-      await emitDomainEvent({
+      // Don't block the chat response on push/email delivery.
+      void emitDomainEvent({
         type: "MessageReceived",
         payload: {
           recipientId,

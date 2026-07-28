@@ -97,7 +97,7 @@ export function SolutionSection() {
         <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:px-8">
           <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-border bg-card shadow-lg">
             <Image
-              src="https://images.unsplash.com/photo-1492681290082-93253102142c?w=900&q=80"
+              src="https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=900&q=80"
               alt="Evendor platform preview"
               fill
               unoptimized

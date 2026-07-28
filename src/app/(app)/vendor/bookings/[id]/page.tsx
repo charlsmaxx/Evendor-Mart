@@ -240,7 +240,7 @@ export default function VendorBookingDetailPage() {
               <MapPin className="h-4 w-4" /> Mark Arrived
             </Button>
             <Button variant="outline" className="gap-1.5" onClick={() => updateStatus.mutate("COMPLETED")} disabled={updateStatus.isPending}>
-              <CheckCircle2 className="h-4 w-4" /> Mark Completed
+              <CheckCircle2 className="h-4 w-4" /> Mark Delivered
             </Button>
           </>
         )}

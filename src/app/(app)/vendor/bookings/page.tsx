@@ -84,7 +84,7 @@ export default function VendorBookingsPage() {
     initialPageParam: 1,
     queryFn: async ({ pageParam }) => {
       const res = await fetch(
-        `/api/bookings?filter=${filter}&page=${pageParam}&limit=${PAGE_SIZE}`
+        `/api/bookings?scope=vendor&filter=${filter}&page=${pageParam}&limit=${PAGE_SIZE}`
       );
       const parsed = await parsePaginatedApiResponse<Booking>(res);
       if (!parsed.ok) throw new Error(parsed.message);
@@ -92,6 +92,8 @@ export default function VendorBookingsPage() {
     },
     getNextPageParam: (lastPage) =>
       lastPage.meta.hasMore ? lastPage.meta.page + 1 : undefined,
+    refetchOnWindowFocus: true,
+    refetchInterval: 60_000,
   });
 
   const updateStatus = useMutation({
@@ -295,7 +297,7 @@ export default function VendorBookingsPage() {
                           disabled={updateStatus.isPending}
                           className="gap-1.5"
                         >
-                          <CheckCircle2 className="h-3.5 w-3.5" /> Mark Completed
+                          <CheckCircle2 className="h-3.5 w-3.5" /> Mark Delivered
                         </Button>
                       </>
                     )}

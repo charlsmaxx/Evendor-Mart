@@ -66,6 +66,9 @@ export const ConversationListRow = memo(function ConversationListRow({
           {c.listing?.title && (
             <p className="truncate text-xs text-muted-foreground">{c.listing.title}</p>
           )}
+          {c.asVendor && !c.listing?.title && (
+            <p className="truncate text-xs text-muted-foreground">Vendor chat</p>
+          )}
           <p className="truncate text-sm text-muted-foreground">
             {messagePreview(c.lastMessage ?? undefined)}
           </p>

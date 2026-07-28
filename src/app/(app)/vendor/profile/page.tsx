@@ -232,7 +232,8 @@ export default function VendorProfilePage() {
         <div>
           <p className="font-semibold">Service packages</p>
           <p className="text-sm text-muted-foreground">
-            Fill in each tier, then check &quot;Show on public profile&quot; for tiers you want customers to see.
+            Create unlimited packages with add-ons and a cancellation policy. Only active packages
+            appear to customers at booking.
           </p>
         </div>
         <PackageEditor value={packageTiers} onChange={(next) => setPackages(next)} />

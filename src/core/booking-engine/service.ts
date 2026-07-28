@@ -24,7 +24,12 @@ import {
 
 export const RESERVATION_WINDOW_MINUTES = 15;
 
-export const ACTIVE_STATUSES: string[] = ["RESERVED", "CONFIRMED", "IN_PROGRESS"];
+export const ACTIVE_STATUSES: string[] = [
+  "RESERVED",
+  "PENDING_PAYMENT",
+  "CONFIRMED",
+  "IN_PROGRESS",
+];
 
 export { PremiumRequiredError };
 
@@ -67,6 +72,8 @@ interface ReserveInput extends SlotInput {
   source?: BookingSource;
   /** Spend the customer's rewards on this booking. The amount is computed server-side. */
   applyRewards?: boolean;
+  /** Contract snapshot: package, add-ons, category answers, cancellation policy. */
+  bookingSnapshot?: Prisma.InputJsonValue;
 }
 
 export interface ManualBookingInput extends SlotInput {
@@ -188,7 +195,7 @@ async function assertNoConflict(
     conflicts = await tx.$queryRaw<{ id: string }[]>`
       SELECT id FROM "Booking"
       WHERE "listingId" = ${input.listingId}
-        AND status = ANY(ARRAY['RESERVED','CONFIRMED','IN_PROGRESS']::"BookingStatus"[])
+        AND status = ANY(ARRAY['RESERVED','PENDING_PAYMENT','CONFIRMED','IN_PROGRESS']::"BookingStatus"[])
         AND DATE("eventDate") = ${eventDay}::date
         AND "startTime" IS NOT NULL AND "endTime" IS NOT NULL
         AND "startTime" < ${input.endTime}
@@ -199,7 +206,7 @@ async function assertNoConflict(
     conflicts = await tx.$queryRaw<{ id: string }[]>`
       SELECT id FROM "Booking"
       WHERE "listingId" = ${input.listingId}
-        AND status = ANY(ARRAY['RESERVED','CONFIRMED','IN_PROGRESS']::"BookingStatus"[])
+        AND status = ANY(ARRAY['RESERVED','PENDING_PAYMENT','CONFIRMED','IN_PROGRESS']::"BookingStatus"[])
         AND DATE("eventDate") = ${eventDay}::date
       LIMIT 1
     `;
@@ -234,6 +241,9 @@ export async function reserveSlot(input: ReserveInput) {
             notes: input.notes,
             status: "RESERVED",
             reservationExpiresAt: reservationExpiresAt(),
+            ...(input.bookingSnapshot != null
+              ? { bookingSnapshot: input.bookingSnapshot }
+              : {}),
           },
           include: { listing: true, vendor: true },
         });
@@ -266,7 +276,12 @@ export async function reserveSlot(input: ReserveInput) {
 
         return booking;
       },
-      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+      {
+        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+        // Remote Postgres (pooler) often needs >5s for conflict checks + writes.
+        maxWait: 15_000,
+        timeout: 30_000,
+      }
     )
   );
 }
@@ -353,7 +368,11 @@ export async function createManualBooking(input: ManualBookingInput) {
 
         return booking;
       },
-      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+      {
+        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+        maxWait: 15_000,
+        timeout: 30_000,
+      }
     )
   );
 }

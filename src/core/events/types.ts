@@ -1,6 +1,7 @@
 export type DomainEventType =
   | "BookingCreated"
   | "BookingConfirmed"
+  | "BookingCancelled"
   | "BookingStatusUpdated"
   | "BookingCompleted"
   | "PaymentReceived"

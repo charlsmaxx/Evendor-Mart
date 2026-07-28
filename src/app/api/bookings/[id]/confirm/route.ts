@@ -21,7 +21,7 @@ export async function POST(
   if (!["CONFIRMED", "IN_PROGRESS"].includes(booking.status)) {
     return jsonError("Booking cannot be confirmed at this stage", 400);
   }
-  if (booking.dispute?.status === "OPEN") {
+  if (booking.dispute?.status === "OPEN" || booking.dispute?.status === "UNDER_REVIEW") {
     return jsonError("This booking has an open dispute. Support will resolve it.", 409);
   }
 

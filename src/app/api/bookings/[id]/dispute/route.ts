@@ -2,7 +2,8 @@ import { NextRequest } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { jsonOk, jsonError } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
-import { EscrowRuleError, openDispute } from "@/lib/escrow";
+import { EscrowRuleError, openDispute, cancelDispute } from "@/lib/escrow";
+import { isOpenDispute } from "@/lib/booking-customer-actions";
 import { z } from "zod";
 
 const schema = z.object({
@@ -31,7 +32,7 @@ export async function POST(
   });
   if (!booking) return jsonError("Booking not found", 404);
   if (booking.customerId !== user.id) return jsonError("Forbidden", 403);
-  if (booking.dispute) {
+  if (isOpenDispute(booking.dispute)) {
     return jsonError("A dispute is already open for this booking.", 409);
   }
 
@@ -44,6 +45,28 @@ export async function POST(
 
   return jsonOk({
     message:
-      "Dispute opened. Your payment stays locked in escrow until our team resolves it, usually within 24–48 hours.",
+      "Dispute opened. Your payment stays locked in escrow until our team resolves it, usually within 24–48 hours. Please upload evidence and check your chat with the vendor for an Evendor Admin notice.",
+  });
+}
+
+/** Customer withdraws an open dispute they filed. */
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const user = await requireAuth();
+  if (!user) return jsonError("Unauthorized", 401);
+
+  try {
+    await cancelDispute(id, user.id);
+  } catch (err) {
+    if (err instanceof EscrowRuleError) return jsonError(err.message, 409);
+    throw err;
+  }
+
+  return jsonOk({
+    message:
+      "Dispute cancelled. Your payment remains in escrow until you confirm the job is done or the automatic release window ends.",
   });
 }
