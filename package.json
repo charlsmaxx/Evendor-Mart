@@ -13,6 +13,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:verify-indexes": "tsx scripts/verify-perf-indexes.ts",
     "test:e2e": "tsx scripts/e2e-smoke.ts",
+    "security:semgrep": "pysemgrep --config=p/owasp-top-ten --config=p/security-audit --config=p/secrets --config=p/javascript --config=p/typescript --config=p/react --metrics=off --exclude=node_modules --exclude=.next --exclude=dist --exclude=build --exclude=coverage --exclude=out --exclude=.vercel --exclude=public --exclude=*.min.js --exclude=*.min.css --exclude=.env --exclude=.env.*",
     "postinstall": "prisma generate"
   },
   "dependencies": {

@@ -200,7 +200,7 @@ export function defaultDraft(businessKind: BusinessKind): VendorOnboardingDraft 
         thursday: { enabled: true, start: "09:00", end: "18:00" },
         friday: { enabled: true, start: "09:00", end: "18:00" },
         saturday: { enabled: true, start: "10:00", end: "16:00" },
-        sunday: { enabled: false, start: "10:00", end: "16:00" },
+        sunday: { enabled: true, start: "10:00", end: "16:00" },
       },
       vacations: [],
       vacationMode: false,

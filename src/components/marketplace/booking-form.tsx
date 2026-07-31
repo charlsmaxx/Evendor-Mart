@@ -36,6 +36,8 @@ export type BookingFormProps = {
   isVenue?: boolean;
   packages?: VendorPackage[];
   vendorCategory?: string | null;
+  /** Services/styles the customer can multi-select (service vendors). */
+  availableServices?: string[];
   onSuccess?: () => void;
 };
 
@@ -46,6 +48,7 @@ export function BookingForm({
   isVenue = false,
   packages = [],
   vendorCategory,
+  availableServices = [],
   onSuccess,
 }: BookingFormProps) {
   const router = useRouter();
@@ -55,6 +58,7 @@ export function BookingForm({
 
   const [addOnQty, setAddOnQty] = useState<Record<string, number>>({});
   const [categoryAnswers, setCategoryAnswers] = useState<Record<string, unknown>>({});
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [acceptPolicy, setAcceptPolicy] = useState(false);
 
   const [loading, setLoading] = useState(false);
@@ -160,6 +164,7 @@ export function BookingForm({
           packageId: selectedPkg?.id,
           selectedAddOns,
           categoryAnswers,
+          selectedServices,
           acceptCancellationPolicy: true,
         }),
       });
@@ -354,6 +359,39 @@ export function BookingForm({
               onChange={(e) => setGuestCountInput(e.target.value)}
             />
           </div>
+
+          {!isVenue && availableServices.length > 0 && (
+            <div className="space-y-2 rounded-xl border border-dashed border-border/80 p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Which services do you need?
+              </p>
+              <p className="text-xs text-muted-foreground">Select one or more.</p>
+              <div className="flex flex-wrap gap-2">
+                {availableServices.map((service) => {
+                  const active = selectedServices.includes(service);
+                  return (
+                    <button
+                      key={service}
+                      type="button"
+                      onClick={() =>
+                        setSelectedServices((prev) =>
+                          active ? prev.filter((s) => s !== service) : [...prev, service]
+                        )
+                      }
+                      className={cn(
+                        "rounded-full border px-3 py-1.5 text-xs font-medium transition",
+                        active
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border hover:border-primary/40"
+                      )}
+                    >
+                      {service}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {categoryFields.length > 0 && (
             <div className="space-y-2 rounded-xl border border-dashed border-border/80 p-3">

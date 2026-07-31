@@ -18,6 +18,7 @@ import {
   Crown,
   UserPlus,
   PenLine,
+  UserCog,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { parseApiResponse } from "@/lib/parse-api-response";
@@ -125,20 +126,27 @@ export function VendorOverview({ businessName }: { businessName: string }) {
             Your business command center — earnings, bookings, and clients at a glance.
           </p>
         </div>
-        {showVerifyCta && (
-          <Link href="/vendor/verification">
-            <Button variant="gradient" size="sm" className="gap-2 shrink-0">
-              <BadgeCheck className="h-4 w-4" /> Get Verified
-            </Button>
-          </Link>
-        )}
-        {!isPremium && (
-          <Link href="/vendor/subscription">
+        <div className="flex flex-wrap gap-2">
+          <Link href="/account">
             <Button variant="outline" size="sm" className="gap-2 shrink-0">
-              <Crown className="h-4 w-4 text-primary" /> Upgrade to Premium
+              <UserCog className="h-4 w-4" /> Edit profile
             </Button>
           </Link>
-        )}
+          {showVerifyCta && (
+            <Link href="/vendor/verification">
+              <Button variant="gradient" size="sm" className="gap-2 shrink-0">
+                <BadgeCheck className="h-4 w-4" /> Get Verified
+              </Button>
+            </Link>
+          )}
+          {!isPremium && (
+            <Link href="/vendor/subscription">
+              <Button variant="outline" size="sm" className="gap-2 shrink-0">
+                <Crown className="h-4 w-4 text-primary" /> Upgrade to Premium
+              </Button>
+            </Link>
+          )}
+        </div>
       </div>
 
       {!isPremium && (

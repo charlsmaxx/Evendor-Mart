@@ -39,8 +39,6 @@ const CATEGORY_BOOKING_FIELDS: Partial<Record<VendorCategoryValue, CategoryBooki
     guestCount,
     { key: "setupTime", label: "Setup time", type: "time" },
     { key: "cleanupTime", label: "Cleanup time", type: "time" },
-    { key: "decorationRequired", label: "Decoration required", type: "boolean" },
-    { key: "parkingRequired", label: "Parking required", type: "boolean" },
     {
       key: "accessibilityRequirements",
       label: "Accessibility requirements",

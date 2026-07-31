@@ -1,0 +1,51 @@
+# Semgrep security scan — warn-only (never fails the build).
+# Review findings in the Actions log; no auto-fixes are applied.
+name: Semgrep
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  semgrep:
+    name: OWASP / security audit (warn-only)
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    steps:
+      - name: Checkout
+        # Pin to full commit SHA (v4.2.2) — avoids mutable tag supply-chain risk
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Run Semgrep (audit only)
+        # continue-on-error keeps CI green while still surfacing findings in logs
+        continue-on-error: true
+        run: |
+          semgrep scan \
+            --config=p/owasp-top-ten \
+            --config=p/security-audit \
+            --config=p/secrets \
+            --config=p/javascript \
+            --config=p/typescript \
+            --config=p/react \
+            --metrics=off \
+            --exclude=node_modules \
+            --exclude=.next \
+            --exclude=dist \
+            --exclude=build \
+            --exclude=coverage \
+            --exclude=out \
+            --exclude=.vercel \
+            --exclude=public \
+            --exclude='*.min.js' \
+            --exclude='*.min.css' \
+            --exclude=.env \
+            --exclude='.env.*' \
+            --error \
+            .
+        # --error exits non-zero if findings exist; continue-on-error makes that non-blocking

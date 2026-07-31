@@ -35,6 +35,28 @@ const profileSchema = z.object({
   packages: z.array(z.record(z.unknown())).optional(),
   experience: z.string().max(500).optional(),
   address: z.string().max(300).optional(),
+  faqs: z
+    .array(
+      z.object({
+        id: z.string(),
+        question: z.string().max(300),
+        answer: z.string().max(2000),
+        sortOrder: z.number().int().optional(),
+      })
+    )
+    .max(40)
+    .optional(),
+  serviceRequirements: z
+    .array(
+      z.object({
+        id: z.string(),
+        text: z.string().max(500),
+        sortOrder: z.number().int().optional(),
+      })
+    )
+    .max(40)
+    .optional(),
+  servicesOffered: z.array(z.string().min(1).max(120)).max(40).optional(),
 });
 
 export async function GET() {
@@ -89,6 +111,9 @@ export async function GET() {
     listings: vendor.listings,
     experience: (meta.experience as string) ?? "",
     address: (meta.address as string) ?? "",
+    faqs: (meta.faqs as unknown[]) ?? [],
+    serviceRequirements: (meta.serviceRequirements as unknown[]) ?? [],
+    servicesOffered: (meta.servicesOffered as string[]) ?? [],
   });
 }
 
@@ -102,8 +127,22 @@ export async function PATCH(req: NextRequest) {
   const parsed = profileSchema.safeParse(await req.json());
   if (!parsed.success) return jsonError(parsed.error.message, 400);
 
-  const { phone, avatarUrl, socialLinks, availability, packages, coverImageUrl, experience, address, featuredImages, featuredClips, ...vendorFields } =
-    parsed.data;
+  const {
+    phone,
+    avatarUrl,
+    socialLinks,
+    availability,
+    packages,
+    coverImageUrl,
+    experience,
+    address,
+    featuredImages,
+    featuredClips,
+    faqs,
+    serviceRequirements,
+    servicesOffered,
+    ...vendorFields
+  } = parsed.data;
 
   const existingMeta = (vendor.metadata as Record<string, unknown>) ?? {};
   const metadata = {
@@ -113,6 +152,9 @@ export async function PATCH(req: NextRequest) {
     ...(coverImageUrl !== undefined ? { coverImageUrl } : {}),
     ...(experience !== undefined ? { experience } : {}),
     ...(address !== undefined ? { address } : {}),
+    ...(faqs ? { faqs } : {}),
+    ...(serviceRequirements ? { serviceRequirements } : {}),
+    ...(servicesOffered ? { servicesOffered } : {}),
   } as Prisma.InputJsonValue;
 
   await prisma.$transaction([

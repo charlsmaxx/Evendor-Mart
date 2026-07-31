@@ -3,11 +3,18 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { CheckCircle2, XCircle, MessageSquare } from "lucide-react";
+import { CheckCircle2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { formatCurrency } from "@/lib/utils";
 import { VendorPageHeader, VendorSkeleton } from "@/components/vendor/vendor-ui";
+
+type QuoteDetails = {
+  eventType?: string;
+  location?: string;
+  guestCount?: number;
+  listingTitle?: string;
+};
 
 type Lead = {
   id: string;
@@ -15,6 +22,7 @@ type Lead = {
   status: string;
   budget: number | null;
   eventDate: string | null;
+  details: QuoteDetails | null;
   createdAt: string;
   customer: { fullName: string | null; email: string };
   listing: { title: string } | null;
@@ -70,92 +78,132 @@ export default function VendorLeadsPage() {
     <div className="space-y-8">
       <VendorPageHeader
         title="Quote Leads"
-        subtitle="Respond to customer enquiries and convert them into bookings."
+        subtitle="Respond to customer quote requests from your profile pages."
       />
 
       {pending.length === 0 && processed.length === 0 && (
-        <p className="text-center text-muted-foreground py-12">No leads yet.</p>
+        <p className="py-12 text-center text-muted-foreground">
+          No leads yet. Customers can request quotes from your public profile.
+        </p>
       )}
 
       {pending.length > 0 && (
         <section className="space-y-4">
           <h2 className="font-semibold">Pending ({pending.length})</h2>
-          {pending.map((q) => (
-            <div key={q.id} className="rounded-2xl border border-border/80 bg-card/80 p-5 backdrop-blur-sm">
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <div>
-                  <p className="font-semibold">{q.customer.fullName ?? q.customer.email}</p>
-                  {q.listing && (
-                    <p className="text-sm text-muted-foreground">{q.listing.title}</p>
-                  )}
+          {pending.map((q) => {
+            const details = q.details ?? {};
+            return (
+              <div
+                key={q.id}
+                className="rounded-2xl border border-border/80 bg-card/80 p-5 backdrop-blur-sm"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div>
+                    <p className="font-semibold">{q.customer.fullName ?? q.customer.email}</p>
+                    {(q.listing || details.listingTitle) && (
+                      <p className="text-sm text-muted-foreground">
+                        {q.listing?.title ?? details.listingTitle}
+                      </p>
+                    )}
+                  </div>
+                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                    {q.status}
+                  </span>
                 </div>
-                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
-                  {q.status}
-                </span>
-              </div>
-              <p className="mt-3 text-sm">{q.message}</p>
-              <div className="mt-2 flex flex-wrap gap-3 text-xs text-muted-foreground">
-                {q.budget != null && <span>Budget: {formatCurrency(q.budget)}</span>}
-                {q.eventDate && (
-                  <span>Event: {format(new Date(q.eventDate), "MMM d, yyyy")}</span>
-                )}
-                <span>Received {format(new Date(q.createdAt), "MMM d")}</span>
-              </div>
 
-              {respondingId === q.id ? (
-                <div className="mt-4 space-y-3 border-t border-border pt-4">
-                  <Textarea
-                    placeholder="Optional message to the customer..."
-                    value={response}
-                    onChange={(e) => setResponse(e.target.value)}
-                    rows={2}
-                  />
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      variant="gradient"
-                      size="sm"
-                      className="gap-1"
-                      disabled={updateLead.isPending}
-                      onClick={() =>
-                        updateLead.mutate({ id: q.id, status: "ACCEPTED", response })
-                      }
-                    >
-                      <CheckCircle2 className="h-3.5 w-3.5" /> Accept & notify
+                <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
+                  {details.eventType && (
+                    <div>
+                      <dt className="text-xs text-muted-foreground">Event type</dt>
+                      <dd>{details.eventType}</dd>
+                    </div>
+                  )}
+                  {details.location && (
+                    <div>
+                      <dt className="text-xs text-muted-foreground">Location</dt>
+                      <dd>{details.location}</dd>
+                    </div>
+                  )}
+                  {details.guestCount != null && (
+                    <div>
+                      <dt className="text-xs text-muted-foreground">Guests</dt>
+                      <dd>{details.guestCount}</dd>
+                    </div>
+                  )}
+                  {q.eventDate && (
+                    <div>
+                      <dt className="text-xs text-muted-foreground">Event date</dt>
+                      <dd>{format(new Date(q.eventDate), "MMM d, yyyy")}</dd>
+                    </div>
+                  )}
+                  {q.budget != null && (
+                    <div>
+                      <dt className="text-xs text-muted-foreground">Budget</dt>
+                      <dd>{formatCurrency(q.budget)}</dd>
+                    </div>
+                  )}
+                </dl>
+
+                <p className="mt-3 text-sm leading-relaxed">{q.message}</p>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Received {format(new Date(q.createdAt), "MMM d, yyyy")}
+                </p>
+
+                {respondingId === q.id ? (
+                  <div className="mt-4 space-y-3 border-t border-border pt-4">
+                    <Textarea
+                      placeholder="Optional message to the customer..."
+                      value={response}
+                      onChange={(e) => setResponse(e.target.value)}
+                      rows={2}
+                    />
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        variant="gradient"
+                        size="sm"
+                        className="gap-1"
+                        disabled={updateLead.isPending}
+                        onClick={() =>
+                          updateLead.mutate({ id: q.id, status: "ACCEPTED", response })
+                        }
+                      >
+                        <CheckCircle2 className="h-3.5 w-3.5" /> Accept & notify
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1 text-red-600"
+                        disabled={updateLead.isPending}
+                        onClick={() =>
+                          updateLead.mutate({ id: q.id, status: "DECLINED", response })
+                        }
+                      >
+                        <XCircle className="h-3.5 w-3.5" /> Decline
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => setRespondingId(null)}>
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <Button size="sm" variant="gradient" onClick={() => setRespondingId(q.id)}>
+                      Respond
                     </Button>
                     <Button
+                      size="sm"
                       variant="outline"
-                      size="sm"
-                      className="gap-1 text-red-600"
+                      className="gap-1"
+                      onClick={() => updateLead.mutate({ id: q.id, status: "ACCEPTED" })}
                       disabled={updateLead.isPending}
-                      onClick={() =>
-                        updateLead.mutate({ id: q.id, status: "DECLINED", response })
-                      }
                     >
-                      <XCircle className="h-3.5 w-3.5" /> Decline
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => setRespondingId(null)}>
-                      Cancel
+                      <CheckCircle2 className="h-3.5 w-3.5" /> Quick accept
                     </Button>
                   </div>
-                </div>
-              ) : (
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <Button size="sm" variant="gradient" onClick={() => setRespondingId(q.id)}>
-                    Respond
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="gap-1"
-                    onClick={() => updateLead.mutate({ id: q.id, status: "ACCEPTED" })}
-                    disabled={updateLead.isPending}
-                  >
-                    <CheckCircle2 className="h-3.5 w-3.5" /> Quick accept
-                  </Button>
-                </div>
-              )}
-            </div>
-          ))}
+                )}
+              </div>
+            );
+          })}
         </section>
       )}
 

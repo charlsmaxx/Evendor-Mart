@@ -1,16 +1,24 @@
 import Link from "next/link";
-import { BadgeCheck, MapPin, Star, Users, ChevronRight } from "lucide-react";
+import { BadgeCheck, MapPin, Star, Users, ChevronRight, Clock3 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { formatPriceRange } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import { resolvePublicListingCover, getVendorProfileImages } from "@/lib/images";
 import { parseListingMetadata } from "@/lib/listing-metadata";
 import { getEnabledPackages } from "@/lib/vendor-packages";
+import { extractProfileContent } from "@/lib/vendor-profile-content";
 import { ListingGalleryHero } from "@/components/marketplace/listing-gallery-hero";
 import { ListingActions } from "@/components/marketplace/listing-actions";
+import { MobileBookingBar } from "@/components/marketplace/mobile-booking-bar";
 import { ListingPortfolio, ListingReviews } from "@/components/marketplace/listing-gallery";
 import { VendorPackagesSection } from "@/components/marketplace/vendor-packages";
 import { ShareListingButton } from "@/components/marketplace/share-listing-button";
 import { VenueOfferingsDisplay } from "@/components/marketplace/venue-offerings-display";
+import { ExpandableText } from "@/components/marketplace/expandable-text";
+import { ProfileFaqSection } from "@/components/marketplace/profile-faq";
+import { ServiceRequirementsSection } from "@/components/marketplace/service-requirements";
+import { ServiceAreasSection } from "@/components/marketplace/service-areas";
+import { ServicesOfferedSection } from "@/components/marketplace/services-offered";
+import { CancellationPolicyCard } from "@/components/marketplace/cancellation-policy-card";
 import type { getPublishedListingBySlug } from "@/core/search-engine/listings";
 
 type ListingData = NonNullable<Awaited<ReturnType<typeof getPublishedListingBySlug>>>;
@@ -22,10 +30,9 @@ function collectGalleryImages(listing: ListingData) {
 
   const fromPortfolio = listing.portfolioMedia.map((m) => m.url);
   const fromVendor = listing.vendor.portfolioMedia.map((m) => m.url);
-  const fromListing = [
-    listing.coverImage,
-    ...listing.images,
-  ].filter((u): u is string => Boolean(u));
+  const fromListing = [listing.coverImage, ...listing.images].filter((u): u is string =>
+    Boolean(u)
+  );
 
   const ordered = [
     ...(vendorCover ? [vendorCover] : []),
@@ -42,28 +49,38 @@ export function ListingDetailView({ listing }: { listing: ListingData }) {
   const { vendor } = listing;
   const meta = parseListingMetadata(listing.metadata);
   const packages = getEnabledPackages(vendor.metadata);
+  const content = extractProfileContent(vendor.metadata, listing.city);
   const cover = resolvePublicListingCover(listing, vendor);
   const gallery = collectGalleryImages(listing);
   const amenities = listing.venueDetails?.amenities ?? [];
   const services = meta.services;
   const isVenue = listing.type === "VENUE";
+  const availableServices = content.servicesOffered.length
+    ? content.servicesOffered
+    : !isVenue
+      ? services
+      : [];
+  const experience =
+    typeof (vendor.metadata as Record<string, unknown> | null)?.experience === "string"
+      ? String((vendor.metadata as Record<string, unknown>).experience)
+      : "";
 
   const portfolioItems = [
     ...listing.portfolioMedia,
-    ...vendor.portfolioMedia.filter(
-      (m) => !listing.portfolioMedia.some((lm) => lm.id === m.id)
-    ),
+    ...vendor.portfolioMedia.filter((m) => !listing.portfolioMedia.some((lm) => lm.id === m.id)),
   ];
 
   return (
-    <div className="-mx-4 sm:mx-0">
-      {/* Breadcrumb */}
+    <div className="-mx-4 pb-24 sm:mx-0 lg:pb-0">
       <nav className="mb-4 flex flex-wrap items-center gap-1 px-4 text-sm text-muted-foreground sm:px-0">
         <Link href="/marketplace" className="hover:text-foreground">
           Marketplace
         </Link>
         <ChevronRight className="h-4 w-4" />
-        <Link href={`/marketplace?category=${listing.category.slug}`} className="hover:text-foreground">
+        <Link
+          href={`/marketplace?category=${listing.category.slug}`}
+          className="hover:text-foreground"
+        >
           {listing.category.name}
         </Link>
         <ChevronRight className="h-4 w-4" />
@@ -75,7 +92,6 @@ export function ListingDetailView({ listing }: { listing: ListingData }) {
       </div>
 
       <div className="mt-8 grid gap-10 px-4 lg:grid-cols-[1fr_340px] lg:items-start lg:gap-12 sm:px-0">
-        {/* Main content */}
         <div className="min-w-0 space-y-10">
           <header>
             <div className="flex flex-wrap items-center gap-2">
@@ -88,11 +104,15 @@ export function ListingDetailView({ listing }: { listing: ListingData }) {
                 </Badge>
               )}
               {listing.featured && <Badge variant="featured">Featured</Badge>}
+              <Badge variant="secondary">{listing.category.name}</Badge>
             </div>
             <h1 className="mt-3 font-display text-3xl font-bold md:text-4xl">{listing.title}</h1>
             <p className="mt-1 text-muted-foreground">
               by{" "}
-              <Link href={`/vendors/${vendor.slug}`} className="font-medium text-primary hover:underline">
+              <Link
+                href={`/vendors/${vendor.slug}`}
+                className="font-medium text-primary hover:underline"
+              >
                 {vendor.businessName}
               </Link>
             </p>
@@ -106,6 +126,12 @@ export function ListingDetailView({ listing }: { listing: ListingData }) {
                   <Star className="h-4 w-4 fill-amber-400" />
                   {listing.ratingAvg.toFixed(1)} ({listing.reviewCount} reviews)
                 </span>
+                {experience ? (
+                  <span className="flex items-center gap-1.5">
+                    <Clock3 className="h-4 w-4" />
+                    {experience} experience
+                  </span>
+                ) : null}
                 {isVenue && listing.venueDetails?.capacity ? (
                   <span className="flex items-center gap-1.5">
                     <Users className="h-4 w-4" />
@@ -116,7 +142,6 @@ export function ListingDetailView({ listing }: { listing: ListingData }) {
               <ShareListingButton title={listing.title} className="hidden sm:inline-flex" />
             </div>
 
-            {/* Mobile: price + actions under the title so customers don't scroll for them */}
             <div
               className="mt-5 rounded-2xl border border-border p-4 lg:hidden"
               style={{
@@ -136,15 +161,21 @@ export function ListingDetailView({ listing }: { listing: ListingData }) {
                 showPrice
                 packages={packages}
                 vendorCategory={vendor.category}
+                availableServices={availableServices}
+                hidePrimaryActions
+                showAvailability
+                vendorAvailability={vendor.availability}
               />
             </div>
           </header>
 
           <section>
-            <h2 className="font-display text-xl font-semibold">About this {isVenue ? "venue" : "service"}</h2>
-            <p className="mt-4 whitespace-pre-wrap leading-relaxed text-muted-foreground">
-              {listing.description}
-            </p>
+            <h2 className="font-display text-xl font-semibold">
+              About this {isVenue ? "venue" : "service"}
+            </h2>
+            <div className="mt-4">
+              <ExpandableText text={listing.description} />
+            </div>
           </section>
 
           {isVenue && (
@@ -157,27 +188,29 @@ export function ListingDetailView({ listing }: { listing: ListingData }) {
             />
           )}
 
-          {!isVenue && services.length > 0 && (
-            <section className="rounded-2xl border border-border bg-card p-6">
-              <h2 className="font-display text-xl font-semibold">Services included</h2>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {services.map((s) => (
-                  <Badge key={s} variant="secondary">{s}</Badge>
-                ))}
-              </div>
-            </section>
+          {!isVenue && (
+            <ServicesOfferedSection
+              services={availableServices}
+              title="Services"
+            />
           )}
+
+          {!isVenue && <ServiceAreasSection area={content.serviceArea} />}
 
           <VendorPackagesSection packages={packages} />
 
           <ListingPortfolio items={portfolioItems} />
 
+          <ProfileFaqSection faqs={content.faqs} />
+          <ServiceRequirementsSection requirements={content.serviceRequirements} />
+          <CancellationPolicyCard packages={packages} />
+
           {meta.termsAndConditions && (
             <section className="rounded-2xl border border-border bg-muted/30 p-6">
               <h2 className="font-display text-xl font-semibold">Terms &amp; conditions</h2>
-              <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
-                {meta.termsAndConditions}
-              </p>
+              <div className="mt-4">
+                <ExpandableText text={meta.termsAndConditions} maxChars={360} />
+              </div>
             </section>
           )}
 
@@ -188,7 +221,6 @@ export function ListingDetailView({ listing }: { listing: ListingData }) {
           />
         </div>
 
-        {/* Sticky booking sidebar — desktop; mobile uses the block under the title */}
         <aside className="hidden lg:sticky lg:top-24 lg:block">
           <div
             className="space-y-5 rounded-2xl border border-border p-6 shadow-sm"
@@ -200,7 +232,7 @@ export function ListingDetailView({ listing }: { listing: ListingData }) {
             <div>
               <p className="text-sm text-muted-foreground">Starting from</p>
               <p className="font-display text-2xl font-bold text-primary">
-                {formatPriceRange(listing.priceMin, listing.priceMax)}
+                {formatCurrency(listing.priceMin)}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
                 {isVenue ? "Per event · paid in full to book" : "Custom packages available"}
@@ -218,10 +250,27 @@ export function ListingDetailView({ listing }: { listing: ListingData }) {
               isVenue={isVenue}
               packages={packages}
               vendorCategory={vendor.category}
+              availableServices={availableServices}
+              showAvailability
+              vendorAvailability={vendor.availability}
             />
           </div>
         </aside>
       </div>
+
+      <MobileBookingBar
+        listingId={listing.id}
+        listingSlug={listing.slug}
+        listingTitle={listing.title}
+        vendorId={vendor.id}
+        slug={vendor.slug}
+        priceMin={listing.priceMin}
+        priceMax={listing.priceMax}
+        isVenue={isVenue}
+        packages={packages}
+        vendorCategory={vendor.category}
+        availableServices={availableServices}
+      />
     </div>
   );
 }

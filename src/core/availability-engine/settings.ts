@@ -46,7 +46,7 @@ export const DEFAULT_WORKING_HOURS: WorkingHours = {
   thursday: { enabled: true, start: "09:00", end: "18:00" },
   friday: { enabled: true, start: "09:00", end: "18:00" },
   saturday: { enabled: true, start: "10:00", end: "16:00" },
-  sunday: { enabled: false, start: "10:00", end: "16:00" },
+  sunday: { enabled: true, start: "10:00", end: "16:00" },
 };
 
 export function parseAvailabilitySettings(raw: unknown): VendorAvailabilitySettings {

@@ -3,7 +3,7 @@
 import { useCompareStore } from "@/stores/compare-store";
 import { useQuery } from "@tanstack/react-query";
 import { X, Star, Plus } from "lucide-react";
-import { formatPriceRange } from "@/lib/utils";
+import { formatStartingPrice } from "@/lib/utils";
 import Link from "next/link";
 import { OptimizedImage } from "@/components/ui/optimized-image";
 import { Button } from "@/components/ui/button";
@@ -28,7 +28,7 @@ type CompareListing = {
 };
 
 const COMPARE_ROWS: { label: string; render: (l: CompareListing) => string }[] = [
-  { label: "Price", render: (l) => formatPriceRange(l.priceMin, l.priceMax) },
+  { label: "Price", render: (l) => formatStartingPrice(l.priceMin) },
   { label: "City", render: (l) => l.city },
   { label: "Type", render: (l) => (l.type === "VENUE" ? "Venue" : "Service") },
   { label: "Capacity", render: (l) => (l.capacity ? `Up to ${l.capacity} guests` : "—") },
@@ -124,7 +124,7 @@ export function CompareDrawer() {
                 </div>
                 <p className="line-clamp-2 text-xs font-medium leading-tight">{s.title}</p>
                 <p className="mt-0.5 text-[10px] text-muted-foreground">
-                  {s.city} · {formatPriceRange(s.priceMin, s.priceMax)}
+                  {s.city} · {formatStartingPrice(s.priceMin)}
                 </p>
                 <Button
                   type="button"
@@ -199,7 +199,7 @@ export function CompareDrawer() {
                   {l.title}
                 </Link>
                 <p className="text-xs text-muted-foreground">
-                  {l.city} · {formatPriceRange(l.priceMin, l.priceMax)} · ★{l.ratingAvg.toFixed(1)}
+                  {l.city} · {formatStartingPrice(l.priceMin)} · ★{l.ratingAvg.toFixed(1)}
                 </p>
               </div>
               <button type="button" onClick={() => remove(l.id)} aria-label="Remove">

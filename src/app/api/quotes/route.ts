@@ -5,6 +5,7 @@ import { jsonOk, jsonError } from "@/lib/api-response";
 import { createQuoteSchema } from "@/lib/validations/quote";
 import { apiLimiter, checkRateLimit } from "@/lib/rate-limit";
 import { emitDomainEvent } from "@/core/events";
+import type { Prisma } from "@prisma/client";
 
 export async function POST(req: NextRequest) {
   const user = await requireAuth();
@@ -24,7 +25,10 @@ export async function POST(req: NextRequest) {
       eventDate: parsed.data.eventDate ? new Date(parsed.data.eventDate) : undefined,
       budget: parsed.data.budget,
       message: parsed.data.message,
-    },
+      ...(parsed.data.details
+        ? { details: parsed.data.details as Prisma.InputJsonValue }
+        : {}),
+    } as Prisma.QuoteRequestUncheckedCreateInput,
   });
 
   await emitDomainEvent({

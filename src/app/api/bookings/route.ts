@@ -194,6 +194,7 @@ export async function POST(req: NextRequest) {
       : null,
     selectedAddOns: selectedAddOnsDetailed,
     categoryAnswers: parsed.data.categoryAnswers ?? {},
+    selectedServices: parsed.data.selectedServices ?? [],
     cancellationPolicy,
     cancellationPolicyLines: formatCancellationPolicyLines(cancellationPolicy),
     policyAcceptedAt: new Date().toISOString(),

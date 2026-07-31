@@ -3,7 +3,7 @@ import Link from "next/link";
 import { memo } from "react";
 import { Star, MapPin, BadgeCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { formatPriceRange } from "@/lib/utils";
+import { formatStartingPrice } from "@/lib/utils";
 import { DEFAULT_LISTING_COVER } from "@/lib/images";
 
 export interface VendorCardData {
@@ -65,7 +65,7 @@ export const VendorCard = memo(function VendorCard({ listing }: { listing: Vendo
             </span>
           </div>
           <p className="mt-3 font-medium text-primary">
-            {formatPriceRange(listing.priceMin, listing.priceMax)}
+            {formatStartingPrice(listing.priceMin)}
           </p>
           <p className="mt-2 flex items-center gap-1 text-xs font-semibold text-primary/80">
             🎁 Earn 2% Cashback

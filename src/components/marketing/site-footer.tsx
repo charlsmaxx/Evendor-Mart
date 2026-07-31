@@ -5,10 +5,11 @@ import { NewsletterForm } from "@/components/marketing/newsletter-form";
 const footerLinks = {
   Product: [
     { href: "/marketplace", label: "Marketplace" },
-    { href: "#categories", label: "Categories" },
+    { href: "/#categories", label: "Categories" },
     { href: "/list-your-business", label: "List your business" },
   ],
   Company: [
+    { href: "/about", label: "About" },
     { href: "/privacy", label: "Privacy" },
     { href: "/terms", label: "Terms" },
   ],

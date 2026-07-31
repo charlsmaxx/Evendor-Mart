@@ -15,7 +15,7 @@ import {
   type PackageBadge,
   type VendorPackage,
 } from "@/lib/vendor-packages";
-import { Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 
 export type { VendorPackage };
 export { normalizePackages };
@@ -53,6 +53,16 @@ export function PackageEditor({ value, onChange }: PackageEditorProps) {
 
   function removePackage(id: string) {
     onChange(packages.filter((p) => p.id !== id));
+  }
+
+  function movePackage(id: string, direction: "up" | "down") {
+    const idx = packages.findIndex((p) => p.id === id);
+    if (idx < 0) return;
+    const swapWith = direction === "up" ? idx - 1 : idx + 1;
+    if (swapWith < 0 || swapWith >= packages.length) return;
+    const next = [...packages];
+    [next[idx], next[swapWith]] = [next[swapWith], next[idx]];
+    onChange(next);
   }
 
   function updateAddOn(pkgId: string, addOnId: string, patch: Partial<PackageAddOn>) {
@@ -100,14 +110,32 @@ export function PackageEditor({ value, onChange }: PackageEditorProps) {
         >
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="font-semibold">{pkg.name || pkg.tier || "Package"}</p>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1 sm:gap-3">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => movePackage(pkg.id, "up")}
+                aria-label="Move package up"
+              >
+                <ArrowUp className="h-4 w-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => movePackage(pkg.id, "down")}
+                aria-label="Move package down"
+              >
+                <ArrowDown className="h-4 w-4" />
+              </Button>
               <label className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
                   checked={pkg.enabled}
                   onChange={(e) => update(pkg.id, { enabled: e.target.checked })}
                 />
-                Active (show to customers)
+                Active
               </label>
               {!pkg.tier && (
                 <Button

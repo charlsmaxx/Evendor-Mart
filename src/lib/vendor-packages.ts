@@ -276,13 +276,8 @@ export function normalizePackages(raw: unknown[]): VendorPackage[] {
     );
   }
 
-  // If only legacy tiers exist without ids collision, keep sorted BASIC→LUXURY then extras.
-  const order = { BASIC: 0, PREMIUM: 1, LUXURY: 2 } as const;
-  return [...parsed].sort((a, b) => {
-    const ao = a.tier ? order[a.tier] : 99;
-    const bo = b.tier ? order[b.tier] : 99;
-    return ao - bo;
-  });
+  // Preserve vendor-defined order (package editor reorder).
+  return parsed;
 }
 
 export function getEnabledPackages(metadata: unknown): VendorPackage[] {

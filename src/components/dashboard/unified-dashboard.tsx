@@ -17,6 +17,7 @@ import {
   Gift,
   CheckCircle2,
   AlertTriangle,
+  UserCog,
 } from "lucide-react";
 import { MessageNotificationBadge, useMessageBadgeCount } from "@/components/messages/message-notification-badge";
 import { RewardsWalletView, type RewardsWalletData } from "@/components/rewards/rewards-wallet-view";
@@ -100,6 +101,12 @@ export function UnifiedDashboard({
         </div>
         <h1 className="mt-4 font-display text-2xl font-bold">{displayName}</h1>
         <p className="text-sm text-muted-foreground">Your Evendor dashboard</p>
+        <Link href="/account" className="mt-4">
+          <Button variant="outline" size="sm" className="gap-2">
+            <UserCog className="h-4 w-4" />
+            Edit profile
+          </Button>
+        </Link>
       </section>
 
       <section>

@@ -363,6 +363,8 @@ model QuoteRequest {
   eventDate   DateTime?
   budget      Int?
   message     String
+  /// Structured quote details: eventType, location, guestCount, listingTitle, etc.
+  details     Json?
   status      QuoteStatus @default(PENDING)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt

@@ -19,6 +19,11 @@ export function formatPriceRange(min: number, max: number) {
   return `${formatCurrency(min)} – ${formatCurrency(max)}`;
 }
 
+/** Browse/list cards: starting price only (full range on vendor profile). */
+export function formatStartingPrice(min: number) {
+  return `From ${formatCurrency(min)}`;
+}
+
 export function slugify(text: string) {
   return text
     .toLowerCase()

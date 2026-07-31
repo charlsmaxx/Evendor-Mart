@@ -1,5 +1,6 @@
 import dynamic from "next/dynamic";
 import { HeroSection } from "@/components/marketing/hero-section";
+import { HeroCtaSection } from "@/components/marketing/hero-cta-section";
 import { SocialProofSection } from "@/components/marketing/social-proof-section";
 import { ProblemSection } from "@/components/marketing/problem-section";
 
@@ -8,6 +9,9 @@ export const revalidate = 300;
 
 const SolutionSection = dynamic(() =>
   import("@/components/marketing/solution-section").then((m) => ({ default: m.SolutionSection }))
+);
+const StayAheadSection = dynamic(() =>
+  import("@/components/marketing/solution-section").then((m) => ({ default: m.StayAheadSection }))
 );
 const CategoryShowcase = dynamic(() =>
   import("@/components/marketing/category-showcase").then((m) => ({ default: m.CategoryShowcase }))
@@ -26,11 +30,6 @@ const TestimonialsSection = dynamic(() =>
 const RewardsSection = dynamic(() =>
   import("@/components/marketing/rewards-section").then((m) => ({ default: m.RewardsSection }))
 );
-const MobilePreviewSection = dynamic(() =>
-  import("@/components/marketing/mobile-preview-section").then((m) => ({
-    default: m.MobilePreviewSection,
-  }))
-);
 const CtaSection = dynamic(() =>
   import("@/components/marketing/cta-section").then((m) => ({ default: m.CtaSection }))
 );
@@ -42,15 +41,16 @@ export default function HomePage() {
   return (
     <>
       <HeroSection />
-      <SocialProofSection />
+      <HeroCtaSection />
       <ProblemSection />
+      <SocialProofSection />
       <SolutionSection />
-      <CategoryShowcase />
-      <HowItWorksSection />
       <FeaturedVendorsSection />
+      <CategoryShowcase />
       <TestimonialsSection />
+      <StayAheadSection />
+      <HowItWorksSection />
       <RewardsSection />
-      <MobilePreviewSection />
       <CtaSection />
       <SiteFooter />
     </>

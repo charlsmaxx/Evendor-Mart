@@ -32,7 +32,8 @@ const MORE_LINKS = [
   { href: "/vendor/leads", label: "Leads", icon: Users },
   { href: "/vendor/disputes", label: "Disputes", icon: Settings },
   { href: "/vendor/subscription", label: "Subscription", icon: Settings },
-  { href: "/vendor/profile", label: "Profile", icon: UserCircle },
+  { href: "/vendor/profile", label: "Business profile", icon: UserCircle },
+  { href: "/account", label: "Edit profile", icon: Settings },
 ];
 
 export function VendorMobileNav({ verified }: { verified?: boolean }) {

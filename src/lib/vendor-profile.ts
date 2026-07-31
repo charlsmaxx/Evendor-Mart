@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { resolveVendorCover, resolveVendorAvatar } from "@/lib/images";
 import { getEnabledPackages } from "@/lib/vendor-packages";
+import { extractProfileContent } from "@/lib/vendor-profile-content";
 import { createCachedByKey } from "@/lib/server-cache";
 import { CACHE_TTL } from "@/lib/cache-policy";
 
@@ -46,6 +47,7 @@ export async function getVendorPublicProfile(slug: string) {
                 rating: true,
                 comment: true,
                 vendorReply: true,
+                bookingId: true,
                 createdAt: true,
                 user: { select: { fullName: true, avatarUrl: true } },
               },
@@ -76,6 +78,7 @@ export async function getVendorPublicProfile(slug: string) {
         : profile.reviewCount;
 
     const meta = (profile.metadata as Record<string, unknown>) ?? {};
+    const content = extractProfileContent(profile.metadata, profile.city);
 
     return {
       vendor: profile,
@@ -94,6 +97,10 @@ export async function getVendorPublicProfile(slug: string) {
         establishedYear: (meta.establishedYear as string) ?? "",
         secondaryCategory: (meta.secondaryCategory as string) ?? "",
       },
+      faqs: content.faqs,
+      serviceRequirements: content.serviceRequirements,
+      servicesOffered: content.servicesOffered,
+      serviceArea: content.serviceArea,
       seo: meta.seo as
         | { title: string; description: string; canonicalPath: string; keywords: string[]; openGraphImage?: string }
         | undefined,

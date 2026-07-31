@@ -72,6 +72,37 @@ const features = [
 ];
 
 export function SolutionSection() {
+  return (
+    <section id="solution" className="border-y border-border bg-secondary/30 py-20 md:py-28">
+      <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:px-8">
+        <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-border bg-card shadow-lg">
+          <Image
+            src="https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=900&q=80"
+            alt="Evendor platform preview"
+            fill
+            unoptimized
+            className="object-cover"
+            sizes="(max-width: 1024px) 100vw, 50vw"
+          />
+        </div>
+        <div>
+          <h2 className="font-display text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
+            One platform. Zero chaos.
+          </h2>
+          <p className="mt-5 text-lg leading-relaxed text-muted-foreground">
+            Evendor brings discovery, comparison, booking, and communication into a single
+            luxurious experience — ask questions, request quotes, and book vendors in seconds.
+          </p>
+          <Link href="/marketplace" className="link-arrow mt-8 inline-flex">
+            Learn more
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export function StayAheadSection() {
   const [active, setActive] = useState(features[0].id);
   const [paused, setPaused] = useState(false);
   const current = features.find((f) => f.id === active)!;
@@ -89,105 +120,74 @@ export function SolutionSection() {
     return () => clearInterval(timer);
   }, [paused, goToNext]);
 
-  const selectTab = (id: string) => setActive(id);
-
   return (
-    <>
-      <section id="solution" className="border-y border-border bg-secondary/30 py-20 md:py-28">
-        <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:px-8">
-          <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-border bg-card shadow-lg">
-            <Image
-              src="https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=900&q=80"
-              alt="Evendor platform preview"
-              fill
-              unoptimized
-              className="object-cover"
-              sizes="(max-width: 1024px) 100vw, 50vw"
-            />
-          </div>
-          <div>
-            <h2 className="font-display text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-              One platform. Zero chaos.
-            </h2>
-            <p className="mt-5 text-lg leading-relaxed text-muted-foreground">
-              Evendor brings discovery, comparison, booking, and communication into a single
-              luxurious experience — ask questions, request quotes, and book vendors in seconds.
-            </p>
-            <Link href="/marketplace" className="link-arrow mt-8 inline-flex">
-              Learn more
-            </Link>
-          </div>
+    <section className="py-20 md:py-28">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-3xl text-center">
+          <h2 className="font-display text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
+            Stay organized, stay informed and stay ahead
+          </h2>
+          <p className="mt-4 text-lg text-muted-foreground">
+            Automate manual tasks and free up your team to focus on creating great events.
+          </p>
         </div>
-      </section>
 
-      <section className="py-20 md:py-28">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-3xl text-center">
-            <h2 className="font-display text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-              Stay organized, stay informed and stay ahead
-            </h2>
-            <p className="mt-4 text-lg text-muted-foreground">
-              Automate manual tasks and free up your team to focus on creating great events.
-            </p>
-          </div>
-
-          <div
-            className="mt-10 flex flex-wrap justify-center gap-2"
-            onMouseEnter={() => setPaused(true)}
-            onMouseLeave={() => setPaused(false)}
-          >
-            {features.map((f) => (
-              <button
-                key={f.id}
-                type="button"
-                onClick={() => selectTab(f.id)}
-                className={`tab-pill transition-all ${active === f.id ? "tab-pill-active" : ""}`}
-              >
-                {f.tab}
-              </button>
-            ))}
-          </div>
-
-          <div
-            className="mx-auto mt-12 max-w-3xl overflow-hidden rounded-2xl border border-border bg-card p-8 md:p-12"
-            onMouseEnter={() => setPaused(true)}
-            onMouseLeave={() => setPaused(false)}
-          >
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={active}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -12 }}
-                transition={{ duration: 0.35 }}
-              >
-                <current.icon className="mb-6 h-10 w-10 text-primary" />
-                <h3 className="font-display text-2xl font-semibold text-foreground">{current.title}</h3>
-                <p className="mt-3 text-muted-foreground">{current.desc}</p>
-                <ul className="mt-8 space-y-4">
-                  {current.bullets.map((b) => (
-                    <li key={b} className="flex gap-3 text-foreground/90">
-                      <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-                      <span className="leading-relaxed">{b}</span>
-                    </li>
-                  ))}
-                </ul>
-              </motion.div>
-            </AnimatePresence>
-          </div>
-
-          <div className="mt-12 text-center">
-            <Link href="/register?redirect=/dashboard">
-              <button
-                type="button"
-                className="rounded-full bg-primary px-8 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
-              >
-                Get started
-              </button>
-            </Link>
-          </div>
+        <div
+          className="mt-10 flex flex-wrap justify-center gap-2"
+          onMouseEnter={() => setPaused(true)}
+          onMouseLeave={() => setPaused(false)}
+        >
+          {features.map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              onClick={() => setActive(f.id)}
+              className={`tab-pill transition-all ${active === f.id ? "tab-pill-active" : ""}`}
+            >
+              {f.tab}
+            </button>
+          ))}
         </div>
-      </section>
-    </>
+
+        <div
+          className="mx-auto mt-12 max-w-3xl overflow-hidden rounded-2xl border border-border bg-card p-8 md:p-12"
+          onMouseEnter={() => setPaused(true)}
+          onMouseLeave={() => setPaused(false)}
+        >
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={active}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.35 }}
+            >
+              <current.icon className="mb-6 h-10 w-10 text-primary" />
+              <h3 className="font-display text-2xl font-semibold text-foreground">{current.title}</h3>
+              <p className="mt-3 text-muted-foreground">{current.desc}</p>
+              <ul className="mt-8 space-y-4">
+                {current.bullets.map((b) => (
+                  <li key={b} className="flex gap-3 text-foreground/90">
+                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                    <span className="leading-relaxed">{b}</span>
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        <div className="mt-12 text-center">
+          <Link href="/register?redirect=/dashboard">
+            <button
+              type="button"
+              className="rounded-full bg-primary px-8 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+            >
+              Get started
+            </button>
+          </Link>
+        </div>
+      </div>
+    </section>
   );
 }

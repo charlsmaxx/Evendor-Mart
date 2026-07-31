@@ -36,7 +36,7 @@ export function VenueOfferingsDisplay({
   return (
     <section className="rounded-2xl border border-border bg-card p-6 space-y-8">
       <div>
-        <h2 className="font-display text-xl font-semibold">Everything about this venue</h2>
+        <h2 className="font-display text-xl font-semibold">More information about this venue</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Review capacity, facilities, and services before you book.
         </p>

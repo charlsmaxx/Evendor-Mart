@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { VendorPageHeader, VendorSkeleton } from "@/components/vendor/vendor-ui";
 import { PackageEditor, normalizePackages, type VendorPackage } from "@/components/vendor/package-editor";
+import { ProfileContentEditor } from "@/components/vendor/profile-content-editor";
 import {
   VendorMediaFields,
   featuredImagesPayload,
@@ -18,6 +19,13 @@ import {
   type FeaturedClip,
 } from "@/components/onboarding/venue-photos-fields";
 import { MAX_FEATURED_CLIPS, MAX_FEATURED_IMAGES } from "@/lib/vendor-media";
+import {
+  normalizeFaqs,
+  normalizeServiceRequirements,
+  normalizeServicesOffered,
+  type ProfileFaq,
+  type ServiceRequirement,
+} from "@/lib/vendor-profile-content";
 import { reportClientError } from "@/lib/client-error";
 
 type ProfileData = {
@@ -38,6 +46,9 @@ type ProfileData = {
   socialLinks: Record<string, string>;
   packages: VendorPackage[];
   listings: { id: string; title: string; status: string }[];
+  faqs: ProfileFaq[];
+  serviceRequirements: ServiceRequirement[];
+  servicesOffered: string[];
 };
 
 function padMedia<T>(items: T[], max: number) {
@@ -60,22 +71,36 @@ export default function VendorProfilePage() {
 
   const [form, setForm] = useState<Partial<ProfileData>>({});
   const [packages, setPackages] = useState<VendorPackage[] | null>(null);
+  const [faqs, setFaqs] = useState<ProfileFaq[] | null>(null);
+  const [requirements, setRequirements] = useState<ServiceRequirement[] | null>(null);
+  const [servicesOffered, setServicesOffered] = useState<string[] | null>(null);
   const [featuredSlots, setFeaturedSlots] = useState<(FeaturedImage | null)[] | null>(null);
   const [clipSlots, setClipSlots] = useState<(FeaturedClip | null)[] | null>(null);
 
   useEffect(() => {
     if (!data) return;
     if (packages === null) setPackages(normalizePackages(data.packages ?? []));
+    if (faqs === null) setFaqs(normalizeFaqs(data.faqs ?? []));
+    if (requirements === null) {
+      setRequirements(normalizeServiceRequirements(data.serviceRequirements ?? []));
+    }
+    if (servicesOffered === null) {
+      setServicesOffered(normalizeServicesOffered(data.servicesOffered ?? []));
+    }
     if (featuredSlots === null) {
       setFeaturedSlots(padMedia(data.featuredImages ?? [], MAX_FEATURED_IMAGES));
     }
     if (clipSlots === null) {
       setClipSlots(padMedia(data.featuredClips ?? [], MAX_FEATURED_CLIPS));
     }
-  }, [data, packages, featuredSlots, clipSlots]);
+  }, [data, packages, faqs, requirements, servicesOffered, featuredSlots, clipSlots]);
 
   const profile = { ...data, ...form } as ProfileData | undefined;
   const packageTiers = packages ?? normalizePackages(profile?.packages ?? []);
+  const faqItems = faqs ?? normalizeFaqs(profile?.faqs ?? []);
+  const requirementItems =
+    requirements ?? normalizeServiceRequirements(profile?.serviceRequirements ?? []);
+  const serviceItems = servicesOffered ?? normalizeServicesOffered(profile?.servicesOffered ?? []);
   const imageSlots = featuredSlots ?? padMedia(profile?.featuredImages ?? [], MAX_FEATURED_IMAGES);
   const videoSlots = clipSlots ?? padMedia(profile?.featuredClips ?? [], MAX_FEATURED_CLIPS);
 
@@ -251,6 +276,41 @@ export default function VendorProfilePage() {
           }
         >
           Save packages
+        </Button>
+      </div>
+
+      <div className="rounded-2xl border border-border/80 bg-card/80 p-6 backdrop-blur-sm space-y-4">
+        <div>
+          <p className="font-semibold">Profile content</p>
+          <p className="text-sm text-muted-foreground">
+            Services, FAQs, and Service Requirements shown on your public profile.
+          </p>
+        </div>
+        <ProfileContentEditor
+          faqs={faqItems}
+          onFaqsChange={setFaqs}
+          requirements={requirementItems}
+          onRequirementsChange={setRequirements}
+          servicesOffered={serviceItems}
+          onServicesOfferedChange={setServicesOffered}
+        />
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={save.isPending}
+          onClick={() =>
+            save.mutate({
+              faqs: faqItems
+                .map((f, i) => ({ ...f, sortOrder: i }))
+                .filter((f) => f.question.trim() && f.answer.trim()),
+              serviceRequirements: requirementItems
+                .map((r, i) => ({ ...r, sortOrder: i, text: r.text.trim() }))
+                .filter((r) => r.text),
+              servicesOffered: serviceItems,
+            })
+          }
+        >
+          Save profile content
         </Button>
       </div>
 

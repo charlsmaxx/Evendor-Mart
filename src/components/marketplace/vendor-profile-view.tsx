@@ -3,17 +3,38 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { formatPriceRange } from "@/lib/utils";
 import { ListingActions } from "@/components/marketplace/listing-actions";
+import { MobileBookingBar } from "@/components/marketplace/mobile-booking-bar";
 import { ListingPortfolio, ListingReviews } from "@/components/marketplace/listing-gallery";
 import { VendorPackagesSection } from "@/components/marketplace/vendor-packages";
 import { VendorMessageButton } from "@/components/marketplace/vendor-message-button";
 import { ShareListingButton } from "@/components/marketplace/share-listing-button";
-import { MapPin, Star, BadgeCheck, Briefcase } from "lucide-react";
+import { ExpandableText } from "@/components/marketplace/expandable-text";
+import { ProfileFaqSection } from "@/components/marketplace/profile-faq";
+import { ServiceRequirementsSection } from "@/components/marketplace/service-requirements";
+import { ServiceAreasSection } from "@/components/marketplace/service-areas";
+import { ServicesOfferedSection } from "@/components/marketplace/services-offered";
+import { CancellationPolicyCard } from "@/components/marketplace/cancellation-policy-card";
+import { MapPin, Star, BadgeCheck, Briefcase, Clock3 } from "lucide-react";
 import type { getVendorPublicProfile } from "@/lib/vendor-profile";
 
 type ProfileData = NonNullable<Awaited<ReturnType<typeof getVendorPublicProfile>>>;
 
 export function VendorProfileView({ data }: { data: ProfileData }) {
-  const { vendor, primaryListing, coverImage, avatarUrl, allReviews, ratingAvg, reviewCount, packages, about } = data;
+  const {
+    vendor,
+    primaryListing,
+    coverImage,
+    avatarUrl,
+    allReviews,
+    ratingAvg,
+    reviewCount,
+    packages,
+    about,
+    faqs,
+    serviceRequirements,
+    servicesOffered,
+    serviceArea,
+  } = data;
 
   const portfolioItems = [
     ...vendor.portfolioMedia,
@@ -21,9 +42,15 @@ export function VendorProfileView({ data }: { data: ProfileData }) {
   ].filter((item, index, arr) => arr.findIndex((x) => x.id === item.id) === index);
 
   const categoryLabel = vendor.listings[0]?.category?.name ?? vendor.category.replace(/_/g, " ");
+  const isVenue = primaryListing?.type === "VENUE";
+  const availableServices = servicesOffered.length
+    ? servicesOffered
+    : primaryListing
+      ? []
+      : [];
 
   return (
-    <div className="-mx-4 sm:mx-0">
+    <div className="-mx-4 pb-24 sm:mx-0 lg:pb-0">
       {/* Cover photo */}
       <div className="relative h-48 w-full overflow-hidden sm:h-64 md:h-72 md:rounded-2xl">
         <OptimizedImage
@@ -67,7 +94,7 @@ export function VendorProfileView({ data }: { data: ProfileData }) {
                   </Badge>
                 )}
               </div>
-              <p className="text-sm text-muted-foreground capitalize">{categoryLabel}</p>
+              <p className="text-sm capitalize text-muted-foreground">{categoryLabel}</p>
             </div>
           </div>
 
@@ -102,13 +129,21 @@ export function VendorProfileView({ data }: { data: ProfileData }) {
             <Briefcase className="h-4 w-4" /> {vendor.listings.length} listing
             {vendor.listings.length !== 1 ? "s" : ""}
           </span>
+          {about?.experience && (
+            <span className="flex items-center gap-1.5">
+              <Clock3 className="h-4 w-4" /> {about.experience} experience
+            </span>
+          )}
+          <Badge variant="secondary" className="capitalize">
+            {categoryLabel}
+          </Badge>
         </div>
 
         {about?.tagline && (
           <p className="mt-4 text-lg font-medium text-foreground">{about.tagline}</p>
         )}
 
-        {/* Mobile: price + book/chat/save/compare right under the name */}
+        {/* Mobile: full price range + utility actions (share/save/compare/availability) */}
         {primaryListing && (
           <div
             className="mt-5 rounded-2xl border border-border p-4 sm:hidden"
@@ -117,6 +152,12 @@ export function VendorProfileView({ data }: { data: ProfileData }) {
                 "linear-gradient(135deg,rgba(122,46,61,0.04) 0%,rgba(229,223,217,0.12) 100%)",
             }}
           >
+            <div className="mb-4">
+              <p className="text-sm text-muted-foreground">Price</p>
+              <p className="font-display text-xl font-bold text-primary">
+                {formatPriceRange(primaryListing.priceMin, primaryListing.priceMax)}
+              </p>
+            </div>
             <ListingActions
               listingId={primaryListing.id}
               listingSlug={primaryListing.slug}
@@ -125,10 +166,13 @@ export function VendorProfileView({ data }: { data: ProfileData }) {
               slug={vendor.slug}
               priceMin={primaryListing.priceMin}
               priceMax={primaryListing.priceMax}
-              isVenue={primaryListing.type === "VENUE"}
-              showPrice
+              isVenue={isVenue}
               packages={packages}
               vendorCategory={vendor.category}
+              availableServices={availableServices}
+              hidePrimaryActions
+              showAvailability
+              vendorAvailability={vendor.availability}
             />
           </div>
         )}
@@ -137,9 +181,13 @@ export function VendorProfileView({ data }: { data: ProfileData }) {
       <section className="mt-10 rounded-2xl border border-border bg-card p-6">
         <h2 className="font-display text-xl font-semibold">About the vendor</h2>
         {vendor.bio ? (
-          <p className="mt-4 whitespace-pre-wrap leading-relaxed text-muted-foreground">{vendor.bio}</p>
+          <div className="mt-4">
+            <ExpandableText text={vendor.bio} />
+          </div>
         ) : (
-          <p className="mt-4 text-sm text-muted-foreground">This vendor is setting up their profile on Evendor.</p>
+          <p className="mt-4 text-sm text-muted-foreground">
+            This vendor is setting up their profile on Evendor.
+          </p>
         )}
         <div className="mt-4 flex flex-wrap gap-4 text-sm text-muted-foreground">
           {about?.experience && <span>{about.experience} experience</span>}
@@ -148,16 +196,25 @@ export function VendorProfileView({ data }: { data: ProfileData }) {
           {about?.languages?.length ? <span>Speaks: {about.languages.join(", ")}</span> : null}
         </div>
         <p className="mt-4 text-xs text-muted-foreground">
-          Message this vendor through Evendor Chat — direct phone and email are not shared for your protection.
+          Message this vendor through Evendor Chat — direct phone and email are not shared for your
+          protection.
         </p>
       </section>
+
+      <div className="mt-10 space-y-10">
+        <ServicesOfferedSection services={servicesOffered} />
+        <ServiceAreasSection area={serviceArea} />
+      </div>
 
       {primaryListing ? (
         <section className="mt-10 rounded-2xl border border-border bg-card p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h2 className="font-display text-xl font-semibold">Featured service</h2>
-              <Link href={`/listings/${primaryListing.slug}`} className="mt-1 block text-sm text-primary hover:underline">
+              <Link
+                href={`/listings/${primaryListing.slug}`}
+                className="mt-1 block text-sm text-primary hover:underline"
+              >
                 {primaryListing.title} →
               </Link>
             </div>
@@ -165,8 +222,12 @@ export function VendorProfileView({ data }: { data: ProfileData }) {
           <p className="mt-3 text-lg font-medium text-primary">
             {formatPriceRange(primaryListing.priceMin, primaryListing.priceMax)}
           </p>
-          <p className="mt-4 text-muted-foreground">{primaryListing.description}</p>
-          <div className="mt-6">
+          {primaryListing.description && (
+            <div className="mt-4">
+              <ExpandableText text={primaryListing.description} maxChars={280} />
+            </div>
+          )}
+          <div className="mt-6 hidden sm:block">
             <ListingActions
               listingId={primaryListing.id}
               listingSlug={primaryListing.slug}
@@ -175,9 +236,12 @@ export function VendorProfileView({ data }: { data: ProfileData }) {
               slug={vendor.slug}
               priceMin={primaryListing.priceMin}
               priceMax={primaryListing.priceMax}
-              isVenue={primaryListing.type === "VENUE"}
+              isVenue={isVenue}
               packages={packages}
               vendorCategory={vendor.category}
+              availableServices={availableServices}
+              showAvailability
+              vendorAvailability={vendor.availability}
             />
           </div>
         </section>
@@ -190,7 +254,6 @@ export function VendorProfileView({ data }: { data: ProfileData }) {
 
       <VendorPackagesSection packages={packages} />
 
-      {/* All listings */}
       {vendor.listings.length > 1 && (
         <section className="mt-10">
           <h2 className="font-display text-xl font-semibold">All services</h2>
@@ -213,12 +276,35 @@ export function VendorProfileView({ data }: { data: ProfileData }) {
       )}
 
       <ListingPortfolio items={portfolioItems} />
+
+      <div className="mt-10 space-y-10">
+        <ProfileFaqSection faqs={faqs} />
+        <ServiceRequirementsSection requirements={serviceRequirements} />
+        <CancellationPolicyCard packages={packages} />
+      </div>
+
       <ListingReviews
         reviews={allReviews}
         ratingAvg={ratingAvg}
         reviewCount={reviewCount}
         className="mt-10"
       />
+
+      {primaryListing && (
+        <MobileBookingBar
+          listingId={primaryListing.id}
+          listingSlug={primaryListing.slug}
+          listingTitle={primaryListing.title}
+          vendorId={vendor.id}
+          slug={vendor.slug}
+          priceMin={primaryListing.priceMin}
+          priceMax={primaryListing.priceMax}
+          isVenue={isVenue}
+          packages={packages}
+          vendorCategory={vendor.category}
+          availableServices={availableServices}
+        />
+      )}
     </div>
   );
 }

@@ -62,7 +62,7 @@ export const VENDOR_CATEGORIES: CategoryDefinition[] = [
   },
   {
     value: "VENUE",
-    label: "Venue Owners",
+    label: "Venue",
     slug: "venues",
     sortOrder: 2,
     isVenue: true,
@@ -175,7 +175,7 @@ export const VENDOR_CATEGORIES: CategoryDefinition[] = [
   },
   {
     value: "BRIDAL_RENTAL",
-    label: "Bridal Rentals",
+    label: "Bridals",
     slug: "bridal-rentals",
     sortOrder: 16,
     description: "Wedding gowns, suits, accessories, and bridal wear available to rent.",

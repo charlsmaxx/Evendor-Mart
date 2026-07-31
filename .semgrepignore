@@ -1,0 +1,15 @@
+# Semgrep ignore patterns — audit-only; does not modify code.
+node_modules/
+.next/
+dist/
+build/
+coverage/
+out/
+.vercel/
+public/
+
+.env
+.env.*
+
+*.min.js
+*.min.css

@@ -3,13 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { cn, formatCurrency } from "@/lib/utils";
-import { Heart, LayoutGrid, MessageSquare, User, Store, Gift, type LucideIcon } from "lucide-react";
+import { Heart, LayoutGrid, MessageSquare, Store, Gift, type LucideIcon } from "lucide-react";
 import { useMessageBadgeCount, MessageNotificationBadge } from "@/components/messages/message-notification-badge";
 import { BrandLogo } from "@/components/brand-logo";
+import { MobileNavDrawer } from "@/components/mobile-nav-drawer";
+import { CategoriesDesktopDropdown } from "@/components/categories-menu";
 
 type NavLink = {
   href: string;
@@ -19,24 +19,26 @@ type NavLink = {
   rewards?: boolean;
 };
 
-const baseLinks: NavLink[] = [
+const guestLinks: NavLink[] = [
+  { href: "/marketplace", label: "Marketplace", icon: LayoutGrid },
+];
+
+const authLinks: NavLink[] = [
   { href: "/marketplace", label: "Marketplace", icon: LayoutGrid },
   { href: "/favorites", label: "Favorites", icon: Heart },
   { href: "/messages", label: "Messages", icon: MessageSquare, badge: true },
-  { href: "/dashboard", label: "Dashboard", icon: User },
   { href: "/rewards", label: "Rewards", icon: Gift, rewards: true },
 ];
 
 export function AppNav() {
   const pathname = usePathname();
-  const router = useRouter();
   const unreadCount = useMessageBadgeCount();
 
-  const { data: me } = useQuery({
+  const { data: me, isLoading } = useQuery({
     queryKey: ["me"],
     queryFn: async () => {
       const res = await fetch("/api/me", { credentials: "same-origin" });
-      if (!res.ok) return null;
+      if (res.status === 401 || !res.ok) return null;
       const json = await res.json();
       return json.data as { isVendor: boolean; role: string } | null;
     },
@@ -57,23 +59,21 @@ export function AppNav() {
     retry: false,
   });
 
-  const vendorLink: NavLink = me?.isVendor
-    ? { href: "/vendor", label: "My business", icon: Store }
-    : { href: "/onboarding/vendor", label: "List your business", icon: Store };
-
-  const navLinks: NavLink[] = [...baseLinks, vendorLink];
-
-  async function signOut() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/");
-  }
+  const navLinks: NavLink[] = me
+    ? [
+        ...authLinks,
+        me.isVendor
+          ? { href: "/vendor", label: "My business", icon: Store }
+          : { href: "/onboarding/vendor", label: "List your business", icon: Store },
+      ]
+    : guestLinks;
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur-xl">
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4">
         <BrandLogo heightClass="h-[68px]" />
-        <nav className="hidden gap-6 md:flex">
+        <nav className="hidden items-center gap-6 md:flex">
+          <CategoriesDesktopDropdown label="Categories" />
           {navLinks.map((l) => (
             <Link
               key={l.href}
@@ -103,9 +103,27 @@ export function AppNav() {
             </Link>
           ))}
         </nav>
-        <Button variant="ghost" size="sm" onClick={signOut}>
-          Sign out
-        </Button>
+        <div className="hidden items-center gap-3 md:flex">
+          {isLoading ? (
+            <div className="h-9 w-28 animate-pulse rounded-full bg-muted" />
+          ) : me ? (
+            <Link href="/dashboard">
+              <Button size="sm">Dashboard</Button>
+            </Link>
+          ) : (
+            <>
+              <Link href="/login">
+                <Button variant="ghost" size="sm">
+                  Log in
+                </Button>
+              </Link>
+              <Link href="/register?redirect=/dashboard">
+                <Button size="sm">Get started</Button>
+              </Link>
+            </>
+          )}
+        </div>
+        <MobileNavDrawer />
       </div>
     </header>
   );

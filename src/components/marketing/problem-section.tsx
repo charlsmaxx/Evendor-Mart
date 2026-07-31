@@ -9,7 +9,7 @@ export function ProblemSection() {
     <section id="problems" className="py-20 md:py-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center">
-          <h2 className="font-display text-3xl font-bold md:text-4xl">Luxury event halls</h2>
+          <h2 className="font-display text-3xl font-bold md:text-4xl">Featured Event Halls</h2>
           <p className="mt-4 text-muted-foreground">
             Stunning venues with transparent pricing and real availability.
           </p>

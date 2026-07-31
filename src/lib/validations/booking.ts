@@ -24,6 +24,8 @@ export const createBookingSchema = z.object({
   selectedAddOns: z.array(selectedAddOnSchema).max(50).optional().default([]),
   /** Dynamic category field answers. */
   categoryAnswers: z.record(z.string(), z.unknown()).optional(),
+  /** Multi-selected services/styles from the vendor services list. */
+  selectedServices: z.array(z.string().min(1).max(120)).max(40).optional().default([]),
   /** Customer must accept the package cancellation policy before pay. */
   acceptCancellationPolicy: z.boolean().optional().default(false),
 });

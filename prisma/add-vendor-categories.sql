@@ -21,7 +21,7 @@ ALTER TYPE "VendorCategory" ADD VALUE IF NOT EXISTS 'BALLOON_BACKDROP';
 INSERT INTO "Category" (id, name, slug, icon, "sortOrder", "createdAt")
 VALUES
   (gen_random_uuid(), 'Event Planners', 'event-planners', 'sparkles', 1, NOW()),
-  (gen_random_uuid(), 'Venue Owners', 'venues', 'building', 2, NOW()),
+  (gen_random_uuid(), 'Venue', 'venues', 'building', 2, NOW()),
   (gen_random_uuid(), 'Caterers', 'caterers', 'utensils', 3, NOW()),
   (gen_random_uuid(), 'Decorators & Stylists', 'decorators', 'sparkles', 4, NOW()),
   (gen_random_uuid(), 'Bakers & Cake Designers', 'bakers', 'sparkles', 5, NOW()),
@@ -35,7 +35,7 @@ VALUES
   (gen_random_uuid(), 'Florists', 'florists', 'sparkles', 13, NOW()),
   (gen_random_uuid(), 'Lighting & Sound Providers', 'lighting-sound', 'sparkles', 14, NOW()),
   (gen_random_uuid(), 'Rental Equipment Providers', 'equipment-rentals', 'sparkles', 15, NOW()),
-  (gen_random_uuid(), 'Bridal Rentals', 'bridal-rentals', 'sparkles', 16, NOW()),
+  (gen_random_uuid(), 'Bridals', 'bridal-rentals', 'sparkles', 16, NOW()),
   (gen_random_uuid(), 'Transportation Providers', 'transportation', 'sparkles', 17, NOW()),
   (gen_random_uuid(), 'Security Services', 'security', 'sparkles', 18, NOW()),
   (gen_random_uuid(), 'Bar & Cocktail Services', 'bar-cocktail', 'sparkles', 19, NOW()),

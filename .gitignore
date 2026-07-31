@@ -36,6 +36,10 @@ yarn-error.log*
 # vercel
 .vercel
 
+# Semgrep local reports
+semgrep-findings.json
+semgrep-report.txt
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

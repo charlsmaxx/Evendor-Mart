@@ -2,8 +2,9 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { OptimizedImage } from "@/components/ui/optimized-image";
-import { Star, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Star, ChevronLeft, ChevronRight, X, BadgeCheck, ThumbsUp } from "lucide-react";
 import { isVideoMedia } from "@/lib/vendor-media";
+import { Badge } from "@/components/ui/badge";
 
 interface PortfolioProps {
   items: { id: string; url: string; resourceType?: string }[];
@@ -17,13 +18,14 @@ export function ListingPortfolio({ items }: PortfolioProps) {
   return (
     <section className="mt-12">
       <h2 className="font-display text-xl font-semibold">Portfolio</h2>
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mt-4 columns-1 gap-3 sm:columns-2 lg:columns-3">
         {items.map((item, index) => (
           <button
             key={item.id}
             type="button"
             onClick={() => setOpenIndex(index)}
-            className="relative aspect-[4/3] overflow-hidden rounded-xl bg-black text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="relative mb-3 block w-full break-inside-avoid overflow-hidden rounded-xl bg-black text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            style={{ aspectRatio: index % 5 === 0 ? "3/4" : index % 3 === 0 ? "1/1" : "4/3" }}
           >
             {isVideoMedia(item) ? (
               <video
@@ -39,8 +41,8 @@ export function ListingPortfolio({ items }: PortfolioProps) {
                 preset="portfolio"
                 alt="Portfolio"
                 fill
-                className="object-cover"
-                sizes="33vw"
+                className="object-cover transition duration-300 hover:scale-[1.02]"
+                sizes="(max-width: 640px) 100vw, 33vw"
               />
             )}
             {isVideoMedia(item) && (
@@ -212,6 +214,7 @@ interface ReviewItem {
   rating: number;
   comment: string | null;
   vendorReply: string | null;
+  bookingId?: string | null;
   createdAt: Date;
   user: { fullName: string | null; avatarUrl: string | null };
 }
@@ -267,23 +270,43 @@ export function ListingReviews({
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="font-medium">{r.user.fullName ?? "Customer"}</p>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-medium">{r.user.fullName ?? "Customer"}</p>
+                      {r.bookingId && (
+                        <Badge variant="verified" className="gap-1 text-[10px]">
+                          <BadgeCheck className="h-3 w-3" /> Verified booking
+                        </Badge>
+                      )}
+                    </div>
                     <div className="flex items-center gap-1 text-amber-500">
                       <Star className="h-4 w-4 fill-amber-400" />
                       <span className="text-sm">{r.rating}</span>
                     </div>
                   </div>
-                  {r.comment && <p className="mt-2 text-sm text-muted-foreground">{r.comment}</p>}
+                  {r.comment && (
+                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{r.comment}</p>
+                  )}
                   {r.vendorReply && (
                     <div className="mt-3 border-l-2 border-primary/30 pl-3">
                       <p className="text-xs font-medium text-muted-foreground">Vendor reply</p>
                       <p className="mt-1 text-sm">{r.vendorReply}</p>
                     </div>
                   )}
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    {new Date(r.createdAt).toLocaleDateString()}
-                  </p>
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(r.createdAt).toLocaleDateString()}
+                    </p>
+                    <button
+                      type="button"
+                      disabled
+                      title="Coming soon"
+                      className="inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs text-muted-foreground opacity-70"
+                    >
+                      <ThumbsUp className="h-3 w-3" />
+                      Helpful · 0
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

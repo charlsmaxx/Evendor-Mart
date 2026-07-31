@@ -30,7 +30,8 @@ const links = [
   { href: "/vendor/disputes", label: "Disputes" },
   { href: "/vendor/notifications", label: "Notifications" },
   { href: "/vendor/verification", label: "Get Verified" },
-  { href: "/vendor/profile", label: "Profile" },
+  { href: "/vendor/profile", label: "Business profile" },
+  { href: "/account", label: "Edit profile" },
   { href: "/vendor/subscription", label: "Subscription" },
 ];
 
@@ -90,7 +91,10 @@ export default async function VendorLayout({ children }: { children: React.React
 
           <div className="flex flex-col gap-8 pb-24 lg:flex-row lg:pb-0">
 
-            <DashboardSidebar title="My Business" links={navLinks} />
+            {/* Desktop sidebar only — mobile uses bottom nav */}
+            <div className="hidden lg:block">
+              <DashboardSidebar title="My Business" links={navLinks} />
+            </div>
 
             <div className="min-w-0 flex-1">{children}</div>
 

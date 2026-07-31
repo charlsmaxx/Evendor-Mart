@@ -155,6 +155,13 @@ export function AdminTopbar() {
         Mission control for the Evendor marketplace
       </div>
       <div className="flex items-center gap-2">
+        <Link
+          href="/account"
+          className="inline-flex h-9 items-center gap-2 rounded-xl border border-white/15 px-3 text-xs font-medium text-[#E5DFD9] transition hover:bg-white/5"
+        >
+          <UserCog className="h-3.5 w-3.5" />
+          Edit profile
+        </Link>
         <div className="flex h-9 items-center gap-2 rounded-xl border border-[#7A2E3D]/30 bg-[#7A2E3D]/10 px-3">
           <Shield className="h-3.5 w-3.5 text-[#E5DFD9]" />
           <span className="text-xs font-medium text-[#E5DFD9]">
