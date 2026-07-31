@@ -57,10 +57,15 @@ export async function getOrCreateWallet(userId: string) {
   return prisma.rewardsWallet.create({ data: { userId } });
 }
 
-/** Call this when a booking is CONFIRMED/COMPLETED to credit cashback. */
+/** Call this when a booking is COMPLETED to credit cashback. Idempotent per booking. */
 export async function earnReward(userId: string, bookingId: string, bookingAmount: number) {
   const amount = calcCashback(bookingAmount);
   if (amount <= 0) return null;
+
+  const existing = await prisma.rewardTransaction.findFirst({
+    where: { bookingId, type: "EARNED", status: "CONFIRMED" },
+  });
+  if (existing) return existing;
 
   const wallet = await getOrCreateWallet(userId);
   const expiresAt = new Date();
@@ -95,6 +100,36 @@ export async function earnReward(userId: string, bookingId: string, bookingAmoun
   });
 
   return tx;
+}
+
+/**
+ * Credit 2% cashback for COMPLETED bookings that never got an EARNED ledger row
+ * (e.g. earnReward failed after escrow release and was previously swallowed).
+ */
+export async function creditMissedCompletedBookingRewards(userId: string): Promise<number> {
+  const bookings = await prisma.booking.findMany({
+    where: {
+      customerId: userId,
+      status: "COMPLETED",
+      payments: { some: { status: "SUCCESS" } },
+      rewardTransactions: { none: { type: "EARNED", status: "CONFIRMED" } },
+    },
+    select: { id: true, totalAmount: true },
+  });
+
+  let credited = 0;
+  for (const booking of bookings) {
+    try {
+      const tx = await earnReward(userId, booking.id, booking.totalAmount);
+      if (tx) credited += tx.amount;
+    } catch (error) {
+      console.error(
+        `[rewards] Failed to backfill reward for booking ${booking.id}:`,
+        error
+      );
+    }
+  }
+  return credited;
 }
 
 /**
@@ -508,6 +543,9 @@ export async function getWalletTransactions(
 }
 
 export async function getWalletSummary(userId: string) {
+  // Heal missed credits from past approvals before reading the balance.
+  await creditMissedCompletedBookingRewards(userId);
+
   const wallet = await getOrCreateWallet(userId);
   const [{ transactions }, pendingBookings] = await Promise.all([
     getWalletTransactions(userId, { limit: 20 }),
@@ -516,7 +554,7 @@ export async function getWalletSummary(userId: string) {
         customerId: userId,
         status: { in: ["CONFIRMED", "IN_PROGRESS"] },
         payments: { some: { status: "SUCCESS" } },
-        rewardTransactions: { none: { type: "EARNED" } },
+        rewardTransactions: { none: { type: "EARNED", status: "CONFIRMED" } },
       },
       select: { totalAmount: true },
     }),

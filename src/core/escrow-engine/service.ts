@@ -88,8 +88,13 @@ export async function releaseEscrow(bookingId: string, confirmedByUserId?: strin
   if (booking.customerId) {
     try {
       await earnReward(booking.customerId, bookingId, booking.totalAmount);
-    } catch {
-      /* non-blocking */
+    } catch (error) {
+      // Escrow is already released — do not roll back payout. Wallet load will
+      // retry via creditMissedCompletedBookingRewards.
+      console.error(
+        `[escrow] earnReward failed for booking ${bookingId} (customer ${booking.customerId}):`,
+        error
+      );
     }
   }
 
@@ -419,6 +424,24 @@ export async function resolveDispute(
       vendorId: booking.vendorId,
     },
   });
+
+  // Customer confirmed value delivered (full or partial payout) — credit cashback.
+  if (
+    booking.customerId &&
+    (resolution === "FULL_PAYOUT" || resolution === "PARTIAL")
+  ) {
+    // FULL_PAYOUT: cashback on full booking. PARTIAL: on vendor payout portion (net paid).
+    const amountForCashback =
+      resolution === "FULL_PAYOUT" ? booking.totalAmount : payoutAmount;
+    try {
+      await earnReward(booking.customerId, booking.id, amountForCashback);
+    } catch (error) {
+      console.error(
+        `[escrow] earnReward failed after dispute ${disputeId} for booking ${booking.id}:`,
+        error
+      );
+    }
+  }
 
   if (booking.customerId) {
     const resolutionCopy =
