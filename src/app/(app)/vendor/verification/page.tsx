@@ -27,7 +27,6 @@ export default function VendorVerificationPage() {
   const [governmentId, setGovernmentId] = useState<VerificationDocument | null>(null);
   const [selfie, setSelfie] = useState<VerificationDocument | null>(null);
   const [businessAddress, setBusinessAddress] = useState<VerificationDocument | null>(null);
-  const [bankVerification, setBankVerification] = useState<VerificationDocument | null>(null);
   const [portfolioSamples, setPortfolioSamples] = useState<VerificationDocument[]>([]);
   const [socialLink, setSocialLink] = useState("");
   const [notes, setNotes] = useState("");
@@ -65,7 +64,6 @@ export default function VendorVerificationPage() {
         governmentId,
         selfie,
         businessAddress,
-        bankVerification,
         ...portfolioSamples,
       ].filter(Boolean) as VerificationDocument[];
 
@@ -105,12 +103,12 @@ export default function VendorVerificationPage() {
   const cfg = STATUS_CONFIG[status as keyof typeof STATUS_CONFIG] ?? STATUS_CONFIG.UNVERIFIED;
   const uploadedCount =
     existingRequest?.documents?.length ??
-    [governmentId, selfie, businessAddress, bankVerification, ...portfolioSamples].filter(Boolean).length;
+    [governmentId, selfie, businessAddress, ...portfolioSamples].filter(Boolean).length;
   const progress = status === "VERIFIED" ? 100 : Math.min(cfg.progress + uploadedCount * 5, 95);
 
   const canSubmit =
     cloudinaryReady &&
-    (governmentId || selfie || businessAddress || bankVerification || portfolioSamples.length > 0);
+    (governmentId || selfie || businessAddress || portfolioSamples.length > 0);
 
   return (
     <div className="mx-auto max-w-2xl space-y-8">
@@ -192,14 +190,6 @@ export default function VendorVerificationPage() {
                 description="Utility bill, tenancy agreement, or property document"
                 value={businessAddress}
                 onChange={setBusinessAddress}
-                cloudinaryReady={cloudinaryReady}
-              />
-
-              <DocumentUploadSlot
-                label="Bank Verification"
-                description="Bank statement or account verification document"
-                value={bankVerification}
-                onChange={setBankVerification}
                 cloudinaryReady={cloudinaryReady}
               />
 

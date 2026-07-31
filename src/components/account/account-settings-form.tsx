@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -10,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { AccountAvatarUpload } from "@/components/account/account-avatar-upload";
 import { createClient } from "@/lib/supabase/client";
 import { reportClientError } from "@/lib/client-error";
-import { ArrowLeft, Save, Trash2 } from "lucide-react";
+import { Save, Trash2 } from "lucide-react";
 
 type MeData = {
   id: string;
@@ -20,11 +19,6 @@ type MeData = {
   role: string;
   isVendor?: boolean;
 };
-
-function profileBackHref(me: MeData) {
-  if (me.role === "ADMIN") return "/admin";
-  return "/dashboard";
-}
 
 export function AccountSettingsForm() {
   const router = useRouter();
@@ -149,21 +143,9 @@ export function AccountSettingsForm() {
     return <p className="text-sm text-muted-foreground">Loading account…</p>;
   }
 
-  const backHref = profileBackHref(me);
-  const backLabel = me.role === "ADMIN" ? "Back to dashboard" : "Back to profile";
-
   return (
     <div className="mx-auto max-w-xl space-y-8">
       <div>
-        <Link
-          href={backHref}
-          className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition hover:text-foreground"
-        >
-          <span className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card shadow-sm">
-            <ArrowLeft className="h-4 w-4" />
-          </span>
-          {backLabel}
-        </Link>
         <h1 className="font-display text-2xl font-bold md:text-3xl">Edit profile</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Update your name, password, and profile picture.

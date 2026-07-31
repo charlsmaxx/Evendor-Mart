@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { requireAuth } from "@/lib/auth";
@@ -9,10 +10,16 @@ import {
   MAX_WITHDRAWAL_AMOUNT,
   MIN_WITHDRAWAL_AMOUNT,
   WithdrawalError,
-  createAndProcessWithdrawal,
+  processWithdrawal,
+  requestWithdrawal,
   readVendorBankAccount,
 } from "@/core/payment-engine/payout-service";
 import { isPaystackConfigured } from "@/core/payment-engine/paystack";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+/** Allow Paystack transfer work started via `after()` enough time on Pro; Hobby still returns fast. */
+export const maxDuration = 60;
 
 export async function GET() {
   return handleApiRoute(async () => {
@@ -77,16 +84,41 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (!isPaystackConfigured()) {
+      return jsonError(
+        "Payouts are not configured yet. Add PAYSTACK_SECRET_KEY on the server.",
+        503
+      );
+    }
+
     try {
-      const withdrawal = await createAndProcessWithdrawal({
+      // Record first so the client always gets a JSON response. Awaiting Paystack for the
+      // full transfer often blew the serverless deadline → browser "Failed to fetch".
+      const { withdrawal } = await requestWithdrawal({
         vendorId: vendor.id,
         amount: parsed.data.amount,
         requestedById: user.id,
       });
 
-      if (withdrawal.status === "FAILED" || withdrawal.status === "REVERSED") {
+      const processPromise = processWithdrawal(withdrawal.id).catch((error) => {
+        console.error(`[payouts] processWithdrawal ${withdrawal.id} failed:`, error);
+        return null;
+      });
+
+      const processed = await Promise.race([
+        processPromise,
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 8_000)),
+      ]);
+
+      if (!processed) {
+        after(async () => {
+          await processPromise;
+        });
+      }
+
+      if (processed?.status === "FAILED" || processed?.status === "REVERSED") {
         return jsonError(
-          withdrawal.failureReason ??
+          processed.failureReason ??
             "We could not complete the transfer. Your balance is unchanged.",
           502
         );
@@ -96,11 +128,11 @@ export async function POST(req: NextRequest) {
         id: withdrawal.id,
         reference: withdrawal.reference,
         amount: withdrawal.amount,
-        status: withdrawal.status,
+        status: processed?.status ?? "PENDING",
         message:
-          withdrawal.status === "PAID"
+          processed?.status === "PAID"
             ? "Withdrawal sent to your bank account."
-            : "Withdrawal is processing. Funds typically arrive within minutes.",
+            : "Withdrawal request received. Funds are being sent to your bank — refresh in a minute to check status.",
       });
     } catch (err) {
       if (err instanceof WithdrawalError) return jsonError(err.message, err.status);

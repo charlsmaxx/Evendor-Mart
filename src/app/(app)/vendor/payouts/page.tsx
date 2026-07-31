@@ -71,13 +71,22 @@ export default function VendorPayoutsPage() {
 
   const withdraw = useMutation({
     mutationFn: async (amt: number) => {
-      const res = await fetch("/api/vendor/payouts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: amt }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error?.message ?? "Withdrawal failed");
+      let res: Response;
+      try {
+        res = await fetch("/api/vendor/payouts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ amount: amt }),
+        });
+      } catch {
+        throw new Error(
+          "Could not reach the server. Refresh this page — if a withdrawal appears below, it is already processing."
+        );
+      }
+      const json = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(json?.error?.message ?? "Withdrawal failed");
+      }
       return json.data as { message: string };
     },
     onMutate: () => setError(null),

@@ -410,17 +410,37 @@ export async function createAndProcessWithdrawal(params: {
 }
 
 /**
- * Cron entry: reconcile withdrawals that Paystack queued asynchronously.
- * Only rows older than the grace period are polled so we never race the create call.
+ * Cron entry: start Paystack transfers for stuck PENDING rows, then reconcile
+ * PROCESSING transfers that Paystack queued asynchronously.
  */
 export async function syncPendingWithdrawals(options?: { graceMs?: number }) {
-  if (!isPaystackConfigured()) return { checked: 0, settled: 0, failed: 0 };
+  if (!isPaystackConfigured()) return { checked: 0, settled: 0, failed: 0, started: 0 };
 
   const graceMs = options?.graceMs ?? 2 * 60 * 1000;
+  const cutoff = new Date(Date.now() - graceMs);
+
+  // Kick off transfers that never reached Paystack (e.g. `after()` dropped on Hobby).
+  const unstarted = await prisma.withdrawal.findMany({
+    where: { status: "PENDING", createdAt: { lte: cutoff } },
+    select: { id: true },
+    take: 20,
+    orderBy: { createdAt: "asc" },
+  });
+
+  let started = 0;
+  for (const row of unstarted) {
+    try {
+      await processWithdrawal(row.id);
+      started++;
+    } catch (error) {
+      console.error(`[payouts] cron processWithdrawal ${row.id} failed:`, error);
+    }
+  }
+
   const pending = await prisma.withdrawal.findMany({
     where: {
       status: "PROCESSING",
-      updatedAt: { lte: new Date(Date.now() - graceMs) },
+      updatedAt: { lte: cutoff },
     },
     include: { vendor: { select: { userId: true } } },
     take: 50,
@@ -453,5 +473,10 @@ export async function syncPendingWithdrawals(options?: { graceMs?: number }) {
     }
   }
 
-  return { checked: pending.length, settled, failed };
+  return {
+    checked: pending.length + unstarted.length,
+    settled,
+    failed,
+    started,
+  };
 }

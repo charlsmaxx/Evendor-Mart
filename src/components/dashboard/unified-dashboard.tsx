@@ -2,10 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
 import {
   Calendar,
   FileText,
@@ -18,6 +20,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   UserCog,
+  LogOut,
 } from "lucide-react";
 import { MessageNotificationBadge, useMessageBadgeCount } from "@/components/messages/message-notification-badge";
 import { RewardsWalletView, type RewardsWalletData } from "@/components/rewards/rewards-wallet-view";
@@ -47,9 +50,20 @@ export function UnifiedDashboard({
   isVendor: boolean;
   vendorStats: VendorStats | null;
 }) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const displayName = user.fullName ?? user.email.split("@")[0];
   const initials = displayName.charAt(0).toUpperCase();
   const unreadCount = useMessageBadgeCount();
+
+  async function signOut() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    queryClient.setQueryData(["me"], null);
+    await queryClient.invalidateQueries({ queryKey: ["me"] });
+    router.push("/");
+    router.refresh();
+  }
 
   const bookings = useQuery({
     queryKey: ["my-bookings", "customer"],
@@ -220,7 +234,7 @@ export function UnifiedDashboard({
             <CardContent className="py-8 text-center">
               <Gift className="mx-auto mb-2 h-8 w-8 text-muted-foreground/50" />
               <p className="text-sm text-muted-foreground">
-                Earn 2% cashback after you confirm a completed booking.
+                After you pay, 2% shows as pending. It moves to your balance when you confirm the job is done.
               </p>
               <Button variant="outline" className="mt-4" asChild>
                 <Link href="/rewards">View rewards wallet</Link>
@@ -311,6 +325,18 @@ export function UnifiedDashboard({
           </div>
         </section>
       )}
+
+      <section className="border-t border-border pt-8">
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full gap-2 text-muted-foreground hover:text-foreground sm:w-auto"
+          onClick={signOut}
+        >
+          <LogOut className="h-4 w-4" />
+          Log out
+        </Button>
+      </section>
     </div>
   );
 }
