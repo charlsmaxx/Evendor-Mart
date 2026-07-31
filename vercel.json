@@ -16,9 +16,5 @@
       "path": "/api/cron/payouts",
       "schedule": "0 8 * * *"
     }
-  ],
-  "env": {
-    "DATABASE_URL": "@database_url",
-    "DIRECT_URL": "@direct_url"
-  }
+  ]
 }
