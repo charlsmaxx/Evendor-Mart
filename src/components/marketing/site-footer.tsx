@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Facebook, Instagram, Youtube } from "lucide-react";
 import { BrandLogo } from "@/components/brand-logo";
 import { NewsletterForm } from "@/components/marketing/newsletter-form";
 
@@ -19,6 +20,27 @@ const footerLinks = {
   ],
 };
 
+const SOCIAL_LINKS: { href: string; label: string; icon: typeof Facebook }[] = [
+  {
+    href: "https://www.facebook.com/profile.php?id=61590498944742",
+    label: "Facebook",
+    icon: Facebook,
+  },
+  {
+    href: "https://www.youtube.com/@Evendor-n2d",
+    label: "YouTube",
+    icon: Youtube,
+  },
+];
+
+if (process.env.NEXT_PUBLIC_INSTAGRAM_URL) {
+  SOCIAL_LINKS.splice(1, 0, {
+    href: process.env.NEXT_PUBLIC_INSTAGRAM_URL,
+    label: "Instagram",
+    icon: Instagram,
+  });
+}
+
 export function SiteFooter() {
   return (
     <footer className="border-t border-border bg-secondary/50 py-16">
@@ -29,6 +51,20 @@ export function SiteFooter() {
             <p className="mt-3 text-sm text-muted-foreground">
               Africa&apos;s premium event marketplace. Discover, compare, book.
             </p>
+            <div className="mt-5 flex items-center gap-3">
+              {SOCIAL_LINKS.map((s) => (
+                <a
+                  key={s.label}
+                  href={s.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={s.label}
+                  className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition hover:border-primary/40 hover:text-primary"
+                >
+                  <s.icon className="h-4 w-4" />
+                </a>
+              ))}
+            </div>
           </div>
           {Object.entries(footerLinks).map(([title, links]) => (
             <div key={title}>

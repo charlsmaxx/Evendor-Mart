@@ -47,6 +47,7 @@ export function CustomerDisputeEvidence({ bookingId }: { bookingId: string }) {
     onMutate: () => setCancelError(null),
     onSuccess: () => {
       router.refresh();
+      router.replace(`/bookings/${bookingId}#confirm`);
     },
     onError: (e: Error) => {
       setCancelError(e.message);

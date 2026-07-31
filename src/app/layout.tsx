@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Providers } from "@/components/providers";
+import { WhatsAppFloat } from "@/components/whatsapp-float";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -80,6 +81,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="font-sans antialiased">
         <Providers>{children}</Providers>
+        <WhatsAppFloat />
       </body>
     </html>
   );

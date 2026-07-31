@@ -91,7 +91,6 @@ export function AdminMessagesShell({ currentUserId }: { currentUserId: string })
             peerName={peerName}
             initialMessages={thread.messages}
             adminMode
-            backHref="/admin/messages"
           />
         ) : activeId && isLoading ? (
           <div className="flex flex-1 items-center justify-center text-muted-foreground">Loading chat...</div>

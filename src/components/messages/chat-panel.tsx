@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { OptimizedImage } from "@/components/ui/optimized-image";
-import Link from "next/link";
 import { useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import { createClient } from "@/lib/supabase/client";
 import type { RealtimeChannel } from "@supabase/supabase-js";
@@ -16,7 +15,6 @@ import {
 import type { MessagePayload } from "@/lib/messages-access";
 import { messageFromRealtimeRow } from "@/lib/messages-access";
 import {
-  ArrowLeft,
   ImagePlus,
   Loader2,
   Paperclip,
@@ -104,7 +102,6 @@ export function ChatPanel({
   relatedBooking = null,
   bookListing = null,
   adminMode = false,
-  backHref,
 }: {
   conversationId: string;
   currentUserId: string;
@@ -116,7 +113,6 @@ export function ChatPanel({
   relatedBooking?: ChatRelatedBooking | null;
   bookListing?: ChatBookListing | null;
   adminMode?: boolean;
-  backHref?: string;
 }) {
   const [messages, setMessages] = useState(initialMessages);
   const [body, setBody] = useState("");
@@ -449,13 +445,6 @@ export function ChatPanel({
   return (
     <div className="flex h-full flex-col bg-[#efeae2] dark:bg-muted/20">
       <header className="flex items-center gap-3 border-b border-border bg-card px-4 py-3">
-        {backHref && (
-          <Link href={backHref} className="md:hidden">
-            <Button variant="ghost" size="icon" className="shrink-0">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          </Link>
-        )}
         <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full bg-primary/10">
           {peerAvatar ? (
             <OptimizedImage

@@ -154,7 +154,6 @@ export function MessagesShell({ currentUserId }: { currentUserId: string }) {
             initialNextCursor={thread.nextCursor}
             relatedBooking={thread.relatedBooking ?? null}
             bookListing={thread.bookListing ?? null}
-            backHref="/messages"
           />
         ) : activeId && threadLoading ? (
           <div className="flex flex-1 items-center justify-center text-muted-foreground">Loading chat...</div>

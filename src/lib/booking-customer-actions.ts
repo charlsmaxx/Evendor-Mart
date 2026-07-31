@@ -21,16 +21,19 @@ export function getCustomerBookingActions(booking: CustomerBookingActionSource) 
   const active = ["CONFIRMED", "IN_PROGRESS"].includes(booking.status);
   const noOpenDispute = !isOpenDispute(booking.dispute);
   const notConfirmed = !booking.completionConfirmedAt;
+  // After the customer withdraws a dispute, they should be able to approve payout
+  // even if the event date has not passed yet (escrow is already HELD again).
+  const disputeWithdrawn = booking.dispute?.status === "CLOSED";
 
-  // Confirm only after vendor marks delivered OR the event date has passed.
+  // Confirm after vendor marks delivered, event date passed, or a dispute was cancelled.
   const awaitingDecision =
-    (vendorMarkedDone || isPastEvent) && active && notConfirmed;
+    (vendorMarkedDone || isPastEvent || disputeWithdrawn) && active && notConfirmed;
 
   return {
     awaitingDecision,
     vendorMarkedDone,
     isPastEvent,
-    /** Release escrow — only after delivery signal. */
+    /** Release escrow — only after delivery signal (or after withdrawing a dispute). */
     canConfirm: awaitingDecision && noOpenDispute,
     /**
      * Open a dispute while funds are still held.
