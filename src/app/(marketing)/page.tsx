@@ -16,9 +16,6 @@ const StayAheadSection = dynamic(() =>
 const CategoryShowcase = dynamic(() =>
   import("@/components/marketing/category-showcase").then((m) => ({ default: m.CategoryShowcase }))
 );
-const HowItWorksSection = dynamic(() =>
-  import("@/components/marketing/how-it-works-section").then((m) => ({ default: m.HowItWorksSection }))
-);
 const FeaturedVendorsSection = dynamic(() =>
   import("@/components/marketing/featured-vendors-section").then((m) => ({
     default: m.FeaturedVendorsSection,
@@ -32,6 +29,11 @@ const RewardsSection = dynamic(() =>
 );
 const CtaSection = dynamic(() =>
   import("@/components/marketing/cta-section").then((m) => ({ default: m.CtaSection }))
+);
+const EventWebsiteSection = dynamic(() =>
+  import("@/components/marketing/event-website-section").then((m) => ({
+    default: m.EventWebsiteSection,
+  }))
 );
 const SiteFooter = dynamic(() =>
   import("@/components/marketing/site-footer").then((m) => ({ default: m.SiteFooter }))
@@ -49,9 +51,9 @@ export default function HomePage() {
       <CategoryShowcase />
       <TestimonialsSection />
       <StayAheadSection />
-      <HowItWorksSection />
       <RewardsSection />
       <CtaSection />
+      <EventWebsiteSection />
       <SiteFooter />
     </>
   );

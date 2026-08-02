@@ -23,7 +23,7 @@ type MeUser = {
 
 const guestNavLinksBefore = [{ href: "/", label: "Home" }] as const;
 const guestNavLinksAfter = [
-  { href: "/#how-it-works", label: "How it works" },
+  { href: "/how-it-works", label: "How it works" },
   { href: "/marketplace", label: "Marketplace" },
 ] as const;
 

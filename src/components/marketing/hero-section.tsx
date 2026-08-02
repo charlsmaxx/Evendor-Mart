@@ -38,7 +38,7 @@ const TRUST = [
   {
     icon: Lock,
     title: "Secure Payments",
-    desc: "100% secure payments with Paystack",
+    desc: "Payments locked in escrow until the job is done",
   },
   {
     icon: Headphones,

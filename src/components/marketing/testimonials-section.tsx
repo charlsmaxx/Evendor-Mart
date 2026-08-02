@@ -11,8 +11,10 @@ const testimonials = [
 
 export function TestimonialsSection() {
   return (
-    <SectionShell id="testimonials">
-      <h2 className="text-center font-display text-3xl font-bold md:text-4xl">Loved by event creators</h2>
+    <SectionShell id="testimonials" className="bg-primary text-primary-foreground">
+      <h2 className="text-center font-display text-3xl font-bold md:text-4xl">
+        Loved by event creators
+      </h2>
       <div className="mt-12 grid gap-6 md:grid-cols-3">
         {testimonials.map((t, i) => (
           <motion.blockquote
@@ -21,12 +23,12 @@ export function TestimonialsSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: i * 0.1 }}
-            className="glass rounded-2xl p-6"
+            className="rounded-2xl border border-white/15 bg-white/10 p-6 backdrop-blur-[2px]"
           >
-            <p className="text-muted-foreground">&ldquo;{t.quote}&rdquo;</p>
+            <p className="text-primary-foreground/90">&ldquo;{t.quote}&rdquo;</p>
             <footer className="mt-4">
-              <p className="font-semibold">{t.name}</p>
-              <p className="text-sm text-muted-foreground">{t.role}</p>
+              <p className="font-semibold text-primary-foreground">{t.name}</p>
+              <p className="text-sm text-primary-foreground/70">{t.role}</p>
             </footer>
           </motion.blockquote>
         ))}

@@ -33,7 +33,7 @@ function ScrollLine({ children }: { children: string }) {
 
 export function SocialProofSection() {
   return (
-    <section id="social-proof" className="border-y border-border bg-secondary/40 py-24 md:py-36">
+    <section id="social-proof" className="border-y border-border bg-secondary/40 py-20 md:py-28">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
         <div className="space-y-8 md:space-y-12">
           {LINES.map((line) => (

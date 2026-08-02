@@ -1,20 +1,14 @@
 "use client";
 
-/** Public customer-care WhatsApp (digits with country code). Override via env. */
-const DEFAULT_WHATSAPP = "2347066997479";
+import { getWhatsAppHref } from "@/lib/whatsapp";
 
 /**
  * Floating WhatsApp support button.
  * Set NEXT_PUBLIC_WHATSAPP_NUMBER to digits with country code, e.g. 2348012345678
  */
 export function WhatsAppFloat() {
-  const raw = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.trim() || DEFAULT_WHATSAPP;
-  const phone = raw.replace(/\D/g, "");
-  if (!phone) return null;
-
-  const href = `https://wa.me/${phone}?text=${encodeURIComponent(
-    "Hi Evendor customer care, I need help with…"
-  )}`;
+  const href = getWhatsAppHref("Hi Evendor customer care, I need help with…");
+  if (!href) return null;
 
   return (
     <a
