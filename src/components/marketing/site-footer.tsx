@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Facebook, Instagram, Youtube } from "lucide-react";
 import { BrandLogo } from "@/components/brand-logo";
 import { NewsletterForm } from "@/components/marketing/newsletter-form";
+import { getWhatsAppHref } from "@/lib/whatsapp";
 
 const footerLinks = {
   Product: [
@@ -14,11 +15,10 @@ const footerLinks = {
     { href: "/privacy", label: "Privacy" },
     { href: "/terms", label: "Terms" },
   ],
-  Support: [
-    { href: "/login", label: "Log in" },
-    { href: "/register", label: "Sign up" },
-  ],
 };
+
+const SUPPORT_EMAIL = "hello@evendor.ng";
+const SUPPORT_WHATSAPP_DISPLAY = "+2347066997479";
 
 const SOCIAL_LINKS: { href: string; label: string; icon: typeof Facebook }[] = [
   {
@@ -42,6 +42,10 @@ if (process.env.NEXT_PUBLIC_INSTAGRAM_URL) {
 }
 
 export function SiteFooter() {
+  const whatsappHref =
+    getWhatsAppHref("Hi Evendor, I need help with…") ??
+    `https://wa.me/2347066997479?text=${encodeURIComponent("Hi Evendor, I need help with…")}`;
+
   return (
     <footer className="border-t border-border bg-secondary/50 py-16">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -80,6 +84,26 @@ export function SiteFooter() {
               </ul>
             </div>
           ))}
+          <div>
+            <h4 className="font-semibold">Support</h4>
+            <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
+              <li>
+                <a href={`mailto:${SUPPORT_EMAIL}`} className="hover:text-foreground">
+                  Email: {SUPPORT_EMAIL}
+                </a>
+              </li>
+              <li>
+                <a
+                  href={whatsappHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-foreground"
+                >
+                  WhatsApp: {SUPPORT_WHATSAPP_DISPLAY}
+                </a>
+              </li>
+            </ul>
+          </div>
           <div>
             <h4 className="font-semibold">Newsletter</h4>
             <p className="mt-2 text-sm text-muted-foreground">Event tips & vendor spotlights.</p>

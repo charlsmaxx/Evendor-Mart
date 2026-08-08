@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { cn, formatCurrency } from "@/lib/utils";
 import { Heart, LayoutGrid, MessageSquare, Store, Gift, type LucideIcon } from "lucide-react";
 import { useMessageBadgeCount, MessageNotificationBadge } from "@/components/messages/message-notification-badge";
+import { NotificationsBell } from "@/components/notifications/notifications-bell";
 import { BrandLogo } from "@/components/brand-logo";
 import { MobileNavDrawer } from "@/components/mobile-nav-drawer";
 import { CategoriesDesktopDropdown } from "@/components/categories-menu";
@@ -107,9 +108,12 @@ export function AppNav() {
           {isLoading ? (
             <div className="h-9 w-28 animate-pulse rounded-full bg-muted" />
           ) : me ? (
-            <Link href="/dashboard">
-              <Button size="sm">Dashboard</Button>
-            </Link>
+            <>
+              <NotificationsBell />
+              <Link href="/dashboard">
+                <Button size="sm">Dashboard</Button>
+              </Link>
+            </>
           ) : (
             <>
               <Link href="/login">
@@ -117,13 +121,16 @@ export function AppNav() {
                   Log in
                 </Button>
               </Link>
-              <Link href="/register?redirect=/dashboard">
+              <Link href="/register">
                 <Button size="sm">Get started</Button>
               </Link>
             </>
           )}
         </div>
-        <MobileNavDrawer />
+        <div className="flex items-center gap-1 md:hidden">
+          {me && <NotificationsBell />}
+          <MobileNavDrawer />
+        </div>
       </div>
     </header>
   );

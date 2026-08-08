@@ -14,6 +14,7 @@ import { ServiceRequirementsSection } from "@/components/marketplace/service-req
 import { ServiceAreasSection } from "@/components/marketplace/service-areas";
 import { ServicesOfferedSection } from "@/components/marketplace/services-offered";
 import { CancellationPolicyCard } from "@/components/marketplace/cancellation-policy-card";
+import { TrackVendorView } from "@/components/marketplace/track-vendor-view";
 import { MapPin, Star, BadgeCheck, Briefcase, Clock3 } from "lucide-react";
 import type { getVendorPublicProfile } from "@/lib/vendor-profile";
 
@@ -51,6 +52,7 @@ export function VendorProfileView({ data }: { data: ProfileData }) {
 
   return (
     <div className="-mx-4 pb-24 sm:mx-0 lg:pb-0">
+      <TrackVendorView vendorId={vendor.id} source="profile" />
       {/* Cover photo */}
       <div className="relative h-48 w-full overflow-hidden sm:h-64 md:h-72 md:rounded-2xl">
         <OptimizedImage

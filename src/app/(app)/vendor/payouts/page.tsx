@@ -32,6 +32,7 @@ type PayoutData = {
   withdrawalsInFlight: number;
   minWithdrawal: number;
   payoutsEnabled: boolean;
+  paystackTestMode?: boolean;
   bankAccount: { bankName: string; accountName: string; accountNumberLast4: string } | null;
   payouts: {
     id: string;
@@ -117,6 +118,17 @@ export default function VendorPayoutsPage() {
         title="Escrow & Payouts"
         subtitle="Withdraw released earnings to your bank account and track every transfer."
       />
+
+      {data.paystackTestMode && (
+        <div className="flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <p>
+            <span className="font-semibold">Paystack test mode:</span> withdrawals show as
+            successful so you can verify the flow, but Paystack does not debit the test balance
+            or send real bank transfers. Switch to live keys when you go to production.
+          </p>
+        </div>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <VendorSummaryCard label="Available for Withdrawal" value={formatCurrency(data.availableBalance)} accent icon={Wallet} />

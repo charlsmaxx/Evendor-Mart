@@ -1,27 +1,20 @@
 import Link from "next/link";
-import { ArrowRight, Store, UserPlus } from "lucide-react";
+import { Store, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const ACTIONS = [
   {
-    href: "/register?redirect=/dashboard",
+    href: "/register",
     label: "Sign up",
     desc: "Create a free account",
     icon: UserPlus,
     primary: true,
   },
   {
-    href: "/register?role=vendor&redirect=/list-your-business",
-    label: "Become a vendor",
-    desc: "Reach more clients",
-    icon: Store,
-    primary: false,
-  },
-  {
     href: "/list-your-business",
     label: "List your business",
     desc: "Add venues or services",
-    icon: ArrowRight,
+    icon: Store,
     primary: false,
   },
 ] as const;
@@ -32,7 +25,7 @@ export function HeroCtaSection() {
       id="hero-cta"
       className="relative z-10 border-b border-border bg-background pt-14 pb-8 md:pt-16 md:pb-10"
     >
-      <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
         <div className="text-center">
           <h2 className="font-display text-xl font-semibold tracking-tight text-foreground md:text-2xl">
             Ready to get started?
@@ -42,7 +35,7 @@ export function HeroCtaSection() {
           </p>
         </div>
 
-        <div className="mt-5 grid gap-2.5 sm:grid-cols-3 sm:gap-3">
+        <div className="mt-5 grid gap-2.5 sm:grid-cols-2 sm:gap-3">
           {ACTIONS.map((action) => (
             <Link
               key={action.label}

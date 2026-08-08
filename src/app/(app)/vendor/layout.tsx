@@ -28,7 +28,7 @@ const links = [
   { href: "/messages", label: "Messages" },
   { href: "/vendor/reviews", label: "Reviews" },
   { href: "/vendor/disputes", label: "Disputes" },
-  { href: "/vendor/notifications", label: "Notifications" },
+  { href: "/notifications", label: "Notifications" },
   { href: "/vendor/verification", label: "Get Verified" },
   { href: "/vendor/profile", label: "Business profile" },
   { href: "/account", label: "Edit profile" },

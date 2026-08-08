@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMessageBadgeCount, MessageNotificationBadge } from "@/components/messages/message-notification-badge";
+import { NotificationsBell } from "@/components/notifications/notifications-bell";
 import type { AdminSection } from "@/lib/admin-permissions";
 import { useAdminSessionGuard } from "@/components/admin/use-admin-me";
 import { BrandLogo } from "@/components/brand-logo";
@@ -155,6 +156,7 @@ export function AdminTopbar() {
         Mission control for the Evendor marketplace
       </div>
       <div className="flex items-center gap-2">
+        <NotificationsBell variant="admin" />
         <Link
           href="/account"
           className="inline-flex h-9 items-center gap-2 rounded-xl border border-white/15 px-3 text-xs font-medium text-[#E5DFD9] transition hover:bg-white/5"

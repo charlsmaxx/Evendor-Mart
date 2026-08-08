@@ -40,10 +40,12 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
-  const redirect = searchParams.get("redirect") ?? "/dashboard";
+  const redirect =
+    searchParams.get("redirect") ?? (mode === "register" ? "/" : "/dashboard");
   const role = searchParams.get("role");
-  const postAuthRedirect =
-    role === "vendor" ? (searchParams.get("redirect") ?? "/list-your-business") : redirect;
+  /** After signup, customers land on the homepage; vendors continue business onboarding. */
+  const postRegisterPath =
+    role === "vendor" ? (searchParams.get("redirect") ?? "/list-your-business") : "/";
 
   async function refreshAuthState() {
     await queryClient.invalidateQueries({ queryKey: ["me"] });
@@ -93,14 +95,11 @@ export function AuthForm({ mode }: { mode: Mode }) {
       const supabase = createClient();
 
       if (mode === "register") {
-        const onboardingPath =
-          role === "vendor" ? postAuthRedirect : "/onboarding/customer";
-
         const { data, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/api/auth/callback?next=${encodeURIComponent(onboardingPath)}`,
+            emailRedirectTo: `${window.location.origin}/api/auth/callback?next=${encodeURIComponent(postRegisterPath)}`,
           },
         });
 
@@ -113,7 +112,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
           await syncDbUser();
           await acceptTermsIfNeeded();
           await refreshAuthState();
-          router.push(onboardingPath);
+          router.push(postRegisterPath);
           router.refresh();
           return;
         }
@@ -178,17 +177,10 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
     try {
       const supabase = createClient();
-      const onboardingPath =
-        mode === "register" && role === "vendor"
-          ? postAuthRedirect
-          : mode === "register"
-            ? redirect && redirect !== "/dashboard"
-              ? redirect
-              : "/onboarding/customer"
-            : redirect;
+      const afterAuthPath = mode === "register" ? postRegisterPath : redirect;
 
       const callback = new URL("/api/auth/callback", window.location.origin);
-      callback.searchParams.set("next", onboardingPath);
+      callback.searchParams.set("next", afterAuthPath);
       // Google sign-up counts as accepting platform terms (disclosed beside the button).
       if (mode === "register") callback.searchParams.set("terms", "1");
 
@@ -264,7 +256,17 @@ export function AuthForm({ mode }: { mode: Mode }) {
         </div>
         {mode !== "otp" && (
           <div>
-            <Label htmlFor="password">Password</Label>
+            <div className="flex items-center justify-between gap-3">
+              <Label htmlFor="password">Password</Label>
+              {mode === "login" && (
+                <Link
+                  href="/forgot-password"
+                  className="text-xs font-medium text-primary hover:underline"
+                >
+                  Forgot password?
+                </Link>
+              )}
+            </div>
             <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} className="mt-1" />
           </div>
         )}

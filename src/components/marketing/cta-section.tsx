@@ -8,7 +8,7 @@ export function CtaSection() {
         <h2 className="font-display text-3xl font-bold md:text-4xl">Ready to plan smarter?</h2>
         <p className="mt-4 text-muted-foreground">Join thousands planning unforgettable events across Africa.</p>
         <div className="mt-8 flex flex-wrap justify-center gap-4">
-          <GlowButton href="/register?redirect=/dashboard">Get Started</GlowButton>
+          <GlowButton href="/register">Get Started</GlowButton>
           <GlowButton href="/list-your-business" variant="outline">Become a Vendor</GlowButton>
         </div>
       </div>

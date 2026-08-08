@@ -33,6 +33,7 @@ const authNavLinksBefore = [
 ] as const;
 const authNavLinksAfter = [
   { href: "/dashboard", label: "Dashboard" },
+  { href: "/notifications", label: "Notifications" },
   { href: "/dashboard", label: "Profile" },
 ] as const;
 
@@ -231,7 +232,7 @@ export function MobileNavDrawer({ triggerClassName }: MobileNavDrawerProps) {
                   </Button>
                 </Link>
                 <Link
-                  href="/register?redirect=/dashboard"
+                  href="/register"
                   onClick={() => setOpen(false)}
                   className="block"
                 >

@@ -19,6 +19,7 @@ import { ServiceRequirementsSection } from "@/components/marketplace/service-req
 import { ServiceAreasSection } from "@/components/marketplace/service-areas";
 import { ServicesOfferedSection } from "@/components/marketplace/services-offered";
 import { CancellationPolicyCard } from "@/components/marketplace/cancellation-policy-card";
+import { TrackVendorView } from "@/components/marketplace/track-vendor-view";
 import type { getPublishedListingBySlug } from "@/core/search-engine/listings";
 
 type ListingData = NonNullable<Awaited<ReturnType<typeof getPublishedListingBySlug>>>;
@@ -72,6 +73,7 @@ export function ListingDetailView({ listing }: { listing: ListingData }) {
 
   return (
     <div className="-mx-4 pb-24 sm:mx-0 lg:pb-0">
+      <TrackVendorView vendorId={vendor.id} listingId={listing.id} source="listing" />
       <nav className="mb-4 flex flex-wrap items-center gap-1 px-4 text-sm text-muted-foreground sm:px-0">
         <Link href="/marketplace" className="hover:text-foreground">
           Marketplace

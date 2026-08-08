@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, GitCompare, Shield, Star, FileText } from "lucide-react";
@@ -76,13 +75,21 @@ export function SolutionSection() {
     <section id="solution" className="border-y border-border bg-secondary/30 py-20 md:py-28">
       <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:px-8">
         <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-border bg-card shadow-lg">
-          <Image
-            src="https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=900&q=80"
-            alt="Evendor platform preview"
-            fill
-            unoptimized
-            className="object-cover"
-            sizes="(max-width: 1024px) 100vw, 50vw"
+          <video
+            className="absolute inset-0 h-full w-full object-cover motion-reduce:hidden"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            aria-label="Evendor platform preview"
+          >
+            <source src="/videos/one-platform.mp4" type="video/mp4" />
+          </video>
+          {/* Static fallback when reduced motion is preferred */}
+          <div
+            className="absolute inset-0 hidden bg-secondary motion-reduce:block"
+            aria-hidden
           />
         </div>
         <div>
@@ -178,7 +185,7 @@ export function StayAheadSection() {
         </div>
 
         <div className="mt-12 text-center">
-          <Link href="/register?redirect=/dashboard">
+          <Link href="/register">
             <button
               type="button"
               className="rounded-full bg-primary px-8 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90"

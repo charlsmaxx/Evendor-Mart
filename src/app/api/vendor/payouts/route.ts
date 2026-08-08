@@ -14,7 +14,7 @@ import {
   requestWithdrawal,
   readVendorBankAccount,
 } from "@/core/payment-engine/payout-service";
-import { isPaystackConfigured } from "@/core/payment-engine/paystack";
+import { isPaystackConfigured, isPaystackLiveMode } from "@/core/payment-engine/paystack";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -38,6 +38,7 @@ export async function GET() {
     return jsonNoStore({
       ...wallet,
       payoutsEnabled: isPaystackConfigured() && !!bank && bank.verified !== false,
+      paystackTestMode: isPaystackConfigured() && !isPaystackLiveMode(),
       bankAccount: bank
         ? {
             bankName: bank.bankName,
@@ -124,6 +125,7 @@ export async function POST(req: NextRequest) {
         );
       }
 
+      const testMode = !isPaystackLiveMode();
       return jsonNoStore({
         id: withdrawal.id,
         reference: withdrawal.reference,
@@ -131,7 +133,9 @@ export async function POST(req: NextRequest) {
         status: processed?.status ?? "PENDING",
         message:
           processed?.status === "PAID"
-            ? "Withdrawal sent to your bank account."
+            ? testMode
+              ? "Test withdrawal succeeded. Paystack test mode does not debit balance or pay a real bank account."
+              : "Withdrawal sent to your bank account."
             : "Withdrawal request received. Funds are being sent to your bank — refresh in a minute to check status.",
       });
     } catch (err) {

@@ -30,7 +30,7 @@ export function CustomerOnboardingForm() {
         reportClientError("onboarding-customer", json?.error?.message ?? "Could not save profile");
         return;
       }
-      router.push("/dashboard");
+      router.push("/");
       router.refresh();
     } catch (err) {
       reportClientError("onboarding-customer", err);

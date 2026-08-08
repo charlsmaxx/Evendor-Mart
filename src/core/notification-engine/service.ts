@@ -7,13 +7,21 @@ type NotifyInput = {
   link?: string;
 };
 
-/** Fire-and-forget in-app notification. Never throws. */
+/** Fire-and-forget in-app notification (+ optional web push). Never throws. */
 export async function notifyUser(input: NotifyInput) {
   try {
     await prisma.notification.create({ data: input });
   } catch {
     /* non-blocking */
+    return;
   }
+
+  // Lazy-load so this module stays safe for any accidental client import paths.
+  void import("./web-push")
+    .then(({ sendWebPushToUser }) => sendWebPushToUser(input))
+    .catch((err) => {
+      console.error("[notifyUser] web push failed:", err);
+    });
 }
 
 export async function notifyVendorByProfileId(

@@ -77,7 +77,7 @@ export function HeroSection() {
       <div className="absolute inset-0 overflow-hidden">
         {/* Poster / fallback while video loads */}
         <Image
-          src="/images/hero-background.png"
+          src="/images/hero-fallback.jpg"
           alt="Luxurious event hall ready for a celebration"
           fill
           priority
@@ -94,7 +94,7 @@ export function HeroSection() {
           loop
           playsInline
           preload="auto"
-          poster="/images/hero-background.png"
+          poster="/images/hero-fallback.jpg"
           aria-hidden
           onCanPlay={() => setVideoReady(true)}
           onError={() => setVideoReady(false)}

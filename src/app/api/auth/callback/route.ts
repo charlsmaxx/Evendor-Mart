@@ -5,7 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { HTTP_CACHE } from "@/lib/cache-policy";
 
 function safeNextPath(raw: string | null) {
-  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return "/dashboard";
+  // Default to homepage when `next` is missing/invalid (e.g. new sign-ups).
+  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return "/";
   return raw;
 }
 
