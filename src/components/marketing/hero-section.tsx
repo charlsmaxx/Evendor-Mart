@@ -58,7 +58,6 @@ export function HeroSection() {
   const [location, setLocation] = useState("");
   const [date, setDate] = useState("");
   const [guests, setGuests] = useState("");
-  const [videoReady, setVideoReady] = useState(false);
 
   function onSearch(e: FormEvent) {
     e.preventDefault();
@@ -73,34 +72,18 @@ export function HeroSection() {
   }
 
   return (
-    <section className="relative min-h-[100svh] overflow-visible text-white">
+    <section className="relative min-h-[72svh] overflow-x-hidden overflow-y-visible text-white md:min-h-[100svh]">
       <div className="absolute inset-0 overflow-hidden">
-        {/* Poster / fallback while video loads */}
         <Image
-          src="/images/hero-fallback.jpg"
-          alt="Luxurious event hall ready for a celebration"
+          src="/images/hero-background.jpg"
+          alt="Guests celebrating at a luxurious Nigerian wedding reception"
           fill
           priority
-          sizes="100vw"
-          className="object-cover object-center"
+          quality={92}
+          // Extra width on mobile so retina + mild zoom stay sharp
+          sizes="(max-width: 768px) 150vw, 100vw"
+          className="object-cover object-[center_12%] scale-[1.2] md:scale-100 md:object-center"
         />
-        <video
-          className={cn(
-            "absolute inset-0 h-full w-full object-cover transition-opacity duration-700 motion-reduce:hidden",
-            videoReady ? "opacity-100" : "opacity-0"
-          )}
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="auto"
-          poster="/images/hero-fallback.jpg"
-          aria-hidden
-          onCanPlay={() => setVideoReady(true)}
-          onError={() => setVideoReady(false)}
-        >
-          <source src="/videos/hero-background.mp4" type="video/mp4" />
-        </video>
       </div>
 
       {/* Dark left + bottom wash so copy/search stay readable */}
@@ -113,7 +96,7 @@ export function HeroSection() {
         aria-hidden
       />
 
-      <div className="relative z-10 mx-auto flex min-h-[100svh] w-full max-w-6xl flex-col justify-center px-4 pb-20 pt-28 sm:px-6 md:pb-24 md:pt-32 lg:px-8">
+      <div className="relative z-10 mx-auto flex min-h-[72svh] w-full max-w-6xl flex-col justify-center px-4 pb-10 pt-24 sm:px-6 md:min-h-[100svh] md:pb-24 md:pt-32 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
@@ -125,18 +108,18 @@ export function HeroSection() {
             Nigeria&apos;s Most Trusted Event Booking Platform
           </span>
 
-          <h1 className="mt-6 font-display text-4xl font-semibold leading-[1.08] tracking-tight sm:text-5xl md:text-6xl lg:text-[3.75rem]">
-            The Perfect Event
+          <h1 className="mt-4 font-display text-3xl font-semibold leading-[1.08] tracking-tight sm:mt-6 sm:text-5xl md:text-6xl lg:text-[3.75rem]">
+             Events 
             <br />
-            Starts Here
+            Start at Evendor
           </h1>
 
-          <p className="mt-5 max-w-xl text-base leading-relaxed text-white/85 sm:text-lg">
+          <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/85 sm:mt-5 sm:text-lg">
             Discover and book the best event halls and professional vendors for any
             occasion. Simple, secure and reliable.
           </p>
 
-          <div className="mt-8 flex flex-wrap items-center gap-2 sm:gap-3">
+          <div className="mt-5 flex flex-wrap items-center gap-2 sm:mt-8 sm:gap-3">
             <button
               type="button"
               onClick={() => setMode("venues")}
@@ -170,12 +153,12 @@ export function HeroSection() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.55, delay: 0.12, ease: "easeOut" }}
-            className="mt-5 flex flex-col gap-3 rounded-[1.75rem] bg-white p-2 shadow-2xl shadow-black/30 sm:rounded-full sm:p-1.5 lg:flex-row lg:items-center"
+            className="mt-5 flex flex-col gap-1 rounded-2xl bg-white p-1.5 shadow-2xl shadow-black/30 sm:gap-0 sm:rounded-full sm:p-1.5 lg:flex-row lg:items-center"
           >
-            <label className="flex min-w-0 flex-1 cursor-text items-center gap-3 rounded-full px-4 py-2.5 sm:py-3">
-              <MapPin className="h-5 w-5 shrink-0 text-[#7A2E3D]" aria-hidden />
+            <label className="flex min-w-0 flex-1 cursor-text items-center gap-2 rounded-full px-3 py-1.5 sm:gap-3 sm:px-4 sm:py-3">
+              <MapPin className="h-4 w-4 shrink-0 text-[#7A2E3D] sm:h-5 sm:w-5" aria-hidden />
               <span className="min-w-0 flex-1">
-                <span className="block text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+                <span className="hidden text-[11px] font-semibold uppercase tracking-wide text-neutral-500 sm:block">
                   Location
                 </span>
                 <input
@@ -190,10 +173,10 @@ export function HeroSection() {
 
             <div className="hidden h-10 w-px bg-neutral-200 lg:block" aria-hidden />
 
-            <label className="flex min-w-0 flex-1 cursor-text items-center gap-3 rounded-full px-4 py-2.5 sm:py-3">
-              <CalendarDays className="h-5 w-5 shrink-0 text-[#7A2E3D]" aria-hidden />
+            <label className="flex min-w-0 flex-1 cursor-text items-center gap-2 rounded-full px-3 py-1.5 sm:gap-3 sm:px-4 sm:py-3">
+              <CalendarDays className="h-4 w-4 shrink-0 text-[#7A2E3D] sm:h-5 sm:w-5" aria-hidden />
               <span className="min-w-0 flex-1">
-                <span className="block text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+                <span className="hidden text-[11px] font-semibold uppercase tracking-wide text-neutral-500 sm:block">
                   Date
                 </span>
                 <input
@@ -210,10 +193,10 @@ export function HeroSection() {
 
             <div className="hidden h-10 w-px bg-neutral-200 lg:block" aria-hidden />
 
-            <label className="flex min-w-0 flex-1 cursor-text items-center gap-3 rounded-full px-4 py-2.5 sm:py-3">
-              <Users className="h-5 w-5 shrink-0 text-[#7A2E3D]" aria-hidden />
+            <label className="flex min-w-0 flex-1 cursor-text items-center gap-2 rounded-full px-3 py-1.5 sm:gap-3 sm:px-4 sm:py-3">
+              <Users className="h-4 w-4 shrink-0 text-[#7A2E3D] sm:h-5 sm:w-5" aria-hidden />
               <span className="min-w-0 flex-1">
-                <span className="block text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+                <span className="hidden text-[11px] font-semibold uppercase tracking-wide text-neutral-500 sm:block">
                   Guests
                 </span>
                 <input
@@ -229,7 +212,7 @@ export function HeroSection() {
 
             <button
               type="submit"
-              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-neutral-950 px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-neutral-800 sm:m-0.5"
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-neutral-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-neutral-800 sm:m-0.5 sm:px-6 sm:py-3.5"
             >
               <Search className="h-4 w-4" aria-hidden />
               Search
@@ -252,33 +235,35 @@ export function HeroSection() {
           </div>
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 28 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, delay: 0.22, ease: "easeOut" }}
-          className="relative z-20 mt-12 -mb-10 w-full translate-y-8 sm:-mb-12 sm:translate-y-10 md:mt-16 md:-mb-14 md:translate-y-12"
-        >
-          <div
-            className="grid grid-cols-1 gap-5 rounded-2xl border border-solid border-[#7A2E3D] bg-[#3A1520] px-5 py-5 shadow-[0_24px_60px_rgba(0,0,0,0.45),0_8px_24px_rgba(122,46,61,0.35)] sm:grid-cols-2 sm:gap-6 sm:px-6 sm:py-6 lg:grid-cols-4"
-          >
-            {TRUST.map((item) => (
-              <div key={item.title} className="flex items-start gap-3">
-                <item.icon
-                  className="mt-0.5 h-6 w-6 shrink-0 text-[#E5DFD9]"
-                  strokeWidth={1.75}
-                  aria-hidden
-                />
-                <div>
-                  <p className="text-sm font-semibold text-white">{item.title}</p>
-                  <p className="mt-0.5 text-xs leading-relaxed text-white/70 sm:text-sm">
-                    {item.desc}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </motion.div>
       </div>
+
+      {/* Full viewport width on mobile; hangs below hero with shadow */}
+      <motion.div
+        initial={{ opacity: 0, y: 28 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.55, delay: 0.22, ease: "easeOut" }}
+        className="relative z-20 -mb-10 w-full translate-y-6 sm:mx-auto sm:max-w-6xl sm:-mb-12 sm:translate-y-10 sm:px-6 md:-mb-14 md:translate-y-12 lg:px-8"
+      >
+        <div className="grid w-full grid-cols-2 gap-x-4 gap-y-4 border-y border-[#7A2E3D] bg-[#3A1520] px-4 py-5 shadow-[0_20px_48px_rgba(0,0,0,0.55),0_8px_20px_rgba(122,46,61,0.4)] sm:gap-6 sm:rounded-2xl sm:border sm:px-6 sm:py-6 sm:shadow-[0_24px_60px_rgba(0,0,0,0.45),0_8px_24px_rgba(122,46,61,0.35)] lg:grid-cols-4">
+          {TRUST.map((item) => (
+            <div key={item.title} className="flex items-start gap-2.5 sm:gap-3">
+              <item.icon
+                className="mt-0.5 h-5 w-5 shrink-0 text-[#E5DFD9] sm:h-6 sm:w-6"
+                strokeWidth={1.75}
+                aria-hidden
+              />
+              <div className="min-w-0">
+                <p className="text-sm font-semibold leading-tight text-white sm:text-sm">
+                  {item.title}
+                </p>
+                <p className="mt-1 text-[11px] leading-snug text-white/70 sm:text-sm sm:leading-relaxed">
+                  {item.desc}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </motion.div>
     </section>
   );
 }

@@ -67,7 +67,7 @@ export const VENDOR_CATEGORIES: CategoryDefinition[] = [
     sortOrder: 2,
     isVenue: true,
     description: "Ballrooms, rooftops, gardens, and unique spaces for weddings, galas, and corporate events.",
-    image: "/images/venues.png",
+    image: "/images/venues.jpg",
   },
   {
     value: "CATERER",
@@ -75,7 +75,7 @@ export const VENDOR_CATEGORIES: CategoryDefinition[] = [
     slug: "caterers",
     sortOrder: 3,
     description: "From buffet spreads to plated fine dining — chefs and caterers for every taste and budget.",
-    image: U("1555244162-803834f70033"),
+    image: "/images/caterers.jpg",
   },
   {
     value: "DECORATOR",
@@ -83,7 +83,7 @@ export const VENDOR_CATEGORIES: CategoryDefinition[] = [
     slug: "decorators",
     sortOrder: 4,
     description: "Floral design, stage styling, and décor that transforms any venue into something unforgettable.",
-    image: U("1464366400600-7168b8af9bc3"),
+    image: "/images/decorators.jpg",
   },
   {
     value: "BAKER",
@@ -91,7 +91,7 @@ export const VENDOR_CATEGORIES: CategoryDefinition[] = [
     slug: "bakers",
     sortOrder: 5,
     description: "Custom wedding cakes, dessert tables, and celebration bakes crafted for your event.",
-    image: U("1578985545062-69928b1d9587"),
+    image: "/images/baker.jpg",
   },
   {
     value: "PHOTOGRAPHER",
@@ -99,7 +99,7 @@ export const VENDOR_CATEGORIES: CategoryDefinition[] = [
     slug: "photographers",
     sortOrder: 6,
     description: "Capture every moment — wedding photographers and creative visual storytellers.",
-    image: U("1492691527719-9d1e07e534b4"),
+    image: "/images/photographers.png",
   },
   {
     value: "VIDEOGRAPHER",
@@ -107,7 +107,7 @@ export const VENDOR_CATEGORIES: CategoryDefinition[] = [
     slug: "videographers",
     sortOrder: 7,
     description: "Cinematic event films, highlight reels, and live-stream coverage for your celebration.",
-    image: U("1492684223066-81342ee5ff30"),
+    image: "/images/videographer.jpg",
   },
   {
     value: "MAKEUP_ARTIST",
@@ -123,7 +123,7 @@ export const VENDOR_CATEGORIES: CategoryDefinition[] = [
     slug: "gele-bridal-artists",
     sortOrder: 9,
     description: "Traditional gele styling, bridal headpieces, and cultural beauty for your ceremony.",
-    image: U("1519741497674-611481863552"),
+    image: "/images/gele-bridal-artist.jpg",
   },
   {
     value: "FASHION_DESIGNER",
@@ -131,7 +131,7 @@ export const VENDOR_CATEGORIES: CategoryDefinition[] = [
     slug: "fashion-designers",
     sortOrder: 10,
     description: "Custom outfits, aso-ebi coordination, and designer wear for hosts and bridal parties.",
-    image: U("1515372039744-b8f02a3ae446"),
+    image: "/images/fashion-designer.jpg",
   },
   {
     value: "MC",
@@ -163,7 +163,7 @@ export const VENDOR_CATEGORIES: CategoryDefinition[] = [
     slug: "lighting-sound",
     sortOrder: 14,
     description: "Stage lighting, PA systems, and technical production for events of any scale.",
-    image: U("1470229722913-7c0e2dbbafd3"),
+    image: "/images/lighting-sound.jpg",
   },
   {
     value: "RENTAL",
@@ -171,7 +171,7 @@ export const VENDOR_CATEGORIES: CategoryDefinition[] = [
     slug: "equipment-rentals",
     sortOrder: 15,
     description: "AV gear, generators, staging equipment, and specialty rentals for events.",
-    image: U("1581094794329-c8112a89af12"),
+    image: "/images/equipment-rentals.jpg",
   },
   {
     value: "BRIDAL_RENTAL",
@@ -179,7 +179,7 @@ export const VENDOR_CATEGORIES: CategoryDefinition[] = [
     slug: "bridal-rentals",
     sortOrder: 16,
     description: "Wedding gowns, suits, accessories, and bridal wear available to rent.",
-    image: U("1519741497674-611481863552"),
+    image: "/images/bridals.jpg",
   },
   {
     value: "TRANSPORTATION",
@@ -187,7 +187,7 @@ export const VENDOR_CATEGORIES: CategoryDefinition[] = [
     slug: "transportation",
     sortOrder: 17,
     description: "Luxury cars, buses, and guest shuttle services for weddings and corporate events.",
-    image: U("1492144534655-ae79c964c9d7"),
+    image: "/images/transportation.jpg",
   },
   {
     value: "SECURITY",
@@ -195,7 +195,7 @@ export const VENDOR_CATEGORIES: CategoryDefinition[] = [
     slug: "security",
     sortOrder: 18,
     description: "Event security, crowd control, and VIP protection for private and public gatherings.",
-    image: U("1450101499163-c8848c66ca85"),
+    image: "/images/security.jpg",
   },
   {
     value: "BAR_COCKTAIL",
@@ -203,7 +203,7 @@ export const VENDOR_CATEGORIES: CategoryDefinition[] = [
     slug: "bar-cocktail",
     sortOrder: 19,
     description: "Mobile bars, mixologists, and cocktail stations for receptions and parties.",
-    image: U("1551218808-94e220e084d2"),
+    image: "/images/bar-cocktail.jpg",
   },
   {
     value: "WAITERS_USHERS",
@@ -211,7 +211,7 @@ export const VENDOR_CATEGORIES: CategoryDefinition[] = [
     slug: "waiters-ushers",
     sortOrder: 20,
     description: "Professional wait staff, ushers, and guest services for seamless event hospitality.",
-    image: U("1504674900247-0877df9cc836"),
+    image: "/images/waiters-ushers.jpg",
   },
   {
     value: "EVENT_RENTAL",
@@ -219,7 +219,7 @@ export const VENDOR_CATEGORIES: CategoryDefinition[] = [
     slug: "event-rentals",
     sortOrder: 21,
     description: "Chairs, tables, tents, linens, and furniture hire for indoor and outdoor events.",
-    image: U("1530103862676-de8c9debad1d"),
+    image: "/images/event-rentals.jpg",
   },
   {
     value: "PRINTING_BRANDING",
@@ -227,7 +227,7 @@ export const VENDOR_CATEGORIES: CategoryDefinition[] = [
     slug: "printing-branding",
     sortOrder: 22,
     description: "Invitations, signage, programmes, and branded materials for your event.",
-    image: U("1429962714451-bb934ecdc4ec"),
+    image: "/images/printing-branding.png",
   },
   {
     value: "GIFT_SOUVENIR",
@@ -235,7 +235,7 @@ export const VENDOR_CATEGORIES: CategoryDefinition[] = [
     slug: "gift-souvenir",
     sortOrder: 23,
     description: "Party favours, corporate gifts, and personalised souvenirs for guests.",
-    image: U("1519741497674-611481863552"),
+    image: "/images/gift-souvenir.jpg",
   },
   {
     value: "SMALL_CHOPS_CATERING",
@@ -243,7 +243,7 @@ export const VENDOR_CATEGORIES: CategoryDefinition[] = [
     slug: "small-chops-catering",
     sortOrder: 24,
     description: "Small chops, finger foods, and snack catering for cocktails and receptions.",
-    image: U("1555244162-803834f70033"),
+    image: "/images/small-chops-catering.jpg",
   },
   {
     value: "BALLOON_BACKDROP",
@@ -251,7 +251,7 @@ export const VENDOR_CATEGORIES: CategoryDefinition[] = [
     slug: "balloon-backdrop",
     sortOrder: 25,
     description: "Balloon arches, photo backdrops, and creative installations for celebrations.",
-    image: U("1530103862676-de8c9debad1d"),
+    image: "/images/balloon-backdrop.jpg",
   },
   {
     value: "WEDDING_VENDOR",

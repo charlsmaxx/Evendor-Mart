@@ -1,5 +1,6 @@
 import type { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import { reportClientError } from "@/lib/client-error";
+import { signupUrl } from "@/lib/auth-redirect";
 
 export async function startVendorConversation({
   vendorId,
@@ -20,7 +21,7 @@ export async function startVendorConversation({
     });
 
     if (res.status === 401) {
-      router.push(`/login?redirect=${encodeURIComponent(`/vendors/${vendorSlug}`)}`);
+      router.push(signupUrl(`/vendors/${vendorSlug}`));
       return { ok: true };
     }
 

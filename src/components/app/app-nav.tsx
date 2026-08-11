@@ -11,6 +11,7 @@ import { NotificationsBell } from "@/components/notifications/notifications-bell
 import { BrandLogo } from "@/components/brand-logo";
 import { MobileNavDrawer } from "@/components/mobile-nav-drawer";
 import { CategoriesDesktopDropdown } from "@/components/categories-menu";
+import { useMe } from "@/hooks/use-me";
 
 type NavLink = {
   href: string;
@@ -35,17 +36,7 @@ export function AppNav() {
   const pathname = usePathname();
   const unreadCount = useMessageBadgeCount();
 
-  const { data: me, isLoading } = useQuery({
-    queryKey: ["me"],
-    queryFn: async () => {
-      const res = await fetch("/api/me", { credentials: "same-origin" });
-      if (res.status === 401 || !res.ok) return null;
-      const json = await res.json();
-      return json.data as { isVendor: boolean; role: string } | null;
-    },
-    staleTime: 5 * 60_000,
-    retry: false,
-  });
+  const { data: me, isLoading } = useMe();
 
   const { data: rewards } = useQuery({
     queryKey: ["rewards-wallet"],

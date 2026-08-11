@@ -83,7 +83,9 @@ export async function POST(req: NextRequest) {
   if (!rate.success) return jsonError("Rate limit exceeded", 429);
 
   const parsed = createBookingSchema.safeParse(await req.json());
-  if (!parsed.success) return jsonError(parsed.error.message, 400);
+  if (!parsed.success) {
+    return jsonError(parsed.error.issues[0]?.message ?? "Invalid booking details.", 400);
+  }
 
   const listing = await prisma.listing.findUnique({
     where: { id: parsed.data.listingId },

@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { reportClientError } from "@/lib/client-error";
+import { currentPathForRedirect, signupUrl } from "@/lib/auth-redirect";
 
 type RequestQuoteDialogProps = {
   open: boolean;
@@ -66,7 +67,7 @@ export function RequestQuoteDialog({
       });
       const json = await res.json().catch(() => null);
       if (res.status === 401) {
-        router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+        router.push(signupUrl(currentPathForRedirect()));
         return;
       }
       if (!res.ok) {

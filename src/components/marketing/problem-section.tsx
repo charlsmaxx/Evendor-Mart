@@ -3,6 +3,7 @@ import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
 import { Users, MapPin } from "lucide-react";
 import { VENUE_SHOWCASE } from "@/data/venue-showcase";
+import { GlowButton } from "@/components/shared/glow-button";
 
 export function ProblemSection() {
   return (
@@ -53,6 +54,11 @@ export function ProblemSection() {
               </div>
             </Link>
           ))}
+        </div>
+        <div className="mt-10 flex justify-center">
+          <GlowButton href="/marketplace?type=VENUE" variant="outline">
+            View all
+          </GlowButton>
         </div>
       </div>
     </section>

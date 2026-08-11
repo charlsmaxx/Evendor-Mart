@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getSupabaseEnv, logAuthError } from "@/lib/supabase/env";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export function ForgotPasswordForm() {
+  const searchParams = useSearchParams();
+  const linkError = searchParams.get("error") === "link";
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
@@ -21,7 +24,9 @@ export function ForgotPasswordForm() {
     try {
       const supabase = createClient();
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: `${window.location.origin}/api/auth/callback?next=${encodeURIComponent("/reset-password")}`,
+        // Dedicated recovery flag so the callback always lands on /reset-password
+        // even if other query params are rewritten by the email provider.
+        redirectTo: `${window.location.origin}/api/auth/callback?flow=recovery`,
       });
       if (error) {
         logAuthError(error.message, error);
@@ -57,6 +62,11 @@ export function ForgotPasswordForm() {
       <p className="mt-2 text-sm text-muted-foreground">
         Enter the email for your Evendor account and we&apos;ll send a reset link.
       </p>
+      {linkError ? (
+        <p className="mt-3 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          That reset link is invalid or expired. Request a new one below.
+        </p>
+      ) : null}
 
       <form onSubmit={onSubmit} className="mt-6 space-y-4">
         <div>

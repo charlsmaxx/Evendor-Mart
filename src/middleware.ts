@@ -2,6 +2,8 @@ import { type NextRequest, NextResponse } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 
 const authRoutes = ["/login", "/register", "/otp"];
+/** Logged-in users must still be able to open these (password recovery). */
+const authAllowWhenSignedIn = ["/forgot-password", "/reset-password"];
 
 /** Vendor dashboard lives at /vendor/* — public profiles are /vendors/* */
 function isProtectedPath(pathname: string) {
@@ -24,8 +26,27 @@ function isProtectedPath(pathname: string) {
 export async function middleware(request: NextRequest) {
   const { supabaseResponse, user } = await updateSession(request);
   const pathname = request.nextUrl.pathname;
+  const inPasswordRecovery = request.cookies.get("evendor_pw_recovery")?.value === "1";
 
-  if (user && authRoutes.some((r) => pathname.startsWith(r))) {
+  // Recovery session: keep the user on the password form, never bounce to dashboard.
+  if (user && inPasswordRecovery && !pathname.startsWith("/reset-password")) {
+    if (
+      authRoutes.some((r) => pathname.startsWith(r)) ||
+      pathname.startsWith("/dashboard") ||
+      pathname === "/"
+    ) {
+      return NextResponse.redirect(new URL("/reset-password", request.url));
+    }
+  }
+
+  if (
+    user &&
+    authRoutes.some((r) => pathname.startsWith(r)) &&
+    !authAllowWhenSignedIn.some((r) => pathname.startsWith(r))
+  ) {
+    if (inPasswordRecovery) {
+      return NextResponse.redirect(new URL("/reset-password", request.url));
+    }
     const role = request.nextUrl.searchParams.get("role");
     const redirectParam = request.nextUrl.searchParams.get("redirect");
     if (role === "vendor" || redirectParam?.startsWith("/list-your-business")) {

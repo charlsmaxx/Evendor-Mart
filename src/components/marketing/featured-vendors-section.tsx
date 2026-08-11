@@ -8,17 +8,21 @@ export async function FeaturedVendorsSection() {
 
   return (
     <SectionShell id="featured">
-      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-        <div>
-          <h2 className="font-display text-3xl font-bold md:text-4xl">Featured vendors</h2>
-          <p className="mt-2 text-muted-foreground">Hand-picked partners trusted by thousands of events.</p>
-        </div>
-        <GlowButton href="/marketplace" variant="outline">View all</GlowButton>
+      <div className="text-center sm:text-left">
+        <h2 className="font-display text-3xl font-bold md:text-4xl">Featured vendors</h2>
+        <p className="mt-2 text-muted-foreground">
+          Hand-picked partners trusted by thousands of events.
+        </p>
       </div>
       <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {listings.map((l) => (
           <VendorCard key={l.id} listing={l} />
         ))}
+      </div>
+      <div className="mt-10 flex justify-center">
+        <GlowButton href="/marketplace" variant="outline">
+          View all
+        </GlowButton>
       </div>
     </SectionShell>
   );

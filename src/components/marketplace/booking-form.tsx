@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { formatCurrency, formatPriceRange, cn } from "@/lib/utils";
 import { calcCashback } from "@/lib/rewards-utils";
 import { reportClientError } from "@/lib/client-error";
+import { currentPathForRedirect, signupUrl } from "@/lib/auth-redirect";
 import {
   calcPackageTotal,
   formatCancellationPolicyLines,
@@ -62,6 +63,7 @@ export function BookingForm({
   const [acceptPolicy, setAcceptPolicy] = useState(false);
 
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [totalInput, setTotalInput] = useState(priceMin);
   const [startTimeInput, setStartTimeInput] = useState("");
   const [endTimeInput, setEndTimeInput] = useState("");
@@ -126,18 +128,75 @@ export function BookingForm({
     }
   }
 
+  function showError(message: string) {
+    setFormError(message);
+    reportClientError("booking", message);
+  }
+
   async function createBooking(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setFormError(null);
+
     if (!acceptPolicy) {
-      reportClientError("booking", "Please accept the cancellation policy to continue.");
+      showError("Please accept the cancellation policy to continue.");
       return;
     }
-    setLoading(true);
+
     const fd = new FormData(e.currentTarget);
     const total = computedTotal;
-    const eventDateStr = String(fd.get("eventDate"));
+    const eventDateStr = String(fd.get("eventDate") ?? "").trim();
+    if (!eventDateStr) {
+      showError("Please choose an event date.");
+      return;
+    }
+
+    if (startTimeInput && endTimeInput && startTimeInput >= endTimeInput) {
+      showError(
+        "End time must be after start time. Please check your event times and try again."
+      );
+      return;
+    }
+
+    if ((startTimeInput && !endTimeInput) || (!startTimeInput && endTimeInput)) {
+      showError("Please enter both a start time and an end time, or leave both blank.");
+      return;
+    }
+
     const startTimeStr = startTimeInput ? `${eventDateStr}T${startTimeInput}:00` : undefined;
     const endTimeStr = endTimeInput ? `${eventDateStr}T${endTimeInput}:00` : undefined;
+
+    let eventDateIso: string;
+    let startTimeIso: string | undefined;
+    let endTimeIso: string | undefined;
+    try {
+      eventDateIso = new Date(eventDateStr).toISOString();
+      startTimeIso = startTimeStr ? new Date(startTimeStr).toISOString() : undefined;
+      endTimeIso = endTimeStr ? new Date(endTimeStr).toISOString() : undefined;
+    } catch {
+      showError("Please check your date and time entries and try again.");
+      return;
+    }
+
+    if (
+      Number.isNaN(new Date(eventDateIso).getTime()) ||
+      (startTimeIso && Number.isNaN(new Date(startTimeIso).getTime())) ||
+      (endTimeIso && Number.isNaN(new Date(endTimeIso).getTime()))
+    ) {
+      showError("Please check your date and time entries and try again.");
+      return;
+    }
+
+    if (startTimeIso && endTimeIso && !(new Date(startTimeIso) < new Date(endTimeIso))) {
+      showError(
+        "End time must be after start time. Please check your event times and try again."
+      );
+      return;
+    }
+
+    if (!total || total < 1) {
+      showError("Please enter a valid booking amount.");
+      return;
+    }
 
     const guestFromCategory = categoryAnswers.guestCount;
     const guestCount =
@@ -147,15 +206,16 @@ export function BookingForm({
           ? guestFromCategory
           : undefined;
 
+    setLoading(true);
     try {
       const res = await fetch("/api/bookings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           listingId,
-          eventDate: new Date(eventDateStr).toISOString(),
-          startTime: startTimeStr ? new Date(startTimeStr).toISOString() : undefined,
-          endTime: endTimeStr ? new Date(endTimeStr).toISOString() : undefined,
+          eventDate: eventDateIso,
+          startTime: startTimeIso,
+          endTime: endTimeIso,
           eventType: eventTypeInput || undefined,
           guestCount,
           totalAmount: total,
@@ -172,13 +232,18 @@ export function BookingForm({
         data?: { id: string };
         error?: { message?: string };
       } | null;
+
+      if (res.status === 401) {
+        router.push(signupUrl(currentPathForRedirect()));
+        return;
+      }
+
       if (!res.ok || !json?.data?.id) {
-        reportClientError(
-          "booking",
+        showError(
           json?.error?.message ??
             (res.status === 409
               ? "Booking Conflict Detected. This date/time is not available."
-              : "Could not create booking. Please try again.")
+              : "Could not create booking. Please check your entries and try again.")
         );
         return;
       }
@@ -192,16 +257,23 @@ export function BookingForm({
       });
       const payJson = (await payRes.json().catch(() => null)) as {
         data?: { already_paid?: boolean; authorization_url?: string };
+        error?: { message?: string };
       } | null;
       if (payJson?.data?.already_paid) {
         router.push(`/bookings/${json.data.id}?payment=success`);
       } else if (payJson?.data?.authorization_url) {
         window.location.href = payJson.data.authorization_url;
+      } else if (!payRes.ok) {
+        showError(
+          payJson?.error?.message ??
+            "Booking was created, but payment could not start. Open the booking to try again."
+        );
+        router.push(`/bookings/${json.data.id}`);
       } else {
         router.push(`/bookings/${json.data.id}`);
       }
     } catch {
-      reportClientError("booking", "Could not create booking. Please try again.");
+      showError("Could not create booking. Please check your entries and try again.");
     } finally {
       setLoading(false);
     }
@@ -326,14 +398,22 @@ export function BookingForm({
         )}
 
         <div className="space-y-3">
-          <Input name="eventDate" type="date" required />
+          <Input
+            name="eventDate"
+            type="date"
+            required
+            onChange={() => setFormError(null)}
+          />
           <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="text-xs text-muted-foreground">Start Time</label>
               <Input
                 type="time"
                 value={startTimeInput}
-                onChange={(e) => setStartTimeInput(e.target.value)}
+                onChange={(e) => {
+                  setStartTimeInput(e.target.value);
+                  setFormError(null);
+                }}
               />
             </div>
             <div>
@@ -341,7 +421,10 @@ export function BookingForm({
               <Input
                 type="time"
                 value={endTimeInput}
-                onChange={(e) => setEndTimeInput(e.target.value)}
+                onChange={(e) => {
+                  setEndTimeInput(e.target.value);
+                  setFormError(null);
+                }}
               />
             </div>
           </div>
@@ -513,6 +596,15 @@ export function BookingForm({
             </span>
           </label>
         </div>
+
+        {formError ? (
+          <div
+            role="alert"
+            className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          >
+            {formError}
+          </div>
+        ) : null}
 
         <Button
           type="submit"

@@ -8,6 +8,8 @@ import { CalendarDays, GitCompare, Heart, MessageSquare, Calendar, FileText } fr
 import { startVendorConversation } from "@/lib/start-conversation";
 import { formatCurrency, cn } from "@/lib/utils";
 import { reportClientError } from "@/lib/client-error";
+import { currentPathForRedirect, signupUrl } from "@/lib/auth-redirect";
+import { useMe } from "@/hooks/use-me";
 import { ShareListingButton } from "@/components/marketplace/share-listing-button";
 import { BookingDialog } from "@/components/marketplace/booking-dialog";
 import { RequestQuoteDialog } from "@/components/marketplace/request-quote-dialog";
@@ -58,6 +60,7 @@ export function ListingActions({
   variant = "default",
 }: ListingActionsProps) {
   const router = useRouter();
+  const { data: me } = useMe();
   const add = useCompareStore((s) => s.add);
   const compareItems = useCompareStore((s) => s.items);
   const [showBook, setShowBook] = useState(false);
@@ -69,16 +72,47 @@ export function ListingActions({
 
   const inCompare = compareItems.some((i) => i.listingId === listingId);
 
+  async function requireSignup() {
+    if (me) return true;
+    try {
+      const res = await fetch("/api/me", { credentials: "same-origin" });
+      if (res.ok) {
+        const json = await res.json();
+        if (json?.data) return true;
+      }
+    } catch {
+      /* treat as signed out */
+    }
+    router.push(signupUrl(currentPathForRedirect()));
+    return false;
+  }
+
+  async function openBook() {
+    if (!(await requireSignup())) return;
+    setShowBook(true);
+  }
+
+  async function openQuote() {
+    if (!(await requireSignup())) return;
+    setShowQuote(true);
+  }
+
   async function toggleFavorite() {
+    if (!(await requireSignup())) return;
     const res = await fetch("/api/favorites", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ listingId }),
     });
+    if (res.status === 401) {
+      router.push(signupUrl(currentPathForRedirect()));
+      return;
+    }
     if (res.ok) setSaved(true);
   }
 
   async function startChat() {
+    if (!(await requireSignup())) return;
     setLoading(true);
     const result = await startVendorConversation({ vendorId, listingId, vendorSlug: slug, router });
     setLoading(false);
@@ -105,14 +139,14 @@ export function ListingActions({
     return (
       <>
         <div className={cn("flex w-full gap-2", className)}>
-          <Button variant="gradient" className="flex-1" onClick={() => setShowBook(true)}>
+          <Button variant="gradient" className="flex-1" onClick={openBook}>
             <Calendar className="h-4 w-4" /> Book now
           </Button>
           <Button variant="outline" className="flex-1" onClick={startChat} disabled={loading}>
             <MessageSquare className="h-4 w-4" /> {loading ? "…" : "Chat"}
           </Button>
           {!isVenue && (
-            <Button variant="secondary" size="icon" onClick={() => setShowQuote(true)} aria-label="Request quote">
+            <Button variant="secondary" size="icon" onClick={openQuote} aria-label="Request quote">
               <FileText className="h-4 w-4" />
             </Button>
           )}
@@ -156,11 +190,11 @@ export function ListingActions({
       <div className="flex flex-wrap gap-2">
         {!hidePrimaryActions && (
           <>
-            <Button variant="gradient" onClick={() => setShowBook(true)}>
+            <Button variant="gradient" onClick={openBook}>
               <Calendar className="h-4 w-4" /> Book now
             </Button>
             {!isVenue && (
-              <Button variant="outline" onClick={() => setShowQuote(true)}>
+              <Button variant="outline" onClick={openQuote}>
                 <FileText className="h-4 w-4" /> Request quote
               </Button>
             )}
@@ -223,7 +257,7 @@ export function ListingActions({
           availability={vendorAvailability}
           onBook={() => {
             setAvailabilityOpen(false);
-            setShowBook(true);
+            openBook();
           }}
         />
       )}

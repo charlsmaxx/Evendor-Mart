@@ -10,6 +10,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+const RECOVERY_COOKIE = "evendor_pw_recovery";
+
+function clearRecoveryCookie() {
+  document.cookie = `${RECOVERY_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;
+}
+
 export function ResetPasswordForm() {
   const router = useRouter();
   const [password, setPassword] = useState("");
@@ -22,10 +28,45 @@ export function ResetPasswordForm() {
   useEffect(() => {
     if (!getSupabaseEnv()) return;
     const supabase = createClient();
-    void supabase.auth.getSession().then(({ data }) => {
-      if (data.session) setReady(true);
-      else setSessionMissing(true);
+    let settled = false;
+
+    function markReady() {
+      if (settled) return;
+      settled = true;
+      setReady(true);
+      setSessionMissing(false);
+    }
+
+    function markMissing() {
+      if (settled) return;
+      settled = true;
+      setSessionMissing(true);
+      setReady(false);
+    }
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY" || (session && event === "SIGNED_IN")) {
+        markReady();
+      }
+      if (session) markReady();
     });
+
+    void supabase.auth.getSession().then(({ data }) => {
+      if (data.session) markReady();
+      else {
+        // Give the recovery redirect a moment to establish the session cookie.
+        window.setTimeout(() => {
+          void supabase.auth.getSession().then(({ data: retry }) => {
+            if (retry.session) markReady();
+            else markMissing();
+          });
+        }, 800);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   async function onSubmit(e: React.FormEvent) {
@@ -49,6 +90,7 @@ export function ResetPasswordForm() {
         logAuthError(error.message, error);
         return;
       }
+      clearRecoveryCookie();
       await supabase.auth.signOut();
       setDone(true);
       setTimeout(() => {
