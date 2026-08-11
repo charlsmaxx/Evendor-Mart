@@ -72,17 +72,28 @@ export function HeroSection() {
   }
 
   return (
-    <section className="relative min-h-[72svh] overflow-x-hidden overflow-y-visible text-white md:min-h-[100svh]">
-      <div className="absolute inset-0 overflow-hidden">
+    <>
+    <section className="relative min-h-[72svh] overflow-hidden text-white md:min-h-[100svh]">
+      <div className="absolute inset-0">
+        {/* Mobile: venues image */}
+        <Image
+          src="/images/venues.jpg"
+          alt="Featured event hall venue"
+          fill
+          priority
+          quality={92}
+          sizes="100vw"
+          className="object-cover object-center md:hidden"
+        />
+        {/* Desktop: celebration hero */}
         <Image
           src="/images/hero-background.jpg"
           alt="Guests celebrating at a luxurious Nigerian wedding reception"
           fill
           priority
           quality={92}
-          // Extra width on mobile so retina + mild zoom stay sharp
-          sizes="(max-width: 768px) 150vw, 100vw"
-          className="object-cover object-[center_12%] scale-[1.2] md:scale-100 md:object-center"
+          sizes="100vw"
+          className="hidden object-cover object-center md:block"
         />
       </div>
 
@@ -91,12 +102,12 @@ export function HeroSection() {
         className="absolute inset-0"
         style={{
           background:
-            "linear-gradient(105deg, rgba(12,10,9,0.88) 0%, rgba(12,10,9,0.62) 42%, rgba(12,10,9,0.28) 68%, rgba(12,10,9,0.45) 100%), linear-gradient(180deg, rgba(12,10,9,0.35) 0%, transparent 38%, rgba(12,10,9,0.78) 100%)",
+            "linear-gradient(105deg, rgba(12,10,9,0.92) 0%, rgba(12,10,9,0.72) 42%, rgba(12,10,9,0.48) 68%, rgba(12,10,9,0.62) 100%), linear-gradient(180deg, rgba(12,10,9,0.5) 0%, rgba(12,10,9,0.2) 38%, rgba(12,10,9,0.88) 100%)",
         }}
         aria-hidden
       />
 
-      <div className="relative z-10 mx-auto flex min-h-[72svh] w-full max-w-6xl flex-col justify-center px-4 pb-10 pt-24 sm:px-6 md:min-h-[100svh] md:pb-24 md:pt-32 lg:px-8">
+      <div className="relative z-10 mx-auto flex min-h-[72svh] w-full max-w-6xl flex-col justify-center px-4 pb-12 pt-24 sm:px-6 md:min-h-[100svh] md:pb-28 md:pt-32 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
@@ -234,15 +245,16 @@ export function HeroSection() {
             </div>
           </div>
         </motion.div>
-
       </div>
+    </section>
 
-      {/* Full viewport width on mobile; hangs below hero with shadow */}
+    {/* Separate from hero — sits below so mobile hero has no overflow scrollbar */}
+    <section className="relative z-20 bg-background px-0 pb-2 pt-0 sm:px-6 sm:pb-4 md:-mt-14 md:px-8 lg:px-8">
       <motion.div
-        initial={{ opacity: 0, y: 28 }}
+        initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.55, delay: 0.22, ease: "easeOut" }}
-        className="relative z-20 -mb-10 w-full translate-y-6 sm:mx-auto sm:max-w-6xl sm:-mb-12 sm:translate-y-10 sm:px-6 md:-mb-14 md:translate-y-12 lg:px-8"
+        transition={{ duration: 0.5, delay: 0.15, ease: "easeOut" }}
+        className="mx-auto w-full max-w-6xl"
       >
         <div className="grid w-full grid-cols-2 gap-x-4 gap-y-4 border-y border-[#7A2E3D] bg-[#3A1520] px-4 py-5 shadow-[0_20px_48px_rgba(0,0,0,0.55),0_8px_20px_rgba(122,46,61,0.4)] sm:gap-6 sm:rounded-2xl sm:border sm:px-6 sm:py-6 sm:shadow-[0_24px_60px_rgba(0,0,0,0.45),0_8px_24px_rgba(122,46,61,0.35)] lg:grid-cols-4">
           {TRUST.map((item) => (
@@ -265,5 +277,6 @@ export function HeroSection() {
         </div>
       </motion.div>
     </section>
+    </>
   );
 }
