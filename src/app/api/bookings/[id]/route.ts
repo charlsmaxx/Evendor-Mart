@@ -10,6 +10,7 @@ import { EscrowRuleError, releaseEscrow } from "@/lib/escrow";
 import { notifyUser } from "@/core/notification-engine";
 import { refundRedeemedRewards } from "@/core/rewards-engine";
 import { AUTO_RELEASE_HOURS } from "@/core/shared/config";
+import { getCustomerBookingActions } from "@/lib/booking-customer-actions";
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -169,9 +170,22 @@ export async function PATCH(
       });
     }
 
-    // Customer confirmation (or an admin acting on their behalf) releases escrow.
+    // Customer confirmation (or an admin acting on their behalf) releases held funds
+    // into the vendor ledger — never a direct Paystack transfer from this path.
+    if (isCustomer && !isAdmin) {
+      const actions = getCustomerBookingActions(booking);
+      if (!actions.canConfirm) {
+        return jsonError(
+          "You can approve after the vendor marks delivery complete or the event date has passed.",
+          409
+        );
+      }
+    }
+
     try {
-      await releaseEscrow(id, user.id);
+      await releaseEscrow(id, user.id, {
+        source: isAdmin ? "admin" : "customer_confirm",
+      });
     } catch (err) {
       if (err instanceof EscrowRuleError) return jsonError(err.message, 409);
       throw err;
@@ -179,7 +193,8 @@ export async function PATCH(
     const released = await prisma.booking.findUnique({ where: { id } });
     return jsonOk({
       ...released,
-      escrowMessage: "Booking completed and payout released to the vendor.",
+      escrowMessage:
+        "Booking completed. Vendor earnings are now available for payout.",
     });
   }
 

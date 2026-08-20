@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { jsonNoStore, jsonError, handleApiRoute, jsonOk } from "@/lib/api-response";
 import { createServiceClient } from "@/lib/supabase/server";
 import { writeAuditLog } from "@/core/audit-engine";
+import { PRIVACY_VERSION, TERMS_VERSION } from "@/lib/legal";
 
 const updateMeSchema = z.object({
   fullName: z.string().min(2).max(120).optional(),
@@ -17,11 +18,25 @@ export async function GET() {
     if (!user) return jsonError("Unauthorized", 401);
 
     let isVendor = false;
+    let needsLegalAcceptance = false;
     try {
-      const vendor = await prisma.vendorProfile.findUnique({ where: { userId: user.id } });
+      const [vendor, accepted] = await Promise.all([
+        prisma.vendorProfile.findUnique({ where: { userId: user.id } }),
+        prisma.legalAcceptance.findUnique({
+          where: {
+            userId_termsVersion_privacyVersion: {
+              userId: user.id,
+              termsVersion: TERMS_VERSION,
+              privacyVersion: PRIVACY_VERSION,
+            },
+          },
+          select: { id: true },
+        }),
+      ]);
       isVendor = user.role === "VENDOR" && !!vendor;
+      needsLegalAcceptance = !accepted;
     } catch {
-      /* vendor lookup optional */
+      /* vendor/legal lookup optional */
     }
 
     return jsonNoStore({
@@ -32,6 +47,7 @@ export async function GET() {
       role: user.role,
       onboardingComplete: user.onboardingComplete,
       isVendor,
+      needsLegalAcceptance,
     });
   });
 }

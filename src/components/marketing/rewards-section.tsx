@@ -19,7 +19,7 @@ const benefits = [
   {
     icon: "💳",
     title: "Secure Payments",
-    desc: "Pay confidently through our protected payment platform — your full payment stays in escrow until the job is done.",
+    desc: "Pay confidently through our protected payment platform — your full payment stays held until the job is done.",
   },
 ];
 

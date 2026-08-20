@@ -1,10 +1,17 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import type { EmailOtpType } from "@supabase/supabase-js";
-import { getOrCreateDbUser } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { HTTP_CACHE } from "@/lib/cache-policy";
 import { getSupabaseEnv } from "@/lib/supabase/env";
+import {
+  applyLegalAcceptanceCookie,
+} from "@/lib/legal";
+import {
+  ensureDbUser,
+  getRequestClientMeta,
+  inferLegalMethodFromAuth,
+  recordLegalAcceptance,
+} from "@/core/identity-engine/legal-acceptance";
 
 const RECOVERY_COOKIE = "evendor_pw_recovery";
 const RECOVERY_MAX_AGE = 60 * 30; // 30 minutes
@@ -46,7 +53,6 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get("code");
   const tokenHash = searchParams.get("token_hash");
   const otpType = searchParams.get("type") as EmailOtpType | null;
-  const acceptTerms = searchParams.get("terms") === "1";
   const recovery = isRecoveryRequest(searchParams);
   const next = recovery ? "/reset-password" : safeNextPath(searchParams.get("next"));
 
@@ -74,6 +80,7 @@ export async function GET(request: NextRequest) {
 
   let userId: string | undefined;
   let userEmail: string | undefined;
+  let authProvider: string | undefined;
   let authError: string | null = null;
 
   if (code) {
@@ -83,6 +90,7 @@ export async function GET(request: NextRequest) {
     } else {
       userId = data.user.id;
       userEmail = data.user.email ?? undefined;
+      authProvider = data.user.app_metadata?.provider ?? data.user.identities?.[0]?.provider;
     }
   } else if (tokenHash && otpType) {
     const { data, error } = await supabase.auth.verifyOtp({
@@ -94,6 +102,7 @@ export async function GET(request: NextRequest) {
     } else {
       userId = data.user.id;
       userEmail = data.user.email ?? undefined;
+      authProvider = data.user.app_metadata?.provider ?? data.user.identities?.[0]?.provider;
     }
   } else {
     authError = "missing_code";
@@ -108,12 +117,26 @@ export async function GET(request: NextRequest) {
     return redirectWithCookies(`${origin}${failPath}`, cookiesToSet);
   }
 
-  const user = await getOrCreateDbUser(userId, userEmail);
-  if (acceptTerms && !user.termsAcceptedAt) {
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { termsAcceptedAt: new Date() },
-    });
+  const { user, created } = await ensureDbUser(userId, userEmail);
+  let recordedNewAcceptance = false;
+
+  if (created) {
+    try {
+      const meta = getRequestClientMeta(request);
+      await recordLegalAcceptance({
+        userId: user.id,
+        method: inferLegalMethodFromAuth({ provider: authProvider, otpType }),
+        ipAddress: meta.ipAddress,
+        userAgent: meta.userAgent,
+      });
+      recordedNewAcceptance = true;
+    } catch (error) {
+      console.error("[Evendor:legal] Failed to record signup acceptance", error);
+      return redirectWithCookies(
+        `${origin}/register?error=registration`,
+        cookiesToSet
+      );
+    }
   }
 
   const extra = recovery
@@ -131,5 +154,7 @@ export async function GET(request: NextRequest) {
       ]
     : undefined;
 
-  return redirectWithCookies(`${origin}${next}`, cookiesToSet, extra);
+  const response = redirectWithCookies(`${origin}${next}`, cookiesToSet, extra);
+  if (recordedNewAcceptance) applyLegalAcceptanceCookie(response);
+  return response;
 }

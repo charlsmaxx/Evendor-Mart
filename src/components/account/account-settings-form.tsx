@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -184,6 +185,22 @@ export function AccountSettingsForm() {
         {saveProfile.isSuccess && (
           <p className="text-sm text-emerald-600">Profile updated.</p>
         )}
+      </section>
+
+      <section className="space-y-3 rounded-2xl border border-border bg-card p-6">
+        <h2 className="font-semibold">Legal</h2>
+        <p className="text-sm text-muted-foreground">
+          Evendor&apos;s{" "}
+          <Link href="/terms" className="font-medium text-primary hover:underline">
+            Terms of Service
+          </Link>{" "}
+          and{" "}
+          <Link href="/privacy" className="font-medium text-primary hover:underline">
+            Privacy Policy
+          </Link>{" "}
+          apply to your account. If we publish a new required version, we&apos;ll ask you to review it
+          before continuing.
+        </p>
       </section>
 
       <section className="space-y-5 rounded-2xl border border-border bg-card p-6">

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Store, ArrowRight } from "lucide-react";
+import { ReturnHomeButton } from "@/components/dashboard/return-home-button";
 
 export function BecomeVendorCard({ isLoggedIn }: { isLoggedIn: boolean }) {
   const setupHref = isLoggedIn
@@ -9,7 +10,8 @@ export function BecomeVendorCard({ isLoggedIn }: { isLoggedIn: boolean }) {
     : "/register?role=vendor&redirect=/list-your-business";
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="mx-auto max-w-2xl space-y-6">
+      <ReturnHomeButton />
       <Card className="overflow-hidden border-primary/20">
         <CardContent className="p-8 text-center sm:p-12">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">

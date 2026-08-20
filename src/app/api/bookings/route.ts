@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth";
+import { requireAuth, hasCurrentLegalAcceptance } from "@/lib/auth";
 import { jsonOk, jsonError } from "@/lib/api-response";
 import { createBookingSchema } from "@/lib/validations/booking";
 import {
@@ -81,6 +81,10 @@ export async function POST(req: NextRequest) {
 
   const rate = await checkRateLimit(apiLimiter, `bookings:${user.id}`);
   if (!rate.success) return jsonError("Rate limit exceeded", 429);
+
+  if (!(await hasCurrentLegalAcceptance(user.id))) {
+    return jsonError("Please review and accept Evendor's Terms of Service and Privacy Policy to continue.", 403);
+  }
 
   const parsed = createBookingSchema.safeParse(await req.json());
   if (!parsed.success) {

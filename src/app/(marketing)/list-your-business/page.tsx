@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getSessionUser } from "@/lib/auth";
+import { getSessionUser, hasCurrentLegalAcceptance } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { BusinessTypeSelector } from "@/components/onboarding/business-type-selector";
 import { Button } from "@/components/ui/button";
@@ -57,6 +57,11 @@ export default async function ListYourBusinessPage() {
     return <GuestLanding />;
   }
 
+  const accepted = await hasCurrentLegalAcceptance(sessionUser.id).catch(() => true);
+  if (!accepted) {
+    redirect("/legal/accept?next=/list-your-business");
+  }
+
   let dbUser = null;
   try {
     dbUser = await prisma.user.findUnique({
@@ -80,6 +85,17 @@ export default async function ListYourBusinessPage() {
           <h1 className="mt-2 font-display text-3xl font-bold">What are you listing?</h1>
           <p className="mt-2 text-muted-foreground">
             Event venues and service vendors use different profiles so customers never get mixed results.
+          </p>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Listing a business is also covered by Evendor&apos;s{" "}
+            <Link href="/terms#vendors" className="font-medium text-primary hover:underline">
+              vendor terms
+            </Link>{" "}
+            and{" "}
+            <Link href="/privacy" className="font-medium text-primary hover:underline">
+              Privacy Policy
+            </Link>
+            .
           </p>
         </div>
         <BusinessTypeSelector signedIn={true} />

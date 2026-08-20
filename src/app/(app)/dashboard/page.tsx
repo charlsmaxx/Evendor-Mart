@@ -28,6 +28,8 @@ export default async function DashboardPage() {
         leads,
         bookings,
         businessName: vendor.businessName,
+        slug: vendor.slug,
+        category: vendor.category,
       };
     }
   } catch {

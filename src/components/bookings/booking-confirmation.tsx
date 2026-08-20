@@ -79,8 +79,8 @@ export function BookingConfirmation({
         </p>
         <p className="mt-1 text-sm text-muted-foreground">
           {canConfirm
-            ? "Approving releases the vendor's payment from escrow immediately. Reporting a problem keeps your money locked until our team resolves it."
-            : "If something went wrong, report a problem to lock your payment in escrow while we investigate. You can confirm the job is done after the event or once the vendor marks it delivered."}
+            ? "Approving releases the vendor's pending earnings for payout. Reporting a problem keeps your payment locked until our team resolves it."
+            : "If something went wrong, report a problem to keep your payment locked while we investigate. You can confirm the job is done after the event or once the vendor marks it delivered."}
         </p>
       </div>
 
@@ -111,7 +111,7 @@ export function BookingConfirmation({
       ) : (
         <div className="space-y-3">
           <p className="text-sm text-amber-800">
-            Your payment stays locked in escrow while we review. The vendor cannot be paid
+            Your payment stays locked while we review. The vendor cannot receive a payout
             until the dispute is resolved.
           </p>
           <Textarea

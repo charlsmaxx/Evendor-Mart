@@ -24,6 +24,7 @@ import {
 import { AdminActivityPanel } from "@/components/admin/admin-activity-panel";
 import { useAdminSessionGuard } from "@/components/admin/use-admin-me";
 import type { AdminSection } from "@/lib/admin-permissions";
+import { ReturnHomeButton } from "@/components/dashboard/return-home-button";
 
 type DashboardData = {
   capabilities?: { revenue: boolean; escrow: boolean };
@@ -103,7 +104,7 @@ export function AdminDashboardHome() {
 
   const quickActions = (
     [
-      { href: "/admin/escrow", icon: Lock, label: "Escrow & Payouts", section: "escrow" },
+      { href: "/admin/escrow", icon: Lock, label: "Settlements & Payouts", section: "escrow" },
       { href: "/admin/trust", icon: ShieldAlert, label: "Trust & Safety", section: "trust" },
       { href: "/admin/verification", icon: BadgeCheck, label: "Verifications", section: "verification" },
       { href: "/admin/users", icon: Users, label: "User Management", section: "users" },
@@ -119,6 +120,7 @@ export function AdminDashboardHome() {
 
   return (
     <div className="space-y-8">
+      <ReturnHomeButton className="border-white/15 bg-[#1a1215] text-[#E5DFD9] hover:bg-white/5" />
       <AdminPageHeader
         title="Control Center"
         subtitle={
@@ -165,7 +167,7 @@ export function AdminDashboardHome() {
           )}
           {showEscrow && kpis.escrowHeld != null && (
             <AdminKpiCard
-              label="Held In Escrow"
+              label="Held Payments"
               value={formatCurrency(kpis.escrowHeld)}
               sub="Funds protected"
               href="/admin/escrow"

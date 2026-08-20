@@ -22,6 +22,7 @@ import {
   PaystackError,
   createTransferRecipient,
   fetchTransferByReference,
+  getPaystackSecretMode,
   initiateTransfer,
   isPaystackConfigured,
 } from "./paystack";
@@ -48,7 +49,13 @@ export type VendorBankAccount = {
 
 type VendorMetadata = Record<string, unknown> & {
   bankAccount?: Partial<VendorBankAccount>;
-  paystackRecipient?: { code?: string; accountNumber?: string; bankCode?: string };
+  paystackRecipient?: {
+    code?: string;
+    accountNumber?: string;
+    bankCode?: string;
+    /** live | test — test recipient codes are invalid after switching to live keys. */
+    mode?: string;
+  };
 };
 
 function readMetadata(metadata: unknown): VendorMetadata {
@@ -90,11 +97,13 @@ async function ensureTransferRecipient(
   });
   const metadata = readMetadata(vendor?.metadata);
   const cached = metadata.paystackRecipient;
+  const keyMode = getPaystackSecretMode();
 
   if (
     cached?.code &&
     cached.accountNumber === bank.accountNumber &&
-    cached.bankCode === bank.bankCode
+    cached.bankCode === bank.bankCode &&
+    cached.mode === keyMode
   ) {
     return cached.code;
   }
@@ -114,6 +123,7 @@ async function ensureTransferRecipient(
           code: recipient.recipient_code,
           accountNumber: bank.accountNumber,
           bankCode: bank.bankCode,
+          mode: keyMode,
         },
       } as Prisma.InputJsonValue,
     },

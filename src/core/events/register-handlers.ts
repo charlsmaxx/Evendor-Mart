@@ -46,7 +46,7 @@ export function registerDomainEventHandlers(): void {
     if (vendorId) {
       await notifyVendorByProfileId(vendorId, {
         title: "Dispute opened",
-        body: "A customer opened a dispute on a booking. Funds stay locked in escrow. Review it in your dashboard.",
+        body: "A customer opened a dispute on a booking. Funds stay locked. Review it in your dashboard.",
         link: "/vendor/disputes",
       });
     }
@@ -54,7 +54,7 @@ export function registerDomainEventHandlers(): void {
       await notifyUser({
         userId: customerId,
         title: "Dispute opened — upload evidence",
-        body: "Your payment is locked in escrow until we resolve this. Upload evidence on your booking page and check your vendor chat for an Evendor Admin notice.",
+        body: "Your payment is locked until we resolve this. Upload evidence on your booking page and check your vendor chat for an Evendor Admin notice.",
         link: `/bookings/${bookingId}`,
       });
     }

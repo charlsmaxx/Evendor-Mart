@@ -207,6 +207,25 @@ model User {
   verificationsReviewed VerificationRequest[] @relation("VerificationReviewer")
   vendorStaffMemberships VendorStaff[]
   manualBookingsCreated  Booking[]         @relation("ManualBookingCreator")
+  legalAcceptances       LegalAcceptance[]
+}
+
+/** Immutable record of Terms / Privacy acceptance for a specific document version. */
+model LegalAcceptance {
+  id                String   @id @default(uuid())
+  userId            String
+  termsVersion      String
+  privacyVersion    String
+  acceptedAt        DateTime @default(now())
+  ipAddress         String?
+  userAgent         String?
+  acceptanceMethod  String
+  createdAt         DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, termsVersion, privacyVersion])
+  @@index([userId, acceptedAt])
 }
 
 model VendorProfile {

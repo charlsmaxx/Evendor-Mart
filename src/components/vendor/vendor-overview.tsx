@@ -31,6 +31,8 @@ import {
   BOOKING_STATUS_STYLES,
 } from "@/components/vendor/vendor-ui";
 import { useVendorSubscription } from "@/hooks/use-vendor-subscription";
+import { ReturnHomeButton } from "@/components/dashboard/return-home-button";
+import { VendorBusinessCard } from "@/components/vendor/vendor-business-card";
 
 type OverviewData = {
   availableBalance: number;
@@ -81,7 +83,17 @@ type OverviewData = {
   }[];
 };
 
-export function VendorOverview({ businessName }: { businessName: string }) {
+export function VendorOverview({
+  businessName,
+  category,
+  slug,
+  avatarUrl,
+}: {
+  businessName: string;
+  category: string;
+  slug: string;
+  avatarUrl: string | null;
+}) {
   const { data: sub } = useVendorSubscription();
   const { data, isLoading } = useQuery({
     queryKey: ["vendor-overview"],
@@ -94,7 +106,14 @@ export function VendorOverview({ businessName }: { businessName: string }) {
     refetchInterval: 60_000,
   });
 
-  if (isLoading || !data) return <VendorSkeleton rows={2} />;
+  if (isLoading || !data) {
+    return (
+      <div className="space-y-8">
+        <ReturnHomeButton />
+        <VendorSkeleton rows={2} />
+      </div>
+    );
+  }
 
   const isVerified = data.verified || data.verificationStatus === "VERIFIED";
   const showVerifyCta = !isVerified;
@@ -119,6 +138,7 @@ export function VendorOverview({ businessName }: { businessName: string }) {
 
   return (
     <div className="space-y-8">
+      <ReturnHomeButton />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-display text-2xl font-bold md:text-3xl">{businessName}</h1>
@@ -163,7 +183,7 @@ export function VendorOverview({ businessName }: { businessName: string }) {
       {/* Top summary */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <VendorSummaryCard
-          label="Available Balance"
+          label="Available for Payout"
           value={formatCurrency(data.availableBalance)}
           sub="Ready to withdraw"
           href="/vendor/payouts"
@@ -171,9 +191,9 @@ export function VendorOverview({ businessName }: { businessName: string }) {
           icon={Wallet}
         />
         <VendorSummaryCard
-          label="Escrow Balance"
+          label="Pending Earnings"
           value={formatCurrency(data.escrowBalance ?? data.pendingEarnings)}
-          sub="Funds protected"
+          sub="Payout pending until job is completed"
           href="/vendor/payouts"
           icon={Lock}
         />
@@ -203,6 +223,13 @@ export function VendorOverview({ businessName }: { businessName: string }) {
         <p className="mb-3 text-sm font-semibold text-muted-foreground">Quick Actions</p>
         <QuickActionGrid actions={quickActions} />
       </div>
+
+      <VendorBusinessCard
+        businessName={businessName}
+        category={category}
+        slug={slug}
+        avatarUrl={avatarUrl}
+      />
 
       {/* Today's overview */}
       <div className="grid gap-4 lg:grid-cols-2">

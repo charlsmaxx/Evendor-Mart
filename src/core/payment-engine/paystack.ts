@@ -23,6 +23,7 @@ export async function paystackRequest<T>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
+  assertPaystackKeysReady();
   const secret = process.env.PAYSTACK_SECRET_KEY;
   if (!secret) throw new PaystackError("PAYSTACK_SECRET_KEY not configured", 0);
 
@@ -95,13 +96,46 @@ export function verifyPaystackSignature(body: string, signature: string | null) 
 }
 
 export function isPaystackConfigured() {
-  const key = process.env.PAYSTACK_SECRET_KEY?.trim();
-  return !!key && key.startsWith("sk_");
+  return getPaystackSecretMode() !== null;
+}
+
+export type PaystackKeyMode = "live" | "test";
+
+export function getPaystackSecretMode(): PaystackKeyMode | null {
+  const key = process.env.PAYSTACK_SECRET_KEY?.trim() ?? "";
+  if (key.startsWith("sk_live_")) return "live";
+  if (key.startsWith("sk_test_")) return "test";
+  return null;
+}
+
+function getPaystackPublicMode(): PaystackKeyMode | null {
+  const key = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY?.trim() ?? "";
+  if (key.startsWith("pk_live_")) return "live";
+  if (key.startsWith("pk_test_")) return "test";
+  return null;
+}
+
+/**
+ * Secret and public keys must be the same environment. Mixing sk_live with pk_test
+ * (or the reverse) charges one ledger and confirms against another.
+ */
+export function assertPaystackKeysReady() {
+  const secretMode = getPaystackSecretMode();
+  if (!secretMode) {
+    throw new PaystackError("PAYSTACK_SECRET_KEY must be a Paystack sk_live_ or sk_test_ key", 0);
+  }
+  const publicMode = getPaystackPublicMode();
+  if (publicMode && publicMode !== secretMode) {
+    throw new PaystackError(
+      "Paystack public and secret keys are from different environments. Use matching live keys (or matching test keys).",
+      0
+    );
+  }
 }
 
 /** True when the configured secret key moves real money. */
 export function isPaystackLiveMode() {
-  return !!process.env.PAYSTACK_SECRET_KEY?.trim().startsWith("sk_live_");
+  return getPaystackSecretMode() === "live";
 }
 
 export async function verifyTransaction(reference: string) {
@@ -161,6 +195,12 @@ export async function createTransferRecipient(params: {
  * Sends money to a recipient. `reference` must be caller-generated and unique —
  * Paystack rejects duplicates, which is what makes retries safe from double-paying.
  * Amount is in kobo (NGN × 100).
+ *
+ * Transfer security (manual Paystack config, not done in app code):
+ * - Prefer disabling the Transfers OTP / "Confirm transfers" preference only after
+ *   enabling Paystack Transfer Approval / IP allowlisting so automated payouts work
+ *   without weakening origin verification.
+ * - Never put PAYSTACK_SECRET_KEY in NEXT_PUBLIC_* or client bundles.
  */
 export async function initiateTransfer(params: {
   amount: number;

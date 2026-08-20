@@ -83,7 +83,7 @@ export default async function BookingDetailPage({
         <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
           <p className="font-medium text-emerald-700">✓ Payment received — booking confirmed!</p>
           <p className="mt-1 text-sm text-emerald-600">
-            Your funds are held securely in Evendor Escrow until after your event.
+            Your funds are held securely until after your event is completed.
           </p>
         </div>
       )}
@@ -125,7 +125,7 @@ export default async function BookingDetailPage({
             {booking.vendor.businessName} marked this job as delivered
           </p>
           <p className="mt-1 text-muted-foreground">
-            Your payment is still locked in escrow. Approve below to release it, or report a
+            Your payment is still held securely. Approve below to release the vendor payout, or report a
             problem to keep it locked while we investigate. If you do neither, it releases
             automatically on{" "}
             {autoReleaseAt.toLocaleString([], {
@@ -198,7 +198,7 @@ export default async function BookingDetailPage({
         )}
         <p><strong>Status:</strong> {booking.status.replace("_", " ")}</p>
         <div className="rounded-lg bg-primary/5 px-3 py-2 text-xs font-medium text-primary">
-          🔒 Your payment is held securely in Evendor Escrow
+          🔒 Your payment is held securely by Evendor
           {booking.dispute?.status === "OPEN"
             ? " — locked until your dispute is resolved."
             : booking.status !== "COMPLETED"
@@ -224,7 +224,7 @@ export default async function BookingDetailPage({
         !booking.dispute && (
           <div className="rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
             After your event (or once the vendor marks the job delivered), you can confirm
-            completion here to release escrow — or report a problem from this page or your chat
+            completion here to release the vendor payout — or report a problem from this page or your chat
             with the vendor.
           </div>
         )}

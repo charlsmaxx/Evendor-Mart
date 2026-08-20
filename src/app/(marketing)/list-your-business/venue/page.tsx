@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getSessionUser } from "@/lib/auth";
+import { getSessionUser, hasCurrentLegalAcceptance } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { SiteHeader } from "@/components/marketing/site-header";
 import { VendorOnboardingWizard } from "@/components/onboarding/vendor-onboarding-wizard";
@@ -12,6 +12,11 @@ export default async function ListVenuePage() {
   const sessionUser = await getSessionUser();
   if (!sessionUser) {
     redirect("/register?role=vendor&redirect=/list-your-business/venue");
+  }
+
+  const accepted = await hasCurrentLegalAcceptance(sessionUser.id).catch(() => true);
+  if (!accepted) {
+    redirect("/legal/accept?next=/list-your-business/venue");
   }
 
   let dbUser = null;
@@ -40,6 +45,11 @@ export default async function ListVenuePage() {
           <h1 className="mt-2 font-display text-3xl font-bold">Set up your venue profile</h1>
           <p className="mt-2 text-muted-foreground">
             Capacity, amenities, address, and bank details — tailored for halls and event spaces.
+            Listing is subject to Evendor&apos;s{" "}
+            <Link href="/terms#vendors" className="font-medium text-primary hover:underline">
+              vendor terms
+            </Link>
+            .
           </p>
         </div>
         <VendorOnboardingWizard businessKind="VENUE" />

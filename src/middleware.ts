@@ -1,9 +1,17 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
+import { LEGAL_COOKIE_NAME, isCurrentLegalCookie } from "@/lib/legal";
 
 const authRoutes = ["/login", "/register", "/otp"];
 /** Logged-in users must still be able to open these (password recovery). */
 const authAllowWhenSignedIn = ["/forgot-password", "/reset-password"];
+
+function copyCookies(from: NextResponse, to: NextResponse) {
+  from.cookies.getAll().forEach((cookie) => {
+    to.cookies.set(cookie);
+  });
+  return to;
+}
 
 /** Vendor dashboard lives at /vendor/* — public profiles are /vendors/* */
 function isProtectedPath(pathname: string) {
@@ -35,7 +43,7 @@ export async function middleware(request: NextRequest) {
       pathname.startsWith("/dashboard") ||
       pathname === "/"
     ) {
-      return NextResponse.redirect(new URL("/reset-password", request.url));
+      return copyCookies(supabaseResponse, NextResponse.redirect(new URL("/reset-password", request.url)));
     }
   }
 
@@ -45,23 +53,35 @@ export async function middleware(request: NextRequest) {
     !authAllowWhenSignedIn.some((r) => pathname.startsWith(r))
   ) {
     if (inPasswordRecovery) {
-      return NextResponse.redirect(new URL("/reset-password", request.url));
+      return copyCookies(supabaseResponse, NextResponse.redirect(new URL("/reset-password", request.url)));
     }
     const role = request.nextUrl.searchParams.get("role");
     const redirectParam = request.nextUrl.searchParams.get("redirect");
     if (role === "vendor" || redirectParam?.startsWith("/list-your-business")) {
       const dest =
         redirectParam?.startsWith("/list-your-business") ? redirectParam : "/list-your-business";
-      return NextResponse.redirect(new URL(dest, request.url));
+      return copyCookies(supabaseResponse, NextResponse.redirect(new URL(dest, request.url)));
     }
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return copyCookies(supabaseResponse, NextResponse.redirect(new URL("/dashboard", request.url)));
   }
 
   if (!user && isProtectedPath(pathname)) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("redirect", pathname);
-    return NextResponse.redirect(url);
+    return copyCookies(supabaseResponse, NextResponse.redirect(url));
+  }
+
+  if (
+    user &&
+    isProtectedPath(pathname) &&
+    !isCurrentLegalCookie(request.cookies.get(LEGAL_COOKIE_NAME)?.value)
+  ) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/legal/accept";
+    url.search = "";
+    url.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
+    return copyCookies(supabaseResponse, NextResponse.redirect(url));
   }
 
   supabaseResponse.headers.set("x-pathname", pathname);

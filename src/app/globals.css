@@ -129,3 +129,24 @@ body {
   color: var(--color-foreground);
   box-shadow: 0 1px 3px rgba(31, 27, 24, 0.06);
 }
+
+@keyframes hero-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.hero-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: hero-marquee 72s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-marquee-track {
+    animation: none;
+  }
+}

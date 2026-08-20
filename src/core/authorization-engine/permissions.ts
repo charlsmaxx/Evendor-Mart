@@ -102,7 +102,7 @@ export function hrefToAdminSection(href: string): AdminSection {
   if (href.startsWith("/admin/bookings")) return "bookings";
   if (href.startsWith("/admin/listings")) return "listings";
   if (href.startsWith("/admin/vendors")) return "vendors";
-  if (href.startsWith("/admin/users")) return "users";
+  if (href.startsWith("/admin/users") || href.startsWith("/admin/legal")) return "users";
   if (href.startsWith("/admin/verification")) return "verification";
   if (href.startsWith("/admin/trust")) return "trust";
   if (href.startsWith("/admin/escrow")) return "escrow";

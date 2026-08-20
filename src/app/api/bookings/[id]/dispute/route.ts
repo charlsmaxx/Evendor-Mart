@@ -45,7 +45,7 @@ export async function POST(
 
   return jsonOk({
     message:
-      "Dispute opened. Your payment stays locked in escrow until our team resolves it, usually within 24–48 hours. Please upload evidence and check your chat with the vendor for an Evendor Admin notice.",
+      "Dispute opened. Your payment stays locked until our team resolves it, usually within 24–48 hours. Please upload evidence and check your chat with the vendor for an Evendor Admin notice.",
   });
 }
 
@@ -67,6 +67,6 @@ export async function DELETE(
 
   return jsonOk({
     message:
-      "Dispute cancelled. Your payment remains in escrow until you confirm the job is done or the automatic release window ends.",
+      "Dispute cancelled. Your payment remains locked until you confirm the job is done or the automatic release window ends.",
   });
 }

@@ -7,7 +7,7 @@ export async function GET() {
   const user = await requireAuth();
   if (!user) return jsonError("Unauthorized", 401);
 
-  const [profile, bookings, favorites, notifications, rewards, messages] = await Promise.all([
+      const [profile, bookings, favorites, notifications, rewards, messages, legalAcceptances] = await Promise.all([
       prisma.user.findUnique({
         where: { id: user.id },
         select: {
@@ -72,6 +72,16 @@ export async function GET() {
         orderBy: { createdAt: "desc" },
         take: 500,
       }),
+      prisma.legalAcceptance.findMany({
+        where: { userId: user.id },
+        select: {
+          termsVersion: true,
+          privacyVersion: true,
+          acceptedAt: true,
+          acceptanceMethod: true,
+        },
+        orderBy: { acceptedAt: "desc" },
+      }),
     ]);
 
     const exportPayload = {
@@ -82,6 +92,7 @@ export async function GET() {
       notifications,
       rewards,
       messagesSent: messages,
+      legalAcceptances,
     };
 
   return new Response(JSON.stringify(exportPayload, null, 2), {

@@ -89,7 +89,7 @@ export default function VendorRevenuePage() {
     <div className="space-y-8">
       <VendorPageHeader
         title="Revenue Center"
-        subtitle="Earnings, escrow, and payout history in one place."
+        subtitle="Earnings, pending payouts, and withdrawal history in one place."
         action={
           <div className="flex gap-2">
             <button
@@ -110,15 +110,15 @@ export default function VendorRevenuePage() {
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <VendorSummaryCard label="Available Balance" value={formatCurrency(data.availableBalance)} accent icon={Wallet} href="/vendor/payouts" />
-        <VendorSummaryCard label="Pending Earnings" value={formatCurrency(data.pendingEarnings)} sub="In escrow" icon={Lock} />
+        <VendorSummaryCard label="Available for Payout" value={formatCurrency(data.availableBalance)} accent icon={Wallet} href="/vendor/payouts" />
+        <VendorSummaryCard label="Pending Earnings" value={formatCurrency(data.pendingEarnings)} sub="Not withdrawable yet" icon={Lock} />
         <VendorSummaryCard label="This Month" value={formatCurrency(data.monthEarnings)} icon={TrendingUp} accent />
         <VendorSummaryCard label="Total Revenue" value={formatCurrency(data.totalRevenue)} sub={`${data.completedBookings} completed`} icon={TrendingUp} />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="rounded-2xl border border-border/80 bg-card/60 p-4 backdrop-blur-sm">
-          <p className="text-sm text-muted-foreground">Escrow Balance</p>
+          <p className="text-sm text-muted-foreground">Pending Earnings</p>
           <p className="mt-1 text-xl font-bold">{formatCurrency(data.escrowBalance)}</p>
         </div>
         <div className="rounded-2xl border border-border/80 bg-card/60 p-4 backdrop-blur-sm">

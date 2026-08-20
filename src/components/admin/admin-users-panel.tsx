@@ -75,6 +75,11 @@ export function AdminUsersPanel() {
       <AdminPageHeader
         title="Users"
         subtitle="Customers, vendors, and platform accounts — searchable and filterable."
+        action={
+          <Link href="/admin/legal" className="text-sm font-medium text-[#7A2E3D] hover:underline">
+            Legal acceptances →
+          </Link>
+        }
       />
 
       {adminMe?.isSuperAdmin && (

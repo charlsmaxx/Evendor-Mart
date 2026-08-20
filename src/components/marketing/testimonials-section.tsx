@@ -4,9 +4,9 @@ import { motion } from "framer-motion";
 import { SectionShell } from "@/components/shared/section-shell";
 
 const testimonials = [
-  { name: "Amara O.", role: "Wedding planner, Lagos", quote: "Evendor cut our vendor sourcing time by 70%. The booking flow is flawless." },
-  { name: "David K.", role: "Corporate events, Nairobi", quote: "Finally — price transparency and verified vendors in one platform." },
-  { name: "Fatima A.", role: "Bride-to-be, Abuja", quote: "I booked my venue, DJ, and caterer without a single stressful phone chase." },
+  { name: "Amara O.", role: "Wedding planner, Port Harcourt", quote: "Evendor cut our vendor sourcing time by 70%. The booking flow is flawless." },
+  { name: "David K.", role: "Corporate events, Asaba", quote: "Finally — price transparency and verified vendors in one platform." },
+  { name: "Fatima A.", role: "Bride-to-be, Warri", quote: "I booked my venue, DJ, and caterer without a single stressful phone chase." },
 ];
 
 export function TestimonialsSection() {

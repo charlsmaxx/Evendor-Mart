@@ -10,8 +10,15 @@ import { reportClientError } from "@/lib/client-error";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { LegalNotice } from "@/components/auth/legal-notice";
+import { LEGAL_SIGNUP_ERROR_MESSAGE } from "@/lib/legal";
 
 type Mode = "login" | "register" | "otp";
+
+const GOOGLE_LABEL = "Continue with Google";
+const EMAIL_REGISTER_LABEL = "Continue with Email";
+const EMAIL_LOGIN_LABEL = "Sign in";
+const OTP_LABEL = "Send magic link";
 
 function GoogleIcon() {
   return (
@@ -43,6 +50,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const redirect =
     searchParams.get("redirect") ?? (mode === "register" ? "/" : "/dashboard");
   const role = searchParams.get("role");
+  const authError = searchParams.get("error");
   /** After signup, customers land on the homepage; vendors continue business onboarding. */
   const postRegisterPath =
     role === "vendor" ? (searchParams.get("redirect") ?? "/list-your-business") : "/";
@@ -53,7 +61,6 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [confirmEmailSent, setConfirmEmailSent] = useState(false);
@@ -67,26 +74,30 @@ export function AuthForm({ mode }: { mode: Mode }) {
     }
   }, []);
 
+  useEffect(() => {
+    if (authError === "registration") {
+      reportClientError("auth", LEGAL_SIGNUP_ERROR_MESSAGE);
+    }
+  }, [authError]);
+
   async function syncDbUser() {
-    await fetch("/api/auth/sync-user", { method: "POST", credentials: "same-origin" });
+    const res = await fetch("/api/auth/sync-user", { method: "POST", credentials: "same-origin" });
+    if (!res.ok) throw new Error(LEGAL_SIGNUP_ERROR_MESSAGE);
   }
 
-  async function acceptTermsIfNeeded() {
-    if (mode !== "register") return;
-    await fetch("/api/auth/accept-terms", {
+  async function recordAcceptance(method: "email" | "google" | "otp") {
+    const res = await fetch("/api/auth/accept-terms", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ acceptTerms: true }),
+      credentials: "same-origin",
+      body: JSON.stringify({ method }),
     });
+    if (!res.ok) throw new Error(LEGAL_SIGNUP_ERROR_MESSAGE);
   }
 
   async function handleEmailAuth(e: React.FormEvent) {
     e.preventDefault();
     if (!getSupabaseEnv()) return;
-    if (mode === "register" && !acceptedTerms) {
-      reportClientError("auth", "Please accept the Terms of Service and Privacy Policy.");
-      return;
-    }
 
     setLoading(true);
     setConfirmEmailSent(false);
@@ -109,8 +120,13 @@ export function AuthForm({ mode }: { mode: Mode }) {
         }
 
         if (data.session) {
-          await syncDbUser();
-          await acceptTermsIfNeeded();
+          try {
+            await syncDbUser();
+            await recordAcceptance("email");
+          } catch {
+            reportClientError("auth", LEGAL_SIGNUP_ERROR_MESSAGE);
+            return;
+          }
           await refreshAuthState();
           router.push(postRegisterPath);
           router.refresh();
@@ -181,8 +197,6 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
       const callback = new URL("/api/auth/callback", window.location.origin);
       callback.searchParams.set("next", afterAuthPath);
-      // Google sign-up counts as accepting platform terms (disclosed beside the button).
-      if (mode === "register") callback.searchParams.set("terms", "1");
 
       const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: "google",
@@ -201,7 +215,6 @@ export function AuthForm({ mode }: { mode: Mode }) {
         return;
       }
 
-      // Supabase usually redirects the browser; if a URL is returned, navigate explicitly.
       if (data?.url) {
         window.location.assign(data.url);
         return;
@@ -238,10 +251,51 @@ export function AuthForm({ mode }: { mode: Mode }) {
     );
   }
 
+  const emailFields = (
+    <>
+      <div>
+        <Label htmlFor="email">Email</Label>
+        <Input
+          id="email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          className="mt-1"
+        />
+      </div>
+      {mode !== "otp" && (
+        <div>
+          <div className="flex items-center justify-between gap-3">
+            <Label htmlFor="password">Password</Label>
+            {mode === "login" && (
+              <Link href="/forgot-password" className="text-xs font-medium text-primary hover:underline">
+                Forgot password?
+              </Link>
+            )}
+          </div>
+          <Input
+            id="password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            minLength={8}
+            className="mt-1"
+          />
+        </div>
+      )}
+    </>
+  );
+
   return (
     <div className="glass w-full max-w-md rounded-2xl border border-border bg-card p-8 shadow-sm">
       <h1 className="font-display text-2xl font-bold">
-        {mode === "login" ? "Welcome back" : mode === "register" ? "Create account" : "Sign in with OTP"}
+        {mode === "login"
+          ? "Welcome back"
+          : mode === "register"
+            ? "Create your Evendor account"
+            : "Sign in with OTP"}
       </h1>
       <p className="mt-2 text-sm text-muted-foreground">
         {mode === "register" && role === "vendor"
@@ -249,92 +303,103 @@ export function AuthForm({ mode }: { mode: Mode }) {
           : "Africa's premium event marketplace."}
       </p>
 
-      <form onSubmit={mode === "otp" ? handleOtp : handleEmailAuth} className="mt-6 space-y-4">
-        <div>
-          <Label htmlFor="email">Email</Label>
-          <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="mt-1" />
-        </div>
-        {mode !== "otp" && (
-          <div>
-            <div className="flex items-center justify-between gap-3">
-              <Label htmlFor="password">Password</Label>
-              {mode === "login" && (
-                <Link
-                  href="/forgot-password"
-                  className="text-xs font-medium text-primary hover:underline"
-                >
-                  Forgot password?
-                </Link>
-              )}
-            </div>
-            <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} className="mt-1" />
+      {mode === "register" ? (
+        <>
+          <div className="mt-6">
+            <LegalNotice googleLabel={GOOGLE_LABEL} emailLabel={EMAIL_REGISTER_LABEL} />
           </div>
-        )}
-        {mode === "register" && (
-          <label className="flex items-start gap-2 text-sm text-muted-foreground">
-            <input
-              type="checkbox"
-              className="mt-1"
-              checked={acceptedTerms}
-              onChange={(e) => setAcceptedTerms(e.target.checked)}
-              required
-            />
-            <span>
-              I agree to the{" "}
-              <Link href="/terms" className="text-primary hover:underline" target="_blank">
-                Terms of Service
-              </Link>{" "}
-              and{" "}
-              <Link href="/privacy" className="text-primary hover:underline" target="_blank">
-                Privacy Policy
-              </Link>
-            </span>
-          </label>
-        )}
-        <Button type="submit" variant="gradient" className="w-full" disabled={loading || !getSupabaseEnv() || (mode === "register" && !acceptedTerms)}>
-          {loading ? "Please wait..." : mode === "login" ? "Sign in" : mode === "register" ? "Sign up" : "Send magic link"}
-        </Button>
-      </form>
-
-      <div className="relative my-6">
-        <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border" /></div>
-        <span className="relative mx-auto block w-fit bg-card px-2 text-xs text-muted-foreground">or</span>
-      </div>
-
-      <Button
-        type="button"
-        variant="outline"
-        className="w-full gap-2"
-        onClick={handleGoogle}
-        disabled={loading || !getSupabaseEnv()}
-      >
-        <GoogleIcon />
-        {loading ? "Redirecting…" : mode === "register" ? "Sign up with Google" : "Continue with Google"}
-      </Button>
-      {mode === "register" && (
-        <p className="mt-2 text-center text-[11px] leading-relaxed text-muted-foreground">
-          By continuing with Google, you agree to our{" "}
-          <Link href="/terms" className="text-primary hover:underline" target="_blank">
-            Terms
-          </Link>{" "}
-          and{" "}
-          <Link href="/privacy" className="text-primary hover:underline" target="_blank">
-            Privacy Policy
-          </Link>
-          .
-        </p>
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-4 w-full gap-2"
+            onClick={handleGoogle}
+            disabled={loading || !getSupabaseEnv()}
+          >
+            <GoogleIcon />
+            {loading ? "Redirecting…" : GOOGLE_LABEL}
+          </Button>
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-border" />
+            </div>
+            <span className="relative mx-auto block w-fit bg-card px-2 text-xs text-muted-foreground">OR</span>
+          </div>
+          <form onSubmit={handleEmailAuth} className="space-y-4">
+            {emailFields}
+            <Button type="submit" variant="gradient" className="w-full" disabled={loading || !getSupabaseEnv()}>
+              {loading ? "Please wait..." : EMAIL_REGISTER_LABEL}
+            </Button>
+          </form>
+        </>
+      ) : (
+        <>
+          {mode === "otp" && (
+            <div className="mt-6">
+              <LegalNotice googleLabel={GOOGLE_LABEL} emailLabel={OTP_LABEL} />
+            </div>
+          )}
+          <form onSubmit={mode === "otp" ? handleOtp : handleEmailAuth} className={mode === "otp" ? "mt-4 space-y-4" : "mt-6 space-y-4"}>
+            {emailFields}
+            <Button type="submit" variant="gradient" className="w-full" disabled={loading || !getSupabaseEnv()}>
+              {loading ? "Please wait..." : mode === "otp" ? OTP_LABEL : EMAIL_LOGIN_LABEL}
+            </Button>
+          </form>
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-border" />
+            </div>
+            <span className="relative mx-auto block w-fit bg-card px-2 text-xs text-muted-foreground">OR</span>
+          </div>
+          {mode === "login" && (
+            <div className="mb-4">
+              <LegalNotice googleLabel={GOOGLE_LABEL} />
+            </div>
+          )}
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full gap-2"
+            onClick={handleGoogle}
+            disabled={loading || !getSupabaseEnv()}
+          >
+            <GoogleIcon />
+            {loading ? "Redirecting…" : GOOGLE_LABEL}
+          </Button>
+        </>
       )}
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
         {mode === "login" ? (
-          <>No account? <Link href="/register" className="text-primary hover:underline">Sign up</Link></>
+          <>
+            No account?{" "}
+            <Link href="/register" className="text-primary hover:underline">
+              Sign up
+            </Link>
+          </>
         ) : mode === "register" ? (
-          <>Have an account? <Link href="/login" className="text-primary hover:underline">Log in</Link></>
+          <>
+            Have an account?{" "}
+            <Link href="/login" className="text-primary hover:underline">
+              Log in
+            </Link>
+          </>
         ) : (
-          <Link href="/login" className="text-primary hover:underline">Back to password login</Link>
+          <Link href="/login" className="text-primary hover:underline">
+            Back to password login
+          </Link>
         )}
         {" · "}
-        <Link href="/otp" className="text-primary hover:underline">OTP login</Link>
+        <Link href="/otp" className="text-primary hover:underline">
+          OTP login
+        </Link>
+        {" · "}
+        <Link href="/terms" className="text-primary hover:underline">
+          Terms
+        </Link>
+        {" · "}
+        <Link href="/privacy" className="text-primary hover:underline">
+          Privacy
+        </Link>
       </p>
     </div>
   );

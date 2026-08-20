@@ -5,7 +5,7 @@ import { HowItWorksSection } from "@/components/marketing/how-it-works-section";
 export const metadata: Metadata = {
   title: "How it works",
   description:
-    "Discover, compare, and book verified event vendors and venues on Evendor — with payments held in escrow until the job is done.",
+    "Discover, compare, and book verified event vendors and venues on Evendor — with payments held securely until the job is done.",
   openGraph: {
     title: "How Evendor works",
     description:

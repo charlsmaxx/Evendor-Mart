@@ -5,7 +5,7 @@ import { requireAuth } from "@/lib/auth";
 import { jsonNoStore, jsonError, handleApiRoute } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
 import { getVendorWalletStats } from "@/lib/vendor-wallet";
-import { payoutLimiter, checkRateLimit } from "@/lib/rate-limit";
+import { payoutLimiter, authLimiter, checkRateLimit } from "@/lib/rate-limit";
 import {
   MAX_WITHDRAWAL_AMOUNT,
   MIN_WITHDRAWAL_AMOUNT,
@@ -14,7 +14,14 @@ import {
   requestWithdrawal,
   readVendorBankAccount,
 } from "@/core/payment-engine/payout-service";
-import { isPaystackConfigured, isPaystackLiveMode } from "@/core/payment-engine/paystack";
+import { isPaystackConfigured } from "@/core/payment-engine/paystack";
+import {
+  PayoutAuthError,
+  getPayoutAuthStatus,
+  verifyPayoutPassword,
+  verifyWebauthnAssertion,
+  webauthnRpFromRequest,
+} from "@/core/payment-engine/payout-auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -34,11 +41,13 @@ export async function GET() {
 
     const wallet = await getVendorWalletStats(vendor.id);
     const bank = readVendorBankAccount(vendor.metadata);
+    const payoutAuth = getPayoutAuthStatus(vendor.metadata);
 
     return jsonNoStore({
       ...wallet,
       payoutsEnabled: isPaystackConfigured() && !!bank && bank.verified !== false,
-      paystackTestMode: isPaystackConfigured() && !isPaystackLiveMode(),
+      payoutPasswordSet: payoutAuth.passwordSet,
+      webauthnEnabled: payoutAuth.webauthnEnabled,
       bankAccount: bank
         ? {
             bankName: bank.bankName,
@@ -59,6 +68,15 @@ const withdrawSchema = z.object({
       MAX_WITHDRAWAL_AMOUNT,
       `Single withdrawals are capped at ₦${MAX_WITHDRAWAL_AMOUNT.toLocaleString()}`
     ),
+  payoutPassword: z.string().optional(),
+  webauthn: z
+    .object({
+      credentialId: z.string().min(16).max(256),
+      authenticatorData: z.string().min(16).max(8192),
+      clientDataJSON: z.string().min(16).max(8192),
+      signature: z.string().min(16).max(8192),
+    })
+    .optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -73,7 +91,7 @@ export async function POST(req: NextRequest) {
 
     const vendor = await prisma.vendorProfile.findUnique({
       where: { userId: user.id },
-      select: { id: true },
+      select: { id: true, metadata: true },
     });
     if (!vendor) return jsonError("Vendor not found", 404);
 
@@ -90,6 +108,44 @@ export async function POST(req: NextRequest) {
         "Payouts are not configured yet. Add PAYSTACK_SECRET_KEY on the server.",
         503
       );
+    }
+
+    const payoutAuth = getPayoutAuthStatus(vendor.metadata);
+    if (!payoutAuth.passwordSet) {
+      return jsonError(
+        "Set a withdrawal password before sending funds to your bank.",
+        403,
+        "PAYOUT_PASSWORD_NOT_SET"
+      );
+    }
+
+    const authRate = await checkRateLimit(authLimiter, `payout-auth:${user.id}`);
+    if (!authRate.success) {
+      return jsonError("Too many attempts. Try again later.", 429, "PAYOUT_AUTH_LOCKED");
+    }
+
+    try {
+      if (parsed.data.webauthn) {
+        const rp = webauthnRpFromRequest(req);
+        await verifyWebauthnAssertion({
+          vendorId: vendor.id,
+          metadata: vendor.metadata,
+          origin: rp.origin,
+          rpId: rp.rpId,
+          assertion: parsed.data.webauthn,
+        });
+      } else {
+        await verifyPayoutPassword({
+          vendorId: vendor.id,
+          metadata: vendor.metadata,
+          password: parsed.data.payoutPassword,
+        });
+      }
+    } catch (err) {
+      if (err instanceof PayoutAuthError) {
+        return jsonError(err.message, err.status, err.code);
+      }
+      throw err;
     }
 
     try {
@@ -125,7 +181,6 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const testMode = !isPaystackLiveMode();
       return jsonNoStore({
         id: withdrawal.id,
         reference: withdrawal.reference,
@@ -133,10 +188,8 @@ export async function POST(req: NextRequest) {
         status: processed?.status ?? "PENDING",
         message:
           processed?.status === "PAID"
-            ? testMode
-              ? "Test withdrawal succeeded. Paystack test mode does not debit balance or pay a real bank account."
-              : "Withdrawal sent to your bank account."
-            : "Withdrawal request received. Funds are being sent to your bank — refresh in a minute to check status.",
+            ? "Payout successful."
+            : "Payout processing. Funds are being sent to your bank — refresh in a minute to check status.",
       });
     } catch (err) {
       if (err instanceof WithdrawalError) return jsonError(err.message, err.status);

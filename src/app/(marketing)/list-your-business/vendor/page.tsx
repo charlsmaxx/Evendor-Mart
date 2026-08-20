@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getSessionUser } from "@/lib/auth";
+import { getSessionUser, hasCurrentLegalAcceptance } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { VendorOnboardingWizard } from "@/components/onboarding/vendor-onboarding-wizard";
 import { SiteHeader } from "@/components/marketing/site-header";
@@ -12,6 +12,11 @@ export default async function ListServiceVendorPage() {
   const sessionUser = await getSessionUser();
   if (!sessionUser) {
     redirect("/register?role=vendor&redirect=/list-your-business/vendor");
+  }
+
+  const accepted = await hasCurrentLegalAcceptance(sessionUser.id).catch(() => true);
+  if (!accepted) {
+    redirect("/legal/accept?next=/list-your-business/vendor");
   }
 
   let dbUser = null;
@@ -40,6 +45,11 @@ export default async function ListServiceVendorPage() {
           <h1 className="mt-2 font-display text-3xl font-bold">Set up your business profile</h1>
           <p className="mt-2 text-muted-foreground">
             Photographers, caterers, DJs, and other event services — listed separately from venues.
+            Listing is subject to Evendor&apos;s{" "}
+            <Link href="/terms#vendors" className="font-medium text-primary hover:underline">
+              vendor terms
+            </Link>
+            .
           </p>
         </div>
         <VendorOnboardingWizard businessKind="SERVICE" />

@@ -37,6 +37,7 @@ ALTER TABLE IF EXISTS public."DisputeEvidence" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public."Payout" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public."Withdrawal" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public."VerificationRequest" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public."LegalAcceptance" ENABLE ROW LEVEL SECURITY;
 
 -- ─── Policies (idempotent: drop then create) ────────────────────────────────
 -- Optional: allow authenticated users limited reads where the browser might need them.
@@ -145,8 +146,15 @@ CREATE POLICY "conversations_participant" ON public."Conversation"
     )
   );
 
+-- Legal acceptance: users may read their own rows. Inserts/updates/deletes
+-- are not granted to anon/authenticated — Prisma (server) records acceptance.
+DROP POLICY IF EXISTS "legal_acceptances_select_own" ON public."LegalAcceptance";
+CREATE POLICY "legal_acceptances_select_own" ON public."LegalAcceptance"
+  FOR SELECT USING (auth.uid()::text = "userId");
+
 -- Sensitive tables intentionally have NO policies for anon/authenticated:
 -- Payment, Payout, Withdrawal, AuditLog, Dispute*, VerificationRequest,
 -- Subscription, QuoteRequest, BusinessCustomer, VendorStaff, BlockedDate,
 -- AnalyticsEvent, VenueDetails
+-- LegalAcceptance has SELECT-own only (no INSERT/UPDATE/DELETE via PostgREST)
 -- → blocked via PostgREST; Prisma (server) still has full access.

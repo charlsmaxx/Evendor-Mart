@@ -8,6 +8,7 @@ import { emitDomainEvent } from "@/core/events";
 import { createRefund, isPaystackConfigured } from "@/core/payment-engine/paystack";
 import { notifyUser } from "@/core/notification-engine";
 import { AUTO_RELEASE_HOURS, VENDOR_PAYOUT_PERCENT, vendorShareAmount } from "@/core/shared/config";
+import { isBookingPayoutEligible, type PayoutReleaseSource } from "./eligibility";
 import crypto from "crypto";
 
 function payoutReference(): string {
@@ -22,25 +23,28 @@ export class EscrowRuleError extends Error {
   }
 }
 
-export async function releaseEscrow(bookingId: string, confirmedByUserId?: string) {
+export async function releaseEscrow(
+  bookingId: string,
+  confirmedByUserId?: string,
+  options?: { source?: PayoutReleaseSource }
+) {
+  const source = options?.source ?? (confirmedByUserId ? "customer_confirm" : "admin");
+  const eligibility = await isBookingPayoutEligible(bookingId, { source });
+  if (!eligibility.eligible) {
+    if (eligibility.status === "ON_HOLD" || eligibility.status === "NOT_ELIGIBLE") {
+      throw new EscrowRuleError(eligibility.reason);
+    }
+    throw new Error(eligibility.reason);
+  }
+
   const booking = await prisma.booking.findUnique({
     where: { id: bookingId },
     include: { vendor: true, payments: true, customer: true, dispute: true },
   });
   if (!booking) throw new Error("Booking not found");
-  if (!["CONFIRMED", "IN_PROGRESS"].includes(booking.status)) {
-    throw new Error("Booking is not in a releasable state");
-  }
 
-  // Last line of defence: an open dispute locks the funds no matter which caller
-  // asks for a release (customer confirm, admin action, or the auto-release cron).
-  if (booking.dispute && ["OPEN", "UNDER_REVIEW"].includes(booking.dispute.status)) {
-    throw new EscrowRuleError(
-      "Funds are locked while a dispute is open. Resolve the dispute first."
-    );
-  }
-
-  const payoutAmount = vendorShareAmount(booking.totalAmount);
+  // Amount is always recomputed from authoritative booking totals — never from the client.
+  const payoutAmount = eligibility.vendorPayableAmount;
 
   await prisma.$transaction(async (tx) => {
     await tx.booking.update({
@@ -256,7 +260,7 @@ export async function cancelDispute(bookingId: string, customerId: string) {
     vendorId: booking.vendorId,
     listingId: booking.listingId,
     body:
-      "Evendor notice: The customer cancelled this dispute. Funds remain in escrow until the customer confirms the job is done, or until the automatic release window ends.",
+      "Evendor notice: The customer cancelled this dispute. Funds remain held until the customer confirms the job is done, or until the automatic release window ends.",
   });
 }
 
@@ -321,7 +325,7 @@ async function postDisputeOpenedChatNotice(input: {
     vendorId: input.vendorId,
     listingId: input.listingId,
     body:
-      "Evendor notice: This booking is now in dispute. Your payment is locked in escrow and cannot be released to the vendor until our team resolves the case.\n\n" +
+      "Evendor notice: This booking is now in dispute. Your payment is locked and cannot be released to the vendor until our team resolves the case.\n\n" +
       "If you opened this dispute, please upload evidence (photos, videos, or documents) on your booking page so we can review it quickly:\n" +
       `/bookings/${input.bookingId}#confirm\n\n` +
       "Our team typically responds within 24–48 hours.",
@@ -535,7 +539,7 @@ export async function autoReleaseExpiredEscrows(): Promise<number> {
   let released = 0;
   for (const b of releasable) {
     try {
-      await releaseEscrow(b.id, undefined);
+      await releaseEscrow(b.id, undefined, { source: "auto_release" });
       released++;
     } catch {
       /* continue */

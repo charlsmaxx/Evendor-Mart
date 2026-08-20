@@ -124,6 +124,21 @@ async function handleRefundProcessed(event: PaystackWebhookEvent): Promise<Handl
  * authoritative signal; the reconciliation cron only exists as a safety net for
  * webhooks that never arrive.
  */
+/**
+ * Terminal transfer transitions we accept from Paystack webhooks.
+ * Never downgrade PAID → FAILED (that would free ledger balance while money
+ * may already have left). PAID → REVERSED is allowed (bank reversal).
+ */
+function canApplyTransferStatus(
+  current: PayoutStatus,
+  next: PayoutStatus
+): boolean {
+  if (current === next) return false;
+  if (current === "REVERSED") return false;
+  if (current === "PAID") return next === "REVERSED";
+  return true;
+}
+
 async function handleTransferEvent(
   event: PaystackWebhookEvent,
   status: PayoutStatus
@@ -145,9 +160,13 @@ async function handleTransferEvent(
   });
   if (!withdrawal) return { received: true };
   if (withdrawal.status === status) return { idempotent: true };
+  if (!canApplyTransferStatus(withdrawal.status, status)) {
+    return { idempotent: true };
+  }
 
-  await prisma.withdrawal.update({
-    where: { id: withdrawal.id },
+  // Optimistic lock on the status we just read — concurrent webhooks cannot both win.
+  const updated = await prisma.withdrawal.updateMany({
+    where: { id: withdrawal.id, status: withdrawal.status },
     data: {
       status,
       paystackTransferCode: event.data.transfer_code ?? withdrawal.paystackTransferCode,
@@ -156,14 +175,21 @@ async function handleTransferEvent(
         status === "PAID" ? null : `Paystack reported transfer ${event.event.split(".")[1]}`,
     },
   });
+  if (updated.count === 0) return { idempotent: true };
 
   const paid = status === "PAID";
   await notifyUser({
     userId: withdrawal.vendor.userId,
-    title: paid ? "Withdrawal sent" : "Withdrawal failed",
+    title: paid
+      ? "Withdrawal sent"
+      : status === "REVERSED"
+        ? "Withdrawal reversed"
+        : "Withdrawal failed",
     body: paid
       ? `₦${withdrawal.amount.toLocaleString()} has been sent to your bank account.`
-      : `Your ₦${withdrawal.amount.toLocaleString()} withdrawal did not go through. The amount is back in your available balance.`,
+      : status === "REVERSED"
+        ? `Your ₦${withdrawal.amount.toLocaleString()} payout was reversed by the bank. Contact support if this persists.`
+        : `Your ₦${withdrawal.amount.toLocaleString()} withdrawal did not go through. The amount is back in your available balance.`,
     link: "/vendor/payouts",
   }).catch(() => {
     /* notification is best-effort */

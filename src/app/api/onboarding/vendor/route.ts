@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/auth";
+import { requireAuth, hasCurrentLegalAcceptance } from "@/lib/auth";
 import { jsonOk, jsonError } from "@/lib/api-response";
 import { venueOnboardingSchema, serviceVendorOnboardingSchema } from "@/lib/validations/auth";
 import { slugify } from "@/lib/utils";
@@ -16,6 +16,10 @@ const onboardingBodySchema = z.discriminatedUnion("businessKind", [
 export async function POST(req: NextRequest) {
   const user = await requireAuth();
   if (!user) return jsonError("Unauthorized", 401);
+
+  if (!(await hasCurrentLegalAcceptance(user.id))) {
+    return jsonError("Please review and accept Evendor's Terms of Service and Privacy Policy to continue.", 403);
+  }
 
   const body = await req.json();
   const parsed = onboardingBodySchema.safeParse(body);

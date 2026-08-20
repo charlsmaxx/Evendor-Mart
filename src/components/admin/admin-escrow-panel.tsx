@@ -108,14 +108,14 @@ export function AdminEscrowPanel() {
   return (
     <div className="space-y-8">
       <AdminPageHeader
-        title="Escrow & Payments"
-        subtitle="All customer funds flow through Evendor escrow. Vendors receive payout after event completion."
+        title="Settlements & Payments"
+        subtitle="Customer payments are collected into Evendor's Paystack balance. Vendors withdraw after successful completion."
       />
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <AdminKpiCard label="Escrow Balance" value={formatCurrency(data.escrowBalance)} sub={`${data.escrowCount} held payments`} href="/admin/escrow" accent highlight="amber" />
-        <AdminKpiCard label="Pending Payouts" value={data.pendingPayouts.length} sub="Awaiting release" href="/admin/escrow" highlight="primary" />
-        <AdminKpiCard label="Released Payouts" value={formatCurrency(data.releasedTotal)} sub={`${data.releasedCount} processed`} href="/admin/escrow" highlight="green" />
+        <AdminKpiCard label="Held Payments" value={formatCurrency(data.escrowBalance)} sub={`${data.escrowCount} awaiting completion`} href="/admin/escrow" accent highlight="amber" />
+        <AdminKpiCard label="Pending Earnings" value={data.pendingPayouts.length} sub="Awaiting release to vendor balance" href="/admin/escrow" highlight="primary" />
+        <AdminKpiCard label="Released Earnings" value={formatCurrency(data.releasedTotal)} sub={`${data.releasedCount} credited to vendors`} href="/admin/escrow" highlight="green" />
         <AdminKpiCard label="Disputed Funds" value={formatCurrency(data.disputedFunds)} sub={`${data.disputedCount} locked`} href="/admin/trust" highlight="red" />
       </div>
 

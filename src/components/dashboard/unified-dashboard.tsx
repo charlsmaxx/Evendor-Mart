@@ -25,6 +25,8 @@ import {
 import { MessageNotificationBadge, useMessageBadgeCount } from "@/components/messages/message-notification-badge";
 import { RewardsWalletView, type RewardsWalletData } from "@/components/rewards/rewards-wallet-view";
 import { getCustomerBookingActions } from "@/lib/booking-customer-actions";
+import { ReturnHomeButton } from "@/components/dashboard/return-home-button";
+import { VendorBusinessCard } from "@/components/vendor/vendor-business-card";
 
 export type DashboardUser = {
   id: string;
@@ -39,6 +41,8 @@ export type VendorStats = {
   leads: number;
   bookings: number;
   businessName: string;
+  slug: string;
+  category: string;
 };
 
 export function UnifiedDashboard({
@@ -103,6 +107,7 @@ export function UnifiedDashboard({
 
   return (
     <div className="mx-auto max-w-4xl space-y-10">
+      <ReturnHomeButton />
       <section className="flex flex-col items-center text-center">
         <div className="relative h-24 w-24 overflow-hidden rounded-full border-2 border-primary/20 bg-primary/10 shadow-sm">
           {user.avatarUrl ? (
@@ -322,6 +327,14 @@ export function UnifiedDashboard({
                 {link.label}
               </Link>
             ))}
+          </div>
+          <div className="mt-8">
+            <VendorBusinessCard
+              businessName={vendorStats.businessName}
+              category={vendorStats.category}
+              slug={vendorStats.slug}
+              avatarUrl={user.avatarUrl}
+            />
           </div>
         </section>
       )}

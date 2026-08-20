@@ -6,11 +6,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
+  Award,
   Building2,
   CalendarDays,
   Headphones,
   MapPin,
-  Award,
   Lock,
   Search,
   ShieldCheck,
@@ -18,6 +18,7 @@ import {
   Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { MARKETPLACE_CATEGORIES } from "@/lib/categories";
 
 type SearchMode = "venues" | "vendors";
 
@@ -38,7 +39,7 @@ const TRUST = [
   {
     icon: Lock,
     title: "Secure Payments",
-    desc: "Payments locked in escrow until the job is done",
+    desc: "Payments held securely until the job is done",
   },
   {
     icon: Headphones,
@@ -52,18 +53,27 @@ const TRUST = [
   },
 ] as const;
 
+const CATEGORY_CHIPS = MARKETPLACE_CATEGORIES.map((c) => ({
+  label: c.label,
+  href: `/marketplace?category=${c.slug}`,
+}));
+
 export function HeroSection() {
   const router = useRouter();
   const [mode, setMode] = useState<SearchMode>("venues");
+  const [query, setQuery] = useState("");
   const [location, setLocation] = useState("");
   const [date, setDate] = useState("");
   const [guests, setGuests] = useState("");
 
-  function onSearch(e: FormEvent) {
+  function onSearch(e: FormEvent, options?: { includeType?: boolean }) {
     e.preventDefault();
     const params = new URLSearchParams();
-    if (mode === "venues") params.set("type", "VENUE");
-    else params.set("type", "SERVICE");
+    if (options?.includeType !== false) {
+      if (mode === "venues") params.set("type", "VENUE");
+      else params.set("type", "SERVICE");
+    }
+    if (query.trim()) params.set("q", query.trim());
     if (location.trim()) params.set("city", location.trim());
     if (date) params.set("date", date);
     if (guests.trim()) params.set("guests", guests.trim());
@@ -71,20 +81,140 @@ export function HeroSection() {
     router.push(qs ? `/marketplace?${qs}` : "/marketplace");
   }
 
+  const modeToggle = (
+    <div className="flex flex-wrap items-center gap-2">
+      <button
+        type="button"
+        onClick={() => setMode("venues")}
+        className={cn(
+          "inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition",
+          mode === "venues"
+            ? "bg-black/55 text-white ring-1 ring-white/15 backdrop-blur-sm"
+            : "text-white/85 hover:text-white"
+        )}
+      >
+        <Building2 className="h-4 w-4" aria-hidden />
+        Event Halls
+      </button>
+      <button
+        type="button"
+        onClick={() => setMode("vendors")}
+        className={cn(
+          "inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition",
+          mode === "vendors"
+            ? "bg-black/55 text-white ring-1 ring-white/15 backdrop-blur-sm"
+            : "text-white/85 hover:text-white"
+        )}
+      >
+        <Users className="h-4 w-4" aria-hidden />
+        Vendors
+      </button>
+    </div>
+  );
+
   return (
     <>
-    <section className="relative min-h-[72svh] overflow-hidden text-white md:min-h-[100svh]">
+      {/* Mobile layout — matches the light Eventra-style mock, desktop hero stays as-is */}
+      <section className="bg-[#faf9f7] pt-24 md:hidden">
+        <div className="px-4 pb-6">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#7A2E3D]/10 px-3 py-1 text-[11px] font-medium text-[#7A2E3D]">
+            <Sparkles className="h-3 w-3" aria-hidden />
+            Nigeria&apos;s most trusted event booking platform
+          </span>
+
+          <h1 className="mt-4 font-display text-[2rem] font-semibold leading-[1.12] tracking-tight text-[#1f1b18]">
+            Your Event Starts {" "}
+            <span className="text-[#7A2E3D]">Here!</span>
+          </h1>
+
+          <p className="mt-3 text-[15px] leading-relaxed text-[#5c534c]">
+            Discover and book the best event halls and professional vendors for any
+            occasion.{" "}
+            <span className="font-medium text-[#7A2E3D]">Simple, secure and reliable.</span>
+          </p>
+
+          <form onSubmit={(e) => onSearch(e, { includeType: false })} className="mt-5 space-y-2.5">
+            <label className="flex items-center gap-3 rounded-2xl border border-[#e5dfd9] bg-white px-4 py-3.5 shadow-sm">
+              <Search className="h-5 w-5 shrink-0 text-[#7A2E3D]" aria-hidden />
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search vendors, venues..."
+                className="w-full bg-transparent text-sm text-[#1f1b18] outline-none placeholder:text-[#9a918a]"
+              />
+            </label>
+            <label className="flex items-center gap-3 rounded-2xl border border-[#e5dfd9] bg-white px-4 py-3.5 shadow-sm">
+              <MapPin className="h-5 w-5 shrink-0 text-[#7A2E3D]" aria-hidden />
+              <input
+                type="text"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="Where is your event?"
+                className="w-full bg-transparent text-sm text-[#1f1b18] outline-none placeholder:text-[#9a918a]"
+              />
+            </label>
+            <button
+              type="submit"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#7A2E3D] px-4 py-3.5 text-sm font-semibold uppercase tracking-wide text-white shadow-md shadow-[#7A2E3D]/25"
+            >
+              <Search className="h-4 w-4" aria-hidden />
+              Find vendors &amp; venues
+            </button>
+          </form>
+        </div>
+
+        <div className="pb-4">
+          <p className="px-4 text-center text-xs font-semibold uppercase tracking-[0.16em] text-[#7A2E3D]">
+            Popular search
+          </p>
+          <div className="mt-3 overflow-hidden">
+            <div className="hero-marquee-track gap-2 px-4">
+              {[...CATEGORY_CHIPS, ...CATEGORY_CHIPS].map((item, i) => (
+                <Link
+                  key={`${item.href}-${i}`}
+                  href={item.href}
+                  className="shrink-0 rounded-full border border-[#eadfd8] bg-white px-3.5 py-1.5 text-sm font-medium text-[#3d342f] shadow-sm"
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="overflow-x-hidden pb-8">
+          <div className="relative left-1/2 w-screen max-w-[100vw] -translate-x-1/2">
+            <div className="relative aspect-[4/5] w-full">
+              <Image
+                src="/images/venues.jpg"
+                alt="Featured event hall venue"
+                fill
+                priority
+                quality={90}
+                sizes="100vw"
+                className="object-cover object-center"
+              />
+            </div>
+            <div className="relative z-10 mx-4 -mt-12 rounded-2xl bg-white px-4 py-4 shadow-[0_12px_40px_rgba(31,27,24,0.18)]">
+              <div className="grid grid-cols-2 gap-x-3 gap-y-4">
+                {TRUST.map((item) => (
+                  <div key={item.title} className="flex items-start gap-2">
+                    <item.icon className="mt-0.5 h-4 w-4 shrink-0 text-[#7A2E3D]" strokeWidth={1.75} aria-hidden />
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold leading-tight text-[#1f1b18]">{item.title}</p>
+                      <p className="mt-0.5 text-[10px] leading-snug text-[#6b635c]">{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="relative hidden min-h-[100svh] overflow-hidden text-white md:block">
       <div className="absolute inset-0">
-        {/* Mobile: venues image */}
-        <Image
-          src="/images/venues.jpg"
-          alt="Featured event hall venue"
-          fill
-          priority
-          quality={92}
-          sizes="100vw"
-          className="object-cover object-center md:hidden"
-        />
         {/* Desktop: celebration hero */}
         <Image
           src="/images/hero-background.jpg"
@@ -93,7 +223,7 @@ export function HeroSection() {
           priority
           quality={92}
           sizes="100vw"
-          className="hidden object-cover object-center md:block"
+          className="object-cover object-center"
         />
       </div>
 
@@ -107,7 +237,7 @@ export function HeroSection() {
         aria-hidden
       />
 
-      <div className="relative z-10 mx-auto flex min-h-[72svh] w-full max-w-6xl flex-col justify-center px-4 pb-12 pt-24 sm:px-6 md:min-h-[100svh] md:pb-28 md:pt-32 lg:px-8">
+      <div className="relative z-10 mx-auto flex min-h-[100svh] w-full max-w-6xl flex-col justify-center px-4 pb-12 pt-24 sm:px-6 md:pb-28 md:pt-32 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
@@ -116,7 +246,7 @@ export function HeroSection() {
         >
           <span className="inline-flex items-center gap-2 rounded-full bg-black/45 px-3.5 py-1.5 text-xs font-medium text-white/95 ring-1 ring-white/10 backdrop-blur-sm sm:text-sm">
             <Sparkles className="h-3.5 w-3.5 text-[#7A2E3D]" aria-hidden />
-            Nigeria&apos;s Most Trusted Event Booking Platform
+            Nigeria&apos;s most trusted event booking platform
           </span>
 
           <h1 className="mt-4 font-display text-3xl font-semibold leading-[1.08] tracking-tight sm:mt-6 sm:text-5xl md:text-6xl lg:text-[3.75rem]">
@@ -131,32 +261,7 @@ export function HeroSection() {
           </p>
 
           <div className="mt-5 flex flex-wrap items-center gap-2 sm:mt-8 sm:gap-3">
-            <button
-              type="button"
-              onClick={() => setMode("venues")}
-              className={cn(
-                "inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition",
-                mode === "venues"
-                  ? "bg-black/55 text-white ring-1 ring-white/15 backdrop-blur-sm"
-                  : "text-white/85 hover:text-white"
-              )}
-            >
-              <Building2 className="h-4 w-4" aria-hidden />
-              Event Halls
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode("vendors")}
-              className={cn(
-                "inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition",
-                mode === "vendors"
-                  ? "bg-black/55 text-white ring-1 ring-white/15 backdrop-blur-sm"
-                  : "text-white/85 hover:text-white"
-              )}
-            >
-              <Users className="h-4 w-4" aria-hidden />
-              Vendors
-            </button>
+            {modeToggle}
           </div>
 
           <motion.form
@@ -249,7 +354,7 @@ export function HeroSection() {
     </section>
 
     {/* Separate from hero — sits below so mobile hero has no overflow scrollbar */}
-    <section className="relative z-20 bg-background px-0 pb-2 pt-0 sm:px-6 sm:pb-4 md:-mt-14 md:px-8 lg:px-8">
+    <section className="relative z-20 hidden bg-background px-0 pb-2 pt-0 sm:px-6 sm:pb-4 md:block md:-mt-14 md:px-8 lg:px-8">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

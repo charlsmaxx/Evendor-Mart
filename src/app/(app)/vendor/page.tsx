@@ -10,12 +10,22 @@ export default async function VendorEntryPage() {
 
   let vendor = null;
   try {
-    vendor = await prisma.vendorProfile.findUnique({ where: { userId: user.id } });
+    vendor = await prisma.vendorProfile.findUnique({
+      where: { userId: user.id },
+      include: { user: { select: { avatarUrl: true } } },
+    });
   } catch { /* */ }
 
   const isVendor = user.role === "VENDOR" && !!vendor;
 
   if (!isVendor) return <BecomeVendorCard isLoggedIn />;
 
-  return <VendorOverview businessName={vendor!.businessName} />;
+  return (
+    <VendorOverview
+      businessName={vendor!.businessName}
+      category={vendor!.category}
+      slug={vendor!.slug}
+      avatarUrl={vendor!.user.avatarUrl ?? user.avatarUrl}
+    />
+  );
 }
