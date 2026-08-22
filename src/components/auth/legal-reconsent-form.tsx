@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { reportClientError } from "@/lib/client-error";
-import { LEGAL_SIGNUP_ERROR_MESSAGE } from "@/lib/legal";
+import { LEGAL_ACCEPT_ERROR_MESSAGE } from "@/lib/legal";
 
 function safeNextPath(raw: string | null) {
   if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return "/dashboard";
@@ -19,9 +19,11 @@ export function LegalReconsentForm() {
   const searchParams = useSearchParams();
   const next = safeNextPath(searchParams.get("next"));
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function onAgree() {
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch("/api/auth/accept-terms", {
         method: "POST",
@@ -29,15 +31,24 @@ export function LegalReconsentForm() {
         credentials: "same-origin",
         body: JSON.stringify({ method: "reconsent" }),
       });
+      if (res.status === 401) {
+        router.replace(`/login?redirect=${encodeURIComponent(`/legal/accept?next=${encodeURIComponent(next)}`)}`);
+        return;
+      }
       if (!res.ok) {
-        reportClientError("auth", LEGAL_SIGNUP_ERROR_MESSAGE);
+        const json = await res.json().catch(() => null);
+        const message =
+          json?.error?.message || LEGAL_ACCEPT_ERROR_MESSAGE;
+        setError(message);
+        reportClientError("auth", message);
         return;
       }
       await queryClient.invalidateQueries({ queryKey: ["me"] });
       router.push(next);
       router.refresh();
     } catch {
-      reportClientError("auth", LEGAL_SIGNUP_ERROR_MESSAGE);
+      setError(LEGAL_ACCEPT_ERROR_MESSAGE);
+      reportClientError("auth", LEGAL_ACCEPT_ERROR_MESSAGE);
     } finally {
       setLoading(false);
     }
@@ -71,6 +82,11 @@ export function LegalReconsentForm() {
           </Link>
         </li>
       </ul>
+      {error ? (
+        <p className="mt-4 text-sm text-destructive" role="alert">
+          {error}
+        </p>
+      ) : null}
       <Button
         type="button"
         variant="gradient"

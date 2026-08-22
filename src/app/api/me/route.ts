@@ -1,11 +1,10 @@
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { requireAuth } from "@/lib/auth";
+import { requireAuth, hasCurrentLegalAcceptance } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { jsonNoStore, jsonError, handleApiRoute, jsonOk } from "@/lib/api-response";
 import { createServiceClient } from "@/lib/supabase/server";
 import { writeAuditLog } from "@/core/audit-engine";
-import { PRIVACY_VERSION, TERMS_VERSION } from "@/lib/legal";
 
 const updateMeSchema = z.object({
   fullName: z.string().min(2).max(120).optional(),
@@ -22,16 +21,7 @@ export async function GET() {
     try {
       const [vendor, accepted] = await Promise.all([
         prisma.vendorProfile.findUnique({ where: { userId: user.id } }),
-        prisma.legalAcceptance.findUnique({
-          where: {
-            userId_termsVersion_privacyVersion: {
-              userId: user.id,
-              termsVersion: TERMS_VERSION,
-              privacyVersion: PRIVACY_VERSION,
-            },
-          },
-          select: { id: true },
-        }),
+        hasCurrentLegalAcceptance(user.id),
       ]);
       isVendor = user.role === "VENDOR" && !!vendor;
       needsLegalAcceptance = !accepted;

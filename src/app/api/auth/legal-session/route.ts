@@ -7,7 +7,12 @@ export async function GET() {
   const user = await requireAuth();
   if (!user) return jsonError("Unauthorized", 401);
 
-  const accepted = await hasCurrentLegalAcceptance(user.id);
+  let accepted = false;
+  try {
+    accepted = await hasCurrentLegalAcceptance(user.id);
+  } catch (error) {
+    console.error("[Evendor:legal] legal-session lookup failed", error);
+  }
   const response = jsonNoStore({
     accepted,
     termsVersion: TERMS_VERSION,

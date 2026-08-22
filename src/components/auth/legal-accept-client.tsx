@@ -20,12 +20,17 @@ function LegalAcceptInner() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch("/api/auth/legal-session", { credentials: "same-origin" });
+        const controller = new AbortController();
+        const timeout = window.setTimeout(() => controller.abort(), 8000);
+        const res = await fetch("/api/auth/legal-session", {
+          credentials: "same-origin",
+          signal: controller.signal,
+        }).finally(() => window.clearTimeout(timeout));
         if (res.status === 401) {
           if (!cancelled) setStatus("unauthenticated");
           return;
         }
-        const json = await res.json();
+        const json = await res.json().catch(() => null);
         if (json?.data?.accepted) {
           router.replace(next);
           return;

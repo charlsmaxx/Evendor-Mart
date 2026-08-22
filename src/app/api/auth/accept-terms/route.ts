@@ -5,7 +5,7 @@ import { z } from "zod";
 import {
   applyLegalAcceptanceCookie,
   isLegalAcceptanceMethod,
-  LEGAL_SIGNUP_ERROR_MESSAGE,
+  LEGAL_ACCEPT_ERROR_MESSAGE,
   PRIVACY_VERSION,
   TERMS_VERSION,
 } from "@/lib/legal";
@@ -21,7 +21,9 @@ const schema = z.object({
 /** Record current Terms / Privacy acceptance for the authenticated user. Versions come from the server. */
 export async function POST(req: NextRequest) {
   const user = await requireAuth();
-  if (!user) return jsonError("Unauthorized", 401);
+  if (!user) {
+    return jsonError("Your session expired. Please sign in again.", 401);
+  }
 
   let methodRaw: unknown = "reconsent";
   try {
@@ -45,7 +47,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error("[Evendor:legal] Failed to record acceptance", error);
-    return jsonError(LEGAL_SIGNUP_ERROR_MESSAGE, 500);
+    return jsonError(LEGAL_ACCEPT_ERROR_MESSAGE, 500);
   }
 
   const response = jsonOk({

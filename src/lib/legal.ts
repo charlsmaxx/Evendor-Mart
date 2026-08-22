@@ -21,6 +21,9 @@ export type LegalAcceptanceMethod = (typeof LEGAL_ACCEPTANCE_METHODS)[number];
 export const LEGAL_SIGNUP_ERROR_MESSAGE =
   "We couldn't complete your registration right now. Please try again.";
 
+export const LEGAL_ACCEPT_ERROR_MESSAGE =
+  "We couldn't save your agreement right now. Please try again.";
+
 export function isLegalAcceptanceMethod(value: unknown): value is LegalAcceptanceMethod {
   return (
     typeof value === "string" &&
