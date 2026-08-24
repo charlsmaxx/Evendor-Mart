@@ -105,7 +105,7 @@ export function HeroSection() {
 
           <Link
             href="/register?redirect=/dashboard"
-            className="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-[#7A2E3D] px-4 py-3.5 text-sm font-semibold text-white shadow-md shadow-[#7A2E3D]/25"
+            className="mt-5 inline-flex items-center justify-center rounded-full bg-[#7A2E3D] px-5 py-2 text-sm font-semibold text-white shadow-md shadow-[#7A2E3D]/25"
           >
             Get started
           </Link>
