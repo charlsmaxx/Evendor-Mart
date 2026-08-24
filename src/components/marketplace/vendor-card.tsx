@@ -5,6 +5,7 @@ import { Star, MapPin, BadgeCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatStartingPrice } from "@/lib/utils";
 import { DEFAULT_LISTING_COVER } from "@/lib/images";
+import { ListingSaveButton } from "@/components/marketplace/listing-save-button";
 
 export interface VendorCardData {
   id: string;
@@ -23,13 +24,21 @@ export interface VendorCardData {
   type: "SERVICE" | "VENUE";
 }
 
-export const VendorCard = memo(function VendorCard({ listing }: { listing: VendorCardData }) {
+export const VendorCard = memo(function VendorCard({
+  listing,
+  showSave = false,
+  hideTypeAndFeaturedBadges = false,
+}: {
+  listing: VendorCardData;
+  showSave?: boolean;
+  hideTypeAndFeaturedBadges?: boolean;
+}) {
   const href = `/listings/${listing.slug}`;
   const image = listing.coverImage || DEFAULT_LISTING_COVER;
 
   return (
-    <Link href={href} className="group block">
-      <article className="glass overflow-hidden rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+    <article className="glass relative overflow-hidden rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+      <Link href={href} className="group block">
         <div className="relative aspect-[4/3] overflow-hidden">
           <OptimizedImage
             src={image}
@@ -41,15 +50,19 @@ export const VendorCard = memo(function VendorCard({ listing }: { listing: Vendo
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
           <div className="absolute left-3 top-3 flex gap-2">
-            <Badge variant="secondary" className="text-xs">
-              {listing.type === "VENUE" ? "Venue" : "Vendor"}
-            </Badge>
+            {!hideTypeAndFeaturedBadges && (
+              <Badge variant="secondary" className="text-xs">
+                {listing.type === "VENUE" ? "Venue" : "Vendor"}
+              </Badge>
+            )}
             {listing.verified && (
               <Badge variant="verified" className="gap-1">
                 <BadgeCheck className="h-3 w-3" /> ✓ Verified
               </Badge>
             )}
-            {listing.featured && <Badge variant="featured">Featured</Badge>}
+            {!hideTypeAndFeaturedBadges && listing.featured && (
+              <Badge variant="featured">Featured</Badge>
+            )}
           </div>
         </div>
         <div className="p-5">
@@ -71,7 +84,12 @@ export const VendorCard = memo(function VendorCard({ listing }: { listing: Vendo
             🎁 Earn 2% Cashback
           </p>
         </div>
-      </article>
-    </Link>
+      </Link>
+      {showSave ? (
+        <div className="absolute right-3 top-3 z-10">
+          <ListingSaveButton listingId={listing.id} />
+        </div>
+      ) : null}
+    </article>
   );
 });

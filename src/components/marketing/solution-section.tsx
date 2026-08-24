@@ -73,8 +73,8 @@ const features = [
 export function SolutionSection() {
   return (
     <section id="solution" className="border-y border-border bg-secondary/30 py-20 md:py-28">
-      <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:px-8">
-        <div className="relative aspect-[4/3] overflow-hidden rounded-2xl border border-border bg-card shadow-lg">
+      <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] lg:gap-14 lg:px-6">
+        <div className="relative -mx-4 aspect-[16/10] overflow-hidden bg-card shadow-lg sm:mx-0 sm:rounded-2xl sm:border sm:border-border lg:aspect-[16/11]">
           <video
             className="absolute inset-0 h-full w-full object-cover motion-reduce:hidden"
             autoPlay

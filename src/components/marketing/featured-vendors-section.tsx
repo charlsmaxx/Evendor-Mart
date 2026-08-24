@@ -16,7 +16,12 @@ export async function FeaturedVendorsSection() {
       </div>
       <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {listings.map((l) => (
-          <VendorCard key={l.id} listing={l} />
+          <VendorCard
+            key={l.id}
+            listing={l}
+            showSave
+            hideTypeAndFeaturedBadges
+          />
         ))}
       </div>
       <div className="mt-10 flex justify-center">

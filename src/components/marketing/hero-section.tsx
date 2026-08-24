@@ -1,13 +1,11 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   Award,
-  Building2,
   CalendarDays,
   Headphones,
   MapPin,
@@ -19,8 +17,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MARKETPLACE_CATEGORIES } from "@/lib/categories";
-
-type SearchMode = "venues" | "vendors";
+import { HeroSlideshow } from "@/components/marketing/hero-slideshow";
 
 const POPULAR = [
   { label: "Wedding Venues", href: "/marketplace?category=venues&q=wedding" },
@@ -60,19 +57,14 @@ const CATEGORY_CHIPS = MARKETPLACE_CATEGORIES.map((c) => ({
 
 export function HeroSection() {
   const router = useRouter();
-  const [mode, setMode] = useState<SearchMode>("venues");
   const [query, setQuery] = useState("");
   const [location, setLocation] = useState("");
   const [date, setDate] = useState("");
   const [guests, setGuests] = useState("");
 
-  function onSearch(e: FormEvent, options?: { includeType?: boolean }) {
+  function onSearch(e: FormEvent) {
     e.preventDefault();
     const params = new URLSearchParams();
-    if (options?.includeType !== false) {
-      if (mode === "venues") params.set("type", "VENUE");
-      else params.set("type", "SERVICE");
-    }
     if (query.trim()) params.set("q", query.trim());
     if (location.trim()) params.set("city", location.trim());
     if (date) params.set("date", date);
@@ -81,35 +73,13 @@ export function HeroSection() {
     router.push(qs ? `/marketplace?${qs}` : "/marketplace");
   }
 
-  const modeToggle = (
-    <div className="flex flex-wrap items-center gap-2">
-      <button
-        type="button"
-        onClick={() => setMode("venues")}
-        className={cn(
-          "inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition",
-          mode === "venues"
-            ? "bg-black/55 text-white ring-1 ring-white/15 backdrop-blur-sm"
-            : "text-white/85 hover:text-white"
-        )}
-      >
-        <Building2 className="h-4 w-4" aria-hidden />
-        Event Halls
-      </button>
-      <button
-        type="button"
-        onClick={() => setMode("vendors")}
-        className={cn(
-          "inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition",
-          mode === "vendors"
-            ? "bg-black/55 text-white ring-1 ring-white/15 backdrop-blur-sm"
-            : "text-white/85 hover:text-white"
-        )}
-      >
-        <Users className="h-4 w-4" aria-hidden />
-        Vendors
-      </button>
-    </div>
+  const getStartedButton = (
+    <Link
+      href="/register?redirect=/dashboard"
+      className="inline-flex items-center justify-center rounded-full bg-[#7A2E3D] px-6 py-3 text-sm font-semibold text-white shadow-md shadow-black/20 transition hover:bg-[#6a2835]"
+    >
+      Get started
+    </Link>
   );
 
   return (
@@ -117,14 +87,14 @@ export function HeroSection() {
       {/* Mobile layout — matches the light Eventra-style mock, desktop hero stays as-is */}
       <section className="bg-[#faf9f7] pt-24 md:hidden">
         <div className="px-4 pb-6">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#7A2E3D]/10 px-3 py-1 text-[11px] font-medium text-[#7A2E3D]">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-black/5 px-3 py-1 text-[11px] font-medium text-black">
             <Sparkles className="h-3 w-3" aria-hidden />
             Nigeria&apos;s most trusted event booking platform
           </span>
 
           <h1 className="mt-4 font-display text-[2rem] font-semibold leading-[1.12] tracking-tight text-[#1f1b18]">
-            Your Event Starts {" "}
-            <span className="text-[#7A2E3D]">Here!</span>
+            Events Start at{" "}
+            <span className="text-[#7A2E3D]">Evendor</span>
           </h1>
 
           <p className="mt-3 text-[15px] leading-relaxed text-[#5c534c]">
@@ -133,7 +103,14 @@ export function HeroSection() {
             <span className="font-medium text-[#7A2E3D]">Simple, secure and reliable.</span>
           </p>
 
-          <form onSubmit={(e) => onSearch(e, { includeType: false })} className="mt-5 space-y-2.5">
+          <Link
+            href="/register?redirect=/dashboard"
+            className="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-[#7A2E3D] px-4 py-3.5 text-sm font-semibold text-white shadow-md shadow-[#7A2E3D]/25"
+          >
+            Get started
+          </Link>
+
+          <form onSubmit={onSearch} className="mt-3 space-y-2.5">
             <label className="flex items-center gap-3 rounded-2xl border border-[#e5dfd9] bg-white px-4 py-3.5 shadow-sm">
               <Search className="h-5 w-5 shrink-0 text-[#7A2E3D]" aria-hidden />
               <input
@@ -141,16 +118,6 @@ export function HeroSection() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search vendors, venues..."
-                className="w-full bg-transparent text-sm text-[#1f1b18] outline-none placeholder:text-[#9a918a]"
-              />
-            </label>
-            <label className="flex items-center gap-3 rounded-2xl border border-[#e5dfd9] bg-white px-4 py-3.5 shadow-sm">
-              <MapPin className="h-5 w-5 shrink-0 text-[#7A2E3D]" aria-hidden />
-              <input
-                type="text"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="Where is your event?"
                 className="w-full bg-transparent text-sm text-[#1f1b18] outline-none placeholder:text-[#9a918a]"
               />
             </label>
@@ -186,15 +153,7 @@ export function HeroSection() {
         <div className="overflow-x-hidden pb-8">
           <div className="relative left-1/2 w-screen max-w-[100vw] -translate-x-1/2">
             <div className="relative aspect-[4/5] w-full">
-              <Image
-                src="/images/venues.jpg"
-                alt="Featured event hall venue"
-                fill
-                priority
-                quality={90}
-                sizes="100vw"
-                className="object-cover object-center"
-              />
+              <HeroSlideshow sizes="100vw" />
             </div>
             <div className="relative z-10 mx-4 -mt-12 rounded-2xl bg-white px-4 py-4 shadow-[0_12px_40px_rgba(31,27,24,0.18)]">
               <div className="grid grid-cols-2 gap-x-3 gap-y-4">
@@ -215,16 +174,7 @@ export function HeroSection() {
 
       <section className="relative hidden min-h-[100svh] overflow-hidden text-white md:block">
       <div className="absolute inset-0">
-        {/* Desktop: celebration hero */}
-        <Image
-          src="/images/hero-background.jpg"
-          alt="Guests celebrating at a luxurious Nigerian wedding reception"
-          fill
-          priority
-          quality={92}
-          sizes="100vw"
-          className="object-cover object-center"
-        />
+        <HeroSlideshow sizes="100vw" />
       </div>
 
       {/* Dark left + bottom wash so copy/search stay readable */}
@@ -260,8 +210,8 @@ export function HeroSection() {
             occasion. Simple, secure and reliable.
           </p>
 
-          <div className="mt-5 flex flex-wrap items-center gap-2 sm:mt-8 sm:gap-3">
-            {modeToggle}
+          <div className="mt-5 sm:mt-8">
+            {getStartedButton}
           </div>
 
           <motion.form
