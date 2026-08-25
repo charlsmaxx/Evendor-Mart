@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { PayBookingButton } from "@/components/bookings/pay-booking-button";
 import { calcCashback } from "@/lib/rewards-utils";
 import { BookingConfirmation } from "@/components/bookings/booking-confirmation";
+import { BookingReviewPrompt } from "@/components/bookings/booking-review-prompt";
 import { CustomerDisputeEvidence } from "@/components/bookings/customer-dispute-evidence";
 import { BookingSnapshotCard } from "@/components/bookings/booking-snapshot-card";
 import { CustomerCancelBooking } from "@/components/bookings/customer-cancel-booking";
@@ -38,7 +39,7 @@ export default async function BookingDetailPage({
     else settleNote = "pending";
   }
 
-  const [booking, conversationRows] = await Promise.all([
+  const [booking, conversationRows, existingReview] = await Promise.all([
     prisma.booking
       .findUnique({
         where: { id },
@@ -60,6 +61,9 @@ export default async function BookingDetailPage({
       WHERE b.id = ${id}
       LIMIT 1
     `.catch(() => [] as { id: string }[]),
+    prisma.review
+      .findUnique({ where: { bookingId: id }, select: { id: true } })
+      .catch(() => null),
   ]);
 
   if (!booking || booking.customerId !== user.id) notFound();
@@ -212,8 +216,24 @@ export default async function BookingDetailPage({
         <div id="confirm">
           <BookingConfirmation
             bookingId={id}
+            listingId={booking.listing.id}
+            listingTitle={booking.listing.title}
+            vendorName={booking.vendor.businessName}
+            isVenue={booking.listing.type === "VENUE"}
             canConfirm={canConfirm}
             canDispute={canDispute}
+          />
+        </div>
+      )}
+
+      {booking.status === "COMPLETED" && !existingReview && (
+        <div id="review">
+          <BookingReviewPrompt
+            bookingId={id}
+            listingId={booking.listing.id}
+            listingTitle={booking.listing.title}
+            vendorName={booking.vendor.businessName}
+            isVenue={booking.listing.type === "VENUE"}
           />
         </div>
       )}

@@ -97,7 +97,6 @@ export async function handleApiRoute(
         "DB_UNAVAILABLE"
       );
     }
-    const message = error instanceof Error ? error.message : "Internal server error";
-    return jsonError(message, 500, "INTERNAL_ERROR");
+    return jsonError("We couldn't complete that just now. Please try again.", 500, "INTERNAL_ERROR");
   }
 }

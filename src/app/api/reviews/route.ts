@@ -7,7 +7,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "@/core/audit-engine";
 import { requireAuth } from "@/lib/auth";
-import { jsonOk, jsonError } from "@/lib/api-response";
+import { jsonOk, jsonError, handleApiRoute } from "@/lib/api-response";
 import { z } from "zod";
 
 const schema = z.object({
@@ -18,11 +18,12 @@ const schema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  return handleApiRoute(async () => {
   const user = await requireAuth();
   if (!user) return jsonError("Unauthorized", 401);
 
-  const parsed = schema.safeParse(await req.json());
-  if (!parsed.success) return jsonError(parsed.error.message, 400);
+  const parsed = schema.safeParse(await req.json().catch(() => null));
+  if (!parsed.success) return jsonError("Please choose a rating and try again.", 400);
 
   const { listingId, bookingId, rating, comment } = parsed.data;
 
@@ -78,4 +79,5 @@ export async function POST(req: NextRequest) {
   });
 
   return jsonOk(review, 201);
+  }, { route: "/api/reviews" });
 }

@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { requireAuth } from "@/lib/auth";
-import { jsonOk, jsonError } from "@/lib/api-response";
+import { jsonOk, jsonError, handleApiRoute } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
 import { EscrowRuleError, openDispute, cancelDispute } from "@/lib/escrow";
 import { isOpenDispute } from "@/lib/booking-customer-actions";
@@ -17,6 +17,7 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  return handleApiRoute(async () => {
   const { id } = await params;
   const user = await requireAuth();
   if (!user) return jsonError("Unauthorized", 401);
@@ -40,13 +41,15 @@ export async function POST(
     await openDispute(id, user.id, parsed.data.reason);
   } catch (err) {
     if (err instanceof EscrowRuleError) return jsonError(err.message, 409);
-    throw err;
+    console.error("[Evendor:booking-dispute]", err);
+    return jsonError("We couldn't open this dispute right now. Please try again.", 500);
   }
 
   return jsonOk({
     message:
       "Dispute opened. Your payment stays locked until our team resolves it, usually within 24–48 hours. Please upload evidence and check your chat with the vendor for an Evendor Admin notice.",
   });
+  }, { route: "/api/bookings/[id]/dispute" });
 }
 
 /** Customer withdraws an open dispute they filed. */
@@ -54,6 +57,7 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  return handleApiRoute(async () => {
   const { id } = await params;
   const user = await requireAuth();
   if (!user) return jsonError("Unauthorized", 401);
@@ -62,11 +66,13 @@ export async function DELETE(
     await cancelDispute(id, user.id);
   } catch (err) {
     if (err instanceof EscrowRuleError) return jsonError(err.message, 409);
-    throw err;
+    console.error("[Evendor:booking-dispute-cancel]", err);
+    return jsonError("We couldn't cancel this dispute right now. Please try again.", 500);
   }
 
   return jsonOk({
     message:
       "Dispute cancelled. Your payment remains locked until you confirm the job is done or the automatic release window ends.",
   });
+  }, { route: "/api/bookings/[id]/dispute" });
 }

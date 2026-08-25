@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
-import { jsonOk, jsonError } from "@/lib/api-response";
+import { jsonOk, jsonError, handleApiRoute } from "@/lib/api-response";
 import { updateBookingSchema } from "@/lib/validations/booking";
 import { getVendorEvidence } from "@/lib/booking-evidence";
 import { writeAuditLog } from "@/core/audit-engine";
@@ -107,11 +107,12 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  return handleApiRoute(async () => {
   const user = await requireAuth();
   if (!user) return jsonError("Unauthorized", 401);
 
   const { id } = await params;
-  const parsed = updateBookingSchema.safeParse(await req.json());
+  const parsed = updateBookingSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return jsonError(parsed.error.message, 400);
 
   const booking = await prisma.booking.findUnique({
@@ -188,7 +189,8 @@ export async function PATCH(
       });
     } catch (err) {
       if (err instanceof EscrowRuleError) return jsonError(err.message, 409);
-      throw err;
+      console.error("[Evendor:booking-complete]", err);
+      return jsonError("We couldn't release this payment right now. Please try again.", 500);
     }
     const released = await prisma.booking.findUnique({ where: { id } });
     return jsonOk({
@@ -234,4 +236,5 @@ export async function PATCH(
   });
 
   return jsonOk(updated);
+  }, { route: "/api/bookings/[id]" });
 }

@@ -1,43 +1,68 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { CheckCircle2, AlertTriangle } from "lucide-react";
 import { reportClientError } from "@/lib/client-error";
+import {
+  apiErrorMessage,
+  GENERIC_REQUEST_ERROR,
+  readApiJson,
+  userFacingRequestError,
+} from "@/lib/api-client";
+import { BookingReviewPrompt } from "@/components/bookings/booking-review-prompt";
 
 export function BookingConfirmation({
   bookingId,
+  listingId,
+  listingTitle,
+  vendorName,
+  isVenue,
   canConfirm = true,
   canDispute,
 }: {
   bookingId: string;
+  listingId: string;
+  listingTitle: string;
+  vendorName: string;
+  isVenue: boolean;
   canConfirm?: boolean;
   canDispute: boolean;
 }) {
   const router = useRouter();
   const [showDispute, setShowDispute] = useState(false);
   const [disputeReason, setDisputeReason] = useState("");
-  const [done, setDone] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
+  const [disputed, setDisputed] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!confirmed) return;
+    document.getElementById("review")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [confirmed]);
 
   const confirmMutation = useMutation({
     mutationFn: async () => {
       const res = await fetch(`/api/bookings/${bookingId}/confirm`, { method: "POST" });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error?.message ?? "Failed to confirm");
-      return json.data as { message?: string };
+      const { ok, json } = await readApiJson<{
+        data?: { message?: string; promptReview?: boolean };
+        error?: { message?: string };
+      }>(res);
+      if (!ok) throw new Error(apiErrorMessage(json));
+      return json?.data ?? { promptReview: true };
     },
     onMutate: () => setError(null),
     onSuccess: () => {
-      setDone(true);
-      router.refresh();
+      setConfirmed(true);
     },
     onError: (e: Error) => {
-      setError(e.message);
+      setError(userFacingRequestError(e, GENERIC_REQUEST_ERROR));
       reportClientError("booking-confirm", e);
+      // Escrow may already have been released even if the response failed to parse.
+      router.refresh();
     },
   });
 
@@ -51,22 +76,42 @@ export function BookingConfirmation({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reason: disputeReason }),
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error?.message ?? "Failed to open dispute");
-      return json.data as { message?: string };
+      const { ok, json } = await readApiJson<{ error?: { message?: string } }>(res);
+      if (!ok) throw new Error(apiErrorMessage(json));
     },
     onMutate: () => setError(null),
     onSuccess: () => {
-      setDone(true);
+      setDisputed(true);
       router.refresh();
     },
     onError: (e: Error) => {
-      setError(e.message);
+      setError(userFacingRequestError(e, GENERIC_REQUEST_ERROR));
       reportClientError("booking-dispute", e);
     },
   });
 
-  if (done) return null;
+  if (confirmed) {
+    return (
+      <div id="review" className="space-y-4">
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4">
+          <p className="font-semibold text-emerald-800">Payment released — thank you</p>
+          <p className="mt-1 text-sm text-emerald-700">
+            The vendor can now withdraw their earnings after settlement checks.
+          </p>
+        </div>
+        <BookingReviewPrompt
+          bookingId={bookingId}
+          listingId={listingId}
+          listingTitle={listingTitle}
+          vendorName={vendorName}
+          isVenue={isVenue}
+          onSubmitted={() => router.refresh()}
+        />
+      </div>
+    );
+  }
+
+  if (disputed) return null;
 
   return (
     <div

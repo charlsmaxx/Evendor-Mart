@@ -104,7 +104,7 @@ export function NotificationsBell({
         <div
           role="dialog"
           aria-label="Notifications"
-          className="absolute right-0 z-50 mt-2 w-[min(100vw-1.5rem,22rem)] overflow-hidden rounded-2xl border border-border bg-card shadow-xl"
+          className="fixed right-2 top-[4.5rem] z-[60] w-[min(16.25rem,calc(100vw-1rem))] overflow-hidden rounded-2xl border border-border bg-card shadow-xl md:absolute md:right-0 md:top-auto md:mt-2 md:w-[min(100vw-1.5rem,22rem)]"
         >
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
             <p className="text-sm font-semibold">Notifications</p>
@@ -138,8 +138,8 @@ export function NotificationsBell({
                         !n.read && "bg-primary/5"
                       )}
                     >
-                      <p className="text-sm font-medium leading-snug">{n.title}</p>
-                      <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{n.body}</p>
+                      <p className="text-sm font-medium leading-snug break-words">{n.title}</p>
+                      <p className="mt-0.5 line-clamp-3 text-xs leading-relaxed break-words text-muted-foreground">{n.body}</p>
                       <p className="mt-1.5 text-[11px] text-muted-foreground">
                         {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}
                       </p>
