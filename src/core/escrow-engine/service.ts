@@ -604,11 +604,22 @@ export async function sendCompletionReminders(): Promise<number> {
 
     if (booking.customer?.email) {
       try {
-        const { sendTransactionalEmail } = await import("@/lib/email");
+        const { renderEvendorEmail, sendTransactionalEmail } = await import("@/lib/email");
+        const confirmUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}${link}`;
+        const branded = renderEvendorEmail({
+          heading: "Please confirm your booking",
+          paragraphs: [
+            `Hi${booking.customer.fullName ? ` ${booking.customer.fullName}` : ""},`,
+            `Your event for "${booking.listing.title}" has passed. Confirm completion or open a dispute within ${AUTO_RELEASE_HOURS} hours before funds auto-release.`,
+          ],
+          ctaLabel: "Open booking",
+          ctaUrl: confirmUrl,
+        });
         await sendTransactionalEmail({
           to: booking.customer.email,
           subject: "Please confirm your Evendor booking",
-          text: `Hi${booking.customer.fullName ? ` ${booking.customer.fullName}` : ""},\n\nYour event for "${booking.listing.title}" has passed. Please confirm completion or open a dispute within ${AUTO_RELEASE_HOURS} hours:\n${process.env.NEXT_PUBLIC_APP_URL ?? ""}${link}\n\n— Evendor`,
+          text: branded.text,
+          html: branded.html,
         });
       } catch {
         /* email optional until Resend is configured */

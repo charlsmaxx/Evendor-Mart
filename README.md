@@ -40,7 +40,18 @@ Africa's premium event marketplace — discover venues, compare vendors, request
    - Set Site URL to `http://localhost:3000`
    - Add redirect URL: `http://localhost:3000/api/auth/callback`
 
-5. **Dev server**
+5. **Auth emails (Resend, from Evendor)**
+
+   Signup, magic link, and password-reset emails are sent by our app through Resend, not the default Supabase sender.
+
+   1. Set `RESEND_API_KEY` in `.env.local` (server-only — never `NEXT_PUBLIC_`).
+   2. Optional: `RESEND_FROM_EMAIL=Evendor <hello@evendor.ng>` after you verify that domain in Resend. Until then Resend only delivers from `Evendor <onboarding@resend.dev>` to the Resend account email.
+   3. In Supabase: **Authentication → Hooks → Send Email** → HTTPS endpoint:
+      `{NEXT_PUBLIC_APP_URL}/api/auth/send-email`
+   4. Paste the generated secret into `SEND_EMAIL_HOOK_SECRET` (`v1,whsec_...`).
+   5. Production/tunnel URL required — Supabase cannot call `localhost`. For local testing use ngrok/Cloudflare Tunnel and put that URL in the hook.
+
+6. **Dev server**
 
    ```bash
    npm run dev
