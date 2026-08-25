@@ -46,11 +46,11 @@ export default function HomePage() {
       <HeroCtaSection />
       <ProblemSection />
       <SocialProofSection />
-      <SolutionSection />
       <FeaturedVendorsSection />
       <CategoryShowcase />
       <TestimonialsSection />
       <StayAheadSection />
+      <SolutionSection />
       <RewardsSection />
       <CtaSection />
       <EventWebsiteSection />

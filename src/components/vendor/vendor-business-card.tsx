@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { getCategoryLabel } from "@/lib/categories";
 import { reportClientError } from "@/lib/client-error";
 import {
+  BUSINESS_CARD_HEADLINE_LINE_1,
+  BUSINESS_CARD_HEADLINE_LINE_2,
   BUSINESS_CARD_IMAGE,
   BUSINESS_CARD_LAYOUT,
   BUSINESS_CARD_SIZE,
@@ -147,6 +149,20 @@ async function renderBusinessCardPng(input: {
   ctx.font = `600 ${catSize}px ui-sans-serif, system-ui, sans-serif`;
   ctx.fillText(input.category, textX, pillY + pillH * 0.68, maxTextW);
 
+  const headline = BUSINESS_CARD_LAYOUT.headline;
+  const headlineY = headline.top * size;
+  const headlineH = headline.height * size;
+  ctx.fillStyle = "#661721";
+  ctx.fillRect(0, headlineY, size, headlineH);
+
+  ctx.fillStyle = "#FFFFFF";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.font = `500 ${Math.round(size * 0.042)}px ui-sans-serif, system-ui, sans-serif`;
+  ctx.fillText(BUSINESS_CARD_HEADLINE_LINE_1, size / 2, headlineY + headlineH * 0.36);
+  ctx.font = `700 ${Math.round(size * 0.05)}px ui-sans-serif, system-ui, sans-serif`;
+  ctx.fillText(BUSINESS_CARD_HEADLINE_LINE_2, size / 2, headlineY + headlineH * 0.7);
+
   return new Promise<Blob>((resolve, reject) => {
     canvas.toBlob((blob) => {
       if (blob) resolve(blob);
@@ -216,7 +232,7 @@ export function VendorBusinessCard({
     setActionError(null);
     try {
       const file = await buildFile();
-      const text = `You can find me on Evendor. ${handle} · ${profileUrl}`;
+      const text = `You can find me on evendor.ng. ${handle} · ${profileUrl}`;
       const nav = navigator as Navigator & {
         canShare?: (data: ShareData) => boolean;
       };
@@ -249,7 +265,7 @@ export function VendorBusinessCard({
   }
 
   const whatsappHref = `https://wa.me/?text=${encodeURIComponent(
-    `You can find me on Evendor — ${handle}\n${profileUrl}`
+    `You can find me on evendor.ng — ${handle}\n${profileUrl}`
   )}`;
 
   return (
@@ -288,6 +304,21 @@ export function VendorBusinessCard({
                 {businessName.charAt(0).toUpperCase()}
               </div>
             )}
+          </div>
+          <div
+            className="absolute left-0 right-0 flex flex-col items-center justify-center text-center text-white"
+            style={{
+              top: `${BUSINESS_CARD_LAYOUT.headline.top * 100}%`,
+              height: `${BUSINESS_CARD_LAYOUT.headline.height * 100}%`,
+              background: "#661721",
+            }}
+          >
+            <p className="text-[clamp(0.85rem,4.1vw,1.2rem)] font-medium leading-tight">
+              {BUSINESS_CARD_HEADLINE_LINE_1}
+            </p>
+            <p className="mt-[0.15em] text-[clamp(1rem,4.8vw,1.4rem)] font-bold leading-tight">
+              {BUSINESS_CARD_HEADLINE_LINE_2}
+            </p>
           </div>
           <div
             className="absolute flex items-center gap-[3.5%] rounded-full bg-[#F3EEE6] px-[4.5%]"
