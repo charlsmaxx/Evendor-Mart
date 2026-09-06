@@ -17,6 +17,9 @@ export type DomainEventType =
   | "QuoteStatusChanged"
   | "MessageReceived"
   | "WithdrawalRequested"
+  | "PayoutRequested"
+  | "PayoutReviewed"
+  | "PayoutPaid"
   | "RewardsExpired"
   | "RewardsExpiringSoon"
   | "VendorVerified";

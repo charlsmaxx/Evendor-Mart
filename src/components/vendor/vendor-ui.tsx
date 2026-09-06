@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { BrandLoader } from "@/components/loading/brand-loader";
 
 export function VendorPageHeader({
   title,
@@ -142,16 +143,21 @@ export function VendorSection({
 
 export function VendorSkeleton({ rows = 3 }: { rows?: number }) {
   return (
-    <div className="space-y-6 animate-pulse">
-      <div className="h-10 w-56 rounded-lg bg-muted" />
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-28 rounded-2xl bg-muted" />
+    <div className="space-y-6">
+      <div className="flex justify-center py-2">
+        <BrandLoader size="md" />
+      </div>
+      <div className="space-y-6 animate-pulse">
+        <div className="h-10 w-56 rounded-lg bg-muted" />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-28 rounded-2xl bg-muted" />
+          ))}
+        </div>
+        {Array.from({ length: rows }).map((_, i) => (
+          <div key={i} className="h-32 rounded-2xl bg-muted" />
         ))}
       </div>
-      {Array.from({ length: rows }).map((_, i) => (
-        <div key={i} className="h-32 rounded-2xl bg-muted" />
-      ))}
     </div>
   );
 }

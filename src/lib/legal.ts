@@ -1,10 +1,10 @@
 import type { NextResponse } from "next/server";
 
 /** Current required document versions. Bump these when the live legal text materially changes. */
-export const TERMS_VERSION = "1.0";
+export const TERMS_VERSION = "1.1";
 export const PRIVACY_VERSION = "1.0";
 
-export const TERMS_EFFECTIVE_DATE = "20 August 2026";
+export const TERMS_EFFECTIVE_DATE = "26 August 2026";
 export const PRIVACY_EFFECTIVE_DATE = "20 August 2026";
 
 export const LEGAL_COOKIE_NAME = "evendor_legal";

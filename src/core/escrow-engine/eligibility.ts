@@ -1,10 +1,9 @@
 /**
- * Server-side booking payout eligibility — the authority for whether held funds
- * may be released into the vendor's Evendor balance (ledger credit).
+ * Server-side booking completion eligibility — whether held customer funds
+ * may be marked complete and a vendor payout record created (status PENDING).
  *
- * This does NOT initiate a Paystack bank transfer. Bank settlement is a separate
- * Withdrawal (`requestWithdrawal` / `processWithdrawal`) that only spends
- * already-released ledger balance.
+ * This does NOT pay the vendor. The vendor must request payout; an authorised
+ * admin reviews and records a manual business payment before status becomes PAID.
  *
  * Never trust the frontend for these checks.
  */
@@ -111,7 +110,7 @@ export async function isBookingPayoutEligible(
     return {
       ...base,
       eligible: false,
-      reason: "Payout for this booking was already credited to the vendor balance.",
+      reason: "A payout record already exists for this booking.",
       status: "ALREADY_RELEASED",
     };
   }
@@ -200,7 +199,7 @@ export async function isBookingPayoutEligible(
   return {
     ...base,
     eligible: true,
-    reason: "Booking is eligible for vendor ledger credit after completion checks.",
+    reason: "Booking is eligible for vendor payout after completion checks.",
     status: "ELIGIBLE",
   };
 }

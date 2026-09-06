@@ -41,7 +41,7 @@ export function ChatBookingBanner({
           <p className="truncate text-sm font-medium">{booking.listingTitle}</p>
           <p className="text-xs text-muted-foreground">
             {needsAction
-              ? "Escrow action available for this booking"
+              ? "Confirm completion or report a problem for this booking"
               : `Booking · ${new Date(booking.eventDate).toLocaleDateString()} · ${booking.status.replace("_", " ")}`}
           </p>
         </div>
@@ -113,7 +113,7 @@ export function ChatBookVendorBanner({
             Ready to book{vendorName ? ` ${vendorName}` : ""}?
           </p>
           <p className="text-xs text-muted-foreground">
-            Secure your date with escrow protection on Evendor.
+            Secure your date with payment protection on Evendor.
           </p>
         </div>
         <Button

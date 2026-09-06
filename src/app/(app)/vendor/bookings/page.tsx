@@ -220,7 +220,7 @@ export default function VendorBookingsPage() {
                   <p className="font-bold text-primary">{formatCurrency(b.totalAmount)}</p>
                   <p className="text-[10px] text-muted-foreground">
                     {paymentStatus === "SUCCESS" ? "Paid" : "Payment pending"}
-                    {escrowStatus === "HELD" ? " · Escrow" : ""}
+                    {escrowStatus === "HELD" ? " · Held" : ""}
                   </p>
                   <ChevronRight
                     className={`ml-auto h-4 w-4 text-muted-foreground transition-transform ${isExpanded ? "rotate-90" : ""}`}

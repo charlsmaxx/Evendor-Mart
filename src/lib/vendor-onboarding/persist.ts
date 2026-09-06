@@ -35,18 +35,24 @@ export async function saveVendorDraft(
   const seo = generateVendorSeo(draft);
 
   const slugBase = draft.step1.slug || slugify(draft.step1.businessName) || "vendor";
-  let slug = slugBase;
-  if (existing && existing.slug !== slug) {
+  let slug = existing?.slug ?? slugBase;
+
+  if (!existing) {
+    slug = slugBase;
+    const taken = await prisma.vendorProfile.findUnique({ where: { slug } });
+    if (taken) slug = `${slugBase}-${Date.now().toString(36).slice(-4)}`;
+    draft.step1.slug = slug;
+  } else if (draft.step1.slug && draft.step1.slug !== existing.slug) {
+    slug = draft.step1.slug;
     const taken = await prisma.vendorProfile.findFirst({
       where: { slug, NOT: { userId } },
     });
-    if (taken) slug = `${slugBase}-${Date.now().toString(36).slice(-4)}`;
-  } else if (!existing) {
-    const taken = await prisma.vendorProfile.findUnique({ where: { slug } });
-    if (taken) slug = `${slugBase}-${Date.now().toString(36).slice(-4)}`;
+    if (taken) slug = `${draft.step1.slug}-${Date.now().toString(36).slice(-4)}`;
+    draft.step1.slug = slug;
+  } else if (!draft.step1.slug) {
+    draft.step1.slug = existing.slug;
+    slug = existing.slug;
   }
-
-  draft.step1.slug = slug;
 
   const metadata = {
     ...((existing?.metadata as Record<string, unknown>) ?? {}),

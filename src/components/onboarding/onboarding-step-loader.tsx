@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { OnboardingStepSkeleton } from "@/components/loading/onboarding-step-skeleton";
-import type { VendorOnboardingDraft } from "@/lib/vendor-onboarding/types";
+import type { VendorOnboardingDraft, DraftUpdater } from "@/lib/vendor-onboarding/types";
 
 const Step1Business = dynamic(
   () => import("./onboarding-step-panels").then((m) => ({ default: m.Step1Business })),
@@ -39,7 +39,7 @@ const Step8Payouts = dynamic(
 
 type StepProps = {
   draft: VendorOnboardingDraft;
-  update: (patch: Partial<VendorOnboardingDraft>) => void;
+  update: DraftUpdater;
   isVenue?: boolean;
 };
 

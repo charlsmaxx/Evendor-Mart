@@ -1,9 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Lock, ArrowUpRight, ArrowDownLeft, AlertTriangle, Landmark, RefreshCw } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { payoutStatusLabel } from "@/lib/payout-labels";
 import { Button } from "@/components/ui/button";
 import { AdminKpiCard, AdminPageHeader } from "@/components/admin/admin-ui";
 
@@ -14,8 +16,18 @@ type EscrowData = {
     id: string;
     amount: number;
     status: string;
-    vendor: { businessName: string };
-    booking: { listing: { title: string }; eventDate: string };
+    requestedAt?: string | null;
+    vendor: { id?: string; businessName: string };
+    booking: {
+      id?: string;
+      listing: { title: string };
+      eventDate: string;
+      customerName?: string;
+      disputeStatus?: string | null;
+      paymentStatus?: string | null;
+      totalAmount?: number;
+      status?: string;
+    };
   }[];
   releasedTotal: number;
   releasedCount: number;
@@ -109,13 +121,13 @@ export function AdminEscrowPanel() {
     <div className="space-y-8">
       <AdminPageHeader
         title="Settlements & Payments"
-        subtitle="Customer payments are collected into Evendor's Paystack balance. Vendors withdraw after successful completion."
+        subtitle="Customer payments are collected by Evendor. Vendors request payout after completion; finance reviews and records a manual business payment."
       />
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <AdminKpiCard label="Held Payments" value={formatCurrency(data.escrowBalance)} sub={`${data.escrowCount} awaiting completion`} href="/admin/escrow" accent highlight="amber" />
-        <AdminKpiCard label="Pending Earnings" value={data.pendingPayouts.length} sub="Awaiting release to vendor balance" href="/admin/escrow" highlight="primary" />
-        <AdminKpiCard label="Released Earnings" value={formatCurrency(data.releasedTotal)} sub={`${data.releasedCount} credited to vendors`} href="/admin/escrow" highlight="green" />
+        <AdminKpiCard label="Payout Requests" value={data.pendingPayouts.length} sub="Available, requested, approved or on hold" href="/admin/escrow" highlight="primary" />
+        <AdminKpiCard label="Released / paid records" value={formatCurrency(data.releasedTotal)} sub={`${data.releasedCount} payout rows`} href="/admin/escrow" highlight="green" />
         <AdminKpiCard label="Disputed Funds" value={formatCurrency(data.disputedFunds)} sub={`${data.disputedCount} locked`} href="/admin/trust" highlight="red" />
       </div>
 
@@ -124,20 +136,27 @@ export function AdminEscrowPanel() {
         <section className="rounded-2xl border border-white/10 bg-[#1a1215]/60 p-5">
           <div className="mb-4 flex items-center gap-2">
             <Lock className="h-4 w-4 text-amber-400" />
-            <p className="font-semibold text-[#E5DFD9]">Pending Payouts</p>
+            <p className="font-semibold text-[#E5DFD9]">Payout Requests</p>
           </div>
           <div className="space-y-2">
             {data.pendingPayouts.map((p) => (
-              <div key={p.id} className="flex items-center justify-between rounded-xl border border-white/5 px-3 py-2.5">
-                <div>
-                  <p className="text-sm text-[#E5DFD9]">{p.booking.listing.title}</p>
-                  <p className="text-xs text-[#E5DFD9]/40">{p.vendor.businessName}</p>
+              <Link
+                key={p.id}
+                href={`/admin/escrow/${p.id}`}
+                className="flex items-center justify-between rounded-xl border border-white/5 px-3 py-2.5 transition hover:bg-white/5"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm text-[#E5DFD9]">{p.booking.listing.title}</p>
+                  <p className="text-xs text-[#E5DFD9]/40">
+                    {p.vendor.businessName} · {payoutStatusLabel(p.status)}
+                    {p.booking.customerName ? ` · ${p.booking.customerName}` : ""}
+                  </p>
                 </div>
                 <p className="font-semibold text-amber-300">{formatCurrency(p.amount)}</p>
-              </div>
+              </Link>
             ))}
             {data.pendingPayouts.length === 0 && (
-              <p className="text-sm text-[#E5DFD9]/40">No pending payouts.</p>
+              <p className="text-sm text-[#E5DFD9]/40">No payout requests.</p>
             )}
           </div>
         </section>

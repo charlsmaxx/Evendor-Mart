@@ -167,7 +167,7 @@ export async function PATCH(
 
       return jsonOk({
         ...updated,
-        escrowMessage: `Marked as delivered. Your payout releases once the customer confirms, or automatically after ${AUTO_RELEASE_HOURS} hours.`,
+        escrowMessage: `Marked as delivered. Payout can be requested after the customer confirms, or automatically after ${AUTO_RELEASE_HOURS} hours if no problem is reported.`,
       });
     }
 
@@ -196,7 +196,7 @@ export async function PATCH(
     return jsonOk({
       ...released,
       escrowMessage:
-        "Booking completed. Vendor earnings are now available for payout.",
+        "Booking completed. Vendor earnings are now available to request as a payout.",
     });
   }
 

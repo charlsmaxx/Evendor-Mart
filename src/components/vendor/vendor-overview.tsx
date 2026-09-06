@@ -130,7 +130,7 @@ export function VendorOverview({
     { label: "Manage Calendar", href: "/vendor/calendar", icon: CalendarDays },
     { label: "Create Service", href: "/vendor/services", icon: Plus },
     { label: "Update Portfolio", href: "/vendor/portfolio", icon: Image },
-    { label: "Withdraw Funds", href: "/vendor/payouts", icon: Banknote },
+    { label: "Payouts", href: "/vendor/payouts", icon: Banknote },
     ...(showVerifyCta
       ? [{ label: "Get Verified", href: "/vendor/verification", icon: BadgeCheck, highlight: true }]
       : []),
@@ -185,7 +185,7 @@ export function VendorOverview({
         <VendorSummaryCard
           label="Available for Payout"
           value={formatCurrency(data.availableBalance)}
-          sub="Ready to withdraw"
+          sub="Eligible to request — not paid yet"
           href="/vendor/payouts"
           accent
           icon={Wallet}
@@ -193,7 +193,7 @@ export function VendorOverview({
         <VendorSummaryCard
           label="Pending Earnings"
           value={formatCurrency(data.escrowBalance ?? data.pendingEarnings)}
-          sub="Payout pending until job is completed"
+          sub="Not payable until the job is completed"
           href="/vendor/payouts"
           icon={Lock}
         />

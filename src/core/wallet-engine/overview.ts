@@ -95,15 +95,9 @@ async function loadVendorOverviewCounts(
           AND b."vendorId" = ${vendorId}
           AND b.status IN ('CONFIRMED', 'IN_PROGRESS')
       ) AS pending_earnings,
-      GREATEST(
-        (SELECT COALESCE(SUM(amount), 0)::int FROM "Payout"
-          WHERE "vendorId" = ${vendorId} AND status IN ('PENDING', 'PROCESSING', 'PAID')
-        )
-        - (SELECT COALESCE(SUM(amount), 0)::int FROM "Withdrawal"
-            WHERE "vendorId" = ${vendorId} AND status IN ('PENDING', 'PROCESSING', 'PAID')
-          ),
-        0
-      ) AS available_balance
+      (SELECT COALESCE(SUM(amount), 0)::int FROM "Payout"
+          WHERE "vendorId" = ${vendorId} AND status = 'PENDING'
+        ) AS available_balance
   `;
 
   return rows[0] ?? {

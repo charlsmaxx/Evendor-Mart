@@ -14,11 +14,27 @@ export async function getVendorWalletStats(vendorId: string) {
   const todayStart = startOfDay(now);
   const todayEnd = endOfDay(now);
 
-  const [balance, pendingAgg, recentPayouts, recentWithdrawals, monthBookings, yearBookings] =
+  const [balance, pendingAgg, requestedAgg, approvedAgg, paidAgg, onHoldAgg, recentPayouts, recentWithdrawals, monthBookings, yearBookings] =
     await Promise.all([
       computeVendorBalance(vendorId),
       prisma.payout.aggregate({
-        where: { vendorId, status: { in: ["PROCESSING", "PENDING"] } },
+        where: { vendorId, status: "PENDING" },
+        _sum: { amount: true },
+      }),
+      prisma.payout.aggregate({
+        where: { vendorId, status: { in: ["REQUESTED", "UNDER_REVIEW"] } },
+        _sum: { amount: true },
+      }),
+      prisma.payout.aggregate({
+        where: { vendorId, status: "APPROVED" },
+        _sum: { amount: true },
+      }),
+      prisma.payout.aggregate({
+        where: { vendorId, status: "PAID", paidById: { not: null } },
+        _sum: { amount: true },
+      }),
+      prisma.payout.aggregate({
+        where: { vendorId, status: "ON_HOLD" },
         _sum: { amount: true },
       }),
       prisma.payout.findMany({
@@ -31,9 +47,12 @@ export async function getVendorWalletStats(vendorId: string) {
           amount: true,
           status: true,
           processedAt: true,
+          requestedAt: true,
+          paidById: true,
           createdAt: true,
           booking: {
             select: {
+              id: true,
               eventDate: true,
               listing: { select: { title: true } },
             },
@@ -77,22 +96,30 @@ export async function getVendorWalletStats(vendorId: string) {
   const vendorShare = vendorShareAmount;
 
   return {
-    availableBalance: balance.availableBalance,
+    availableBalance: pendingAgg._sum.amount ?? 0,
     pendingEarnings: balance.escrowHeld,
     escrowBalance: balance.escrowHeld,
     pendingRelease: pendingAgg._sum.amount ?? 0,
+    payoutRequested: requestedAgg._sum.amount ?? 0,
+    payoutApproved: approvedAgg._sum.amount ?? 0,
+    payoutPaid: paidAgg._sum.amount ?? 0,
+    payoutOnHold: onHoldAgg._sum.amount ?? 0,
     releasedTotal: balance.releasedTotal,
     withdrawnAmount: balance.withdrawnTotal,
     withdrawalsInFlight: balance.inFlightTotal,
+    legacyLedgerBalance: balance.availableBalance,
     minWithdrawal: MIN_WITHDRAWAL_AMOUNT,
     monthEarnings: vendorShare(monthBookings._sum.totalAmount ?? 0),
     yearEarnings: vendorShare(yearBookings._sum.totalAmount ?? 0),
     payouts: recentPayouts.map((p) => ({
       id: p.id,
+      bookingId: p.booking.id,
       reference: p.reference,
       amount: p.amount,
       status: p.status,
+      canRequest: p.status === "PENDING",
       processedAt: p.processedAt?.toISOString() ?? null,
+      requestedAt: p.requestedAt?.toISOString() ?? null,
       createdAt: p.createdAt.toISOString(),
       bookingTitle: p.booking.listing.title,
       eventDate: p.booking.eventDate.toISOString(),

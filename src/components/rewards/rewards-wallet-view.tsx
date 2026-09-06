@@ -86,8 +86,7 @@ export function RewardsWalletView({
           </p>
           <ul className="mt-3 list-inside list-disc space-y-1">
             <li>
-              Earn {CASHBACK_RATE * 100}% cashback after you confirm a booking is completed (escrow
-              released)
+              Earn {CASHBACK_RATE * 100}% cashback after you confirm a booking is completed
             </li>
             <li>
               Each booking spends {WALLET_REDEEM_RATIO * 100}% of your balance, so a{" "}

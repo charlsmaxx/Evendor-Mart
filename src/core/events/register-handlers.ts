@@ -28,8 +28,8 @@ export function registerDomainEventHandlers(): void {
 
     await notifyVendorByProfileId(vendorId, {
       title: "Booking completed",
-      body: "Escrow has been released. Your payout is being processed.",
-      link: `/vendor/bookings/${bookingId}`,
+      body: "This booking is complete. You can request payout from Earnings when it is available for payout.",
+      link: `/vendor/payouts`,
     });
     await notifyUser({
       userId: customerId,
@@ -67,7 +67,7 @@ export function registerDomainEventHandlers(): void {
     const resolution = String(event.payload.resolution ?? "");
     const bodyByResolution: Record<string, string> = {
       FULL_REFUND: "The dispute was resolved with a full refund to the customer.",
-      FULL_PAYOUT: "The dispute was resolved and escrow was released to the vendor.",
+      FULL_PAYOUT: "The dispute was resolved and the vendor may request payout under Evendor's rules.",
       PARTIAL: "The dispute was resolved with a partial refund and partial vendor payout.",
     };
     const body = bodyByResolution[resolution] ?? "The dispute on your booking has been resolved.";

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,12 +17,49 @@ import {
   SPECIALTY_SUGGESTIONS,
   createEmptyService,
   type VendorOnboardingDraft,
+  type DraftUpdater,
 } from "@/lib/vendor-onboarding/types";
 import { DAY_LABELS, type DayKey } from "@/lib/vendor-availability";
 import type { BankAccountInput } from "@/lib/validations/bank";
 import { MAX_FEATURED_CLIPS, MAX_FEATURED_IMAGES } from "@/lib/vendor-media";
 
-type DraftUpdater = (patch: Partial<VendorOnboardingDraft>) => void;
+function CommaListField({
+  items,
+  onCommit,
+  placeholder,
+}: {
+  items: string[];
+  onCommit: (items: string[]) => void;
+  placeholder?: string;
+}) {
+  const [focused, setFocused] = useState(false);
+  const [text, setText] = useState(items.join(", "));
+
+  useEffect(() => {
+    if (!focused) setText(items.join(", "));
+  }, [items, focused]);
+
+  return (
+    <Input
+      value={focused ? text : items.join(", ")}
+      placeholder={placeholder}
+      onFocus={() => {
+        setFocused(true);
+        setText(items.join(", "));
+      }}
+      onChange={(e) => setText(e.target.value)}
+      onBlur={() => {
+        setFocused(false);
+        onCommit(
+          text
+            .split(",")
+            .map((part) => part.trim())
+            .filter(Boolean)
+        );
+      }}
+    />
+  );
+}
 
 export function Step1Business({
   draft,
@@ -38,7 +75,7 @@ export function Step1Business({
 
   async function checkSlug(value: string) {
     const slug = slugify(value);
-    update({ step1: { ...s, slug } });
+    update({ step1: { slug } });
     if (slug.length < 3) {
       setSlugStatus("idle");
       return;
@@ -47,7 +84,7 @@ export function Step1Business({
     const res = await fetch(`/api/onboarding/vendor/slug?slug=${encodeURIComponent(slug)}`);
     const json = await res.json();
     setSlugStatus(json.data?.available ? "ok" : "taken");
-    if (json.data?.slug) update({ step1: { ...s, slug: json.data.slug } });
+    if (json.data?.slug) update({ step1: { slug: json.data.slug } });
   }
 
   return (
@@ -61,8 +98,8 @@ export function Step1Business({
         avatarUrl={s.avatarUrl}
         coverImageUrl={s.coverImageUrl}
         featuredImages={[]}
-        onAvatarChange={(url) => update({ step1: { ...s, avatarUrl: url } })}
-        onCoverChange={(url) => update({ step1: { ...s, coverImageUrl: url } })}
+        onAvatarChange={(url) => update({ step1: { avatarUrl: url } })}
+        onCoverChange={(url) => update({ step1: { coverImageUrl: url } })}
         onFeaturedChange={() => {}}
         showFeatured={false}
         showClips={false}
@@ -74,7 +111,7 @@ export function Step1Business({
         <Label>Business name *</Label>
         <Input
           value={s.businessName}
-          onChange={(e) => update({ step1: { ...s, businessName: e.target.value } })}
+          onChange={(e) => update({ step1: { businessName: e.target.value } })}
           onBlur={(e) => {
             if (!s.slug) void checkSlug(e.target.value);
           }}
@@ -88,7 +125,7 @@ export function Step1Business({
           <span className="text-sm text-muted-foreground shrink-0">evendor.com/vendors/</span>
           <Input
             value={s.slug}
-            onChange={(e) => update({ step1: { ...s, slug: slugify(e.target.value) } })}
+            onChange={(e) => update({ step1: { slug: slugify(e.target.value) } })}
             onBlur={(e) => void checkSlug(e.target.value)}
             placeholder="chuks-photography"
           />
@@ -104,7 +141,7 @@ export function Step1Business({
             <select
               className="w-full rounded-lg border border-border bg-input px-3 py-2 text-sm"
               value={s.category}
-              onChange={(e) => update({ step1: { ...s, category: e.target.value } })}
+              onChange={(e) => update({ step1: { category: e.target.value } })}
             >
               {SERVICE_VENDOR_CATEGORIES.map((c) => (
                 <option key={c.value} value={c.value}>{c.label}</option>
@@ -116,7 +153,7 @@ export function Step1Business({
             <select
               className="w-full rounded-lg border border-border bg-input px-3 py-2 text-sm"
               value={s.secondaryCategory ?? ""}
-              onChange={(e) => update({ step1: { ...s, secondaryCategory: e.target.value } })}
+              onChange={(e) => update({ step1: { secondaryCategory: e.target.value } })}
             >
               <option value="">Optional</option>
               {SERVICE_VENDOR_CATEGORIES.map((c) => (
@@ -131,7 +168,7 @@ export function Step1Business({
         <Label>Business tagline</Label>
         <Input
           value={s.tagline}
-          onChange={(e) => update({ step1: { ...s, tagline: e.target.value } })}
+          onChange={(e) => update({ step1: { tagline: e.target.value } })}
           placeholder="Luxury wedding stories, beautifully told"
         />
       </div>
@@ -141,7 +178,7 @@ export function Step1Business({
         <Textarea
           rows={4}
           value={s.description}
-          onChange={(e) => update({ step1: { ...s, description: e.target.value } })}
+          onChange={(e) => update({ step1: { description: e.target.value } })}
           placeholder="Describe your business, style, and what makes you unique…"
         />
       </div>
@@ -149,29 +186,22 @@ export function Step1Business({
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label>Years of experience</Label>
-          <Input value={s.yearsExperience} onChange={(e) => update({ step1: { ...s, yearsExperience: e.target.value } })} placeholder="5+" />
+          <Input value={s.yearsExperience} onChange={(e) => update({ step1: { yearsExperience: e.target.value } })} placeholder="5+" />
         </div>
         <div className="space-y-2">
           <Label>Team size</Label>
-          <Input value={s.teamSize} onChange={(e) => update({ step1: { ...s, teamSize: e.target.value } })} placeholder="Solo / 5 people" />
+          <Input value={s.teamSize} onChange={(e) => update({ step1: { teamSize: e.target.value } })} placeholder="Solo / 5 people" />
         </div>
         <div className="space-y-2">
           <Label>Established year</Label>
-          <Input value={s.establishedYear} onChange={(e) => update({ step1: { ...s, establishedYear: e.target.value } })} placeholder="2018" />
+          <Input value={s.establishedYear} onChange={(e) => update({ step1: { establishedYear: e.target.value } })} placeholder="2018" />
         </div>
         <div className="space-y-2">
           <Label>Languages spoken</Label>
-          <Input
-            value={s.languages.join(", ")}
-            onChange={(e) =>
-              update({
-                step1: {
-                  ...s,
-                  languages: e.target.value.split(",").map((l) => l.trim()).filter(Boolean),
-                },
-              })
-            }
+          <CommaListField
+            items={s.languages}
             placeholder="English, Yoruba"
+            onCommit={(languages) => update({ step1: { languages } })}
           />
         </div>
       </div>
@@ -190,43 +220,43 @@ export function Step2Location({ draft, update }: { draft: VendorOnboardingDraft;
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label>Country</Label>
-          <Input value={s.country} onChange={(e) => update({ step2: { ...s, country: e.target.value } })} />
+          <Input value={s.country} onChange={(e) => update({ step2: { country: e.target.value } })} />
         </div>
         <div className="space-y-2">
           <Label>State *</Label>
-          <Input value={s.state} onChange={(e) => update({ step2: { ...s, state: e.target.value } })} placeholder="Rivers" />
+          <Input value={s.state} onChange={(e) => update({ step2: { state: e.target.value } })} placeholder="Rivers" />
         </div>
         <div className="space-y-2">
           <Label>City *</Label>
-          <Input value={s.city} onChange={(e) => update({ step2: { ...s, city: e.target.value } })} placeholder="Port Harcourt" />
+          <Input value={s.city} onChange={(e) => update({ step2: { city: e.target.value } })} placeholder="Port Harcourt" />
         </div>
         <div className="space-y-2">
           <Label>Service radius (km)</Label>
-          <Input value={s.serviceRadiusKm} onChange={(e) => update({ step2: { ...s, serviceRadiusKm: e.target.value } })} type="number" min={1} />
+          <Input value={s.serviceRadiusKm} onChange={(e) => update({ step2: { serviceRadiusKm: e.target.value } })} type="number" min={1} />
         </div>
       </div>
       <div className="space-y-2">
         <Label>Business address *</Label>
-        <Input value={s.address} onChange={(e) => update({ step2: { ...s, address: e.target.value } })} placeholder="Street, area, landmark" />
+        <Input value={s.address} onChange={(e) => update({ step2: { address: e.target.value } })} placeholder="Street, area, landmark" />
         <p className="text-xs text-muted-foreground">Exact address is not shown publicly — only city/area for search.</p>
       </div>
       <div className="space-y-2">
         <Label>Google Maps link</Label>
-        <Input value={s.mapUrl} onChange={(e) => update({ step2: { ...s, mapUrl: e.target.value } })} placeholder="https://maps.google.com/…" />
+        <Input value={s.mapUrl} onChange={(e) => update({ step2: { mapUrl: e.target.value } })} placeholder="https://maps.google.com/…" />
       </div>
       <div className="flex flex-wrap gap-4 text-sm">
         <label className="flex items-center gap-2">
-          <input type="checkbox" checked={s.travelsOutsideCity} onChange={(e) => update({ step2: { ...s, travelsOutsideCity: e.target.checked } })} />
+          <input type="checkbox" checked={s.travelsOutsideCity} onChange={(e) => update({ step2: { travelsOutsideCity: e.target.checked } })} />
           Travels outside city
         </label>
         <label className="flex items-center gap-2">
-          <input type="checkbox" checked={s.travelsOutsideState} onChange={(e) => update({ step2: { ...s, travelsOutsideState: e.target.checked } })} />
+          <input type="checkbox" checked={s.travelsOutsideState} onChange={(e) => update({ step2: { travelsOutsideState: e.target.checked } })} />
           Travels outside state
         </label>
       </div>
       <div className="space-y-2">
         <Label>Travel fee policy</Label>
-        <Textarea rows={2} value={s.travelFeePolicy} onChange={(e) => update({ step2: { ...s, travelFeePolicy: e.target.value } })} placeholder="Travel fees may apply outside Port Harcourt…" />
+        <Textarea rows={2} value={s.travelFeePolicy} onChange={(e) => update({ step2: { travelFeePolicy: e.target.value } })} placeholder="Travel fees may apply outside Port Harcourt…" />
       </div>
     </div>
   );
@@ -244,9 +274,11 @@ export function Step3Services({
   const s = draft.step3;
 
   function updateService(index: number, patch: Partial<(typeof s.services)[0]>) {
-    const services = [...s.services];
-    services[index] = { ...services[index], ...patch };
-    update({ step3: { ...s, services } });
+    update((prev) => ({
+      step3: {
+        services: prev.step3.services.map((svc, i) => (i === index ? { ...svc, ...patch } : svc)),
+      },
+    }));
   }
 
   return (
@@ -264,7 +296,7 @@ export function Step3Services({
               type="number"
               min={1}
               value={s.capacity ?? ""}
-              onChange={(e) => update({ step3: { ...s, capacity: Number(e.target.value) || undefined } })}
+              onChange={(e) => update({ step3: { capacity: Number(e.target.value) || undefined } })}
             />
           </div>
           <VenueOfferingsPicker
@@ -272,8 +304,8 @@ export function Step3Services({
             services={s.venueServices ?? []}
             customAmenities={[]}
             customServices={[]}
-            onAmenitiesChange={(amenities) => update({ step3: { ...s, amenities } })}
-            onServicesChange={(venueServices) => update({ step3: { ...s, venueServices } })}
+            onAmenitiesChange={(amenities) => update({ step3: { amenities } })}
+            onServicesChange={(venueServices) => update({ step3: { venueServices } })}
             onCustomAmenitiesChange={() => {}}
             onCustomServicesChange={() => {}}
           />
@@ -285,7 +317,7 @@ export function Step3Services({
           <div className="flex items-center justify-between">
             <p className="font-medium">Service {index + 1}</p>
             {s.services.length > 1 && (
-              <Button type="button" variant="ghost" size="sm" onClick={() => update({ step3: { ...s, services: s.services.filter((_, i) => i !== index) } })}>
+              <Button type="button" variant="ghost" size="sm" onClick={() => update((prev) => ({ step3: { services: prev.step3.services.filter((_, i) => i !== index) } }))}>
                 <Trash2 className="h-4 w-4" />
               </Button>
             )}
@@ -310,13 +342,13 @@ export function Step3Services({
         </div>
       ))}
 
-      <Button type="button" variant="outline" className="gap-2" onClick={() => update({ step3: { ...s, services: [...s.services, createEmptyService()] } })}>
+      <Button type="button" variant="outline" className="gap-2" onClick={() => update((prev) => ({ step3: { services: [...prev.step3.services, createEmptyService()] } }))}>
         <Plus className="h-4 w-4" /> Add another service
       </Button>
 
       <div className="space-y-2">
         <Label>Terms & conditions</Label>
-        <Textarea rows={3} value={s.termsAndConditions ?? ""} onChange={(e) => update({ step3: { ...s, termsAndConditions: e.target.value } })} />
+        <Textarea rows={3} value={s.termsAndConditions ?? ""} onChange={(e) => update({ step3: { termsAndConditions: e.target.value } })} />
       </div>
     </div>
   );
@@ -331,7 +363,7 @@ export function Step4Portfolio({ draft, update }: { draft: VendorOnboardingDraft
     const next = s.portfolioCategories.includes(cat)
       ? s.portfolioCategories.filter((c) => c !== cat)
       : [...s.portfolioCategories, cat];
-    update({ step4: { ...s, portfolioCategories: next } });
+    update({ step4: { portfolioCategories: next } });
   }
 
   return (
@@ -349,10 +381,10 @@ export function Step4Portfolio({ draft, update }: { draft: VendorOnboardingDraft
         onAvatarChange={() => {}}
         onCoverChange={() => {}}
         onFeaturedChange={(slots) =>
-          update({ step4: { ...s, featuredImages: slots.filter((x): x is NonNullable<typeof x> => Boolean(x)) } })
+          update({ step4: { featuredImages: slots.filter((x): x is NonNullable<typeof x> => Boolean(x)) } })
         }
         onClipsChange={(slots) =>
-          update({ step4: { ...s, featuredClips: slots.filter((x): x is NonNullable<typeof x> => Boolean(x)) } })
+          update({ step4: { featuredClips: slots.filter((x): x is NonNullable<typeof x> => Boolean(x)) } })
         }
         showProfile={false}
         title="Featured work"
@@ -393,7 +425,7 @@ export function Step5BusinessDetails({ draft, update }: { draft: VendorOnboardin
       </div>
       <div className="space-y-2">
         <Label>Business email (private)</Label>
-        <Input type="email" value={s.businessEmail} onChange={(e) => update({ step5: { ...s, businessEmail: e.target.value } })} placeholder="admin@yourbusiness.com" />
+        <Input type="email" value={s.businessEmail} onChange={(e) => update({ step5: { businessEmail: e.target.value } })} placeholder="admin@yourbusiness.com" />
         <p className="text-xs text-muted-foreground">Used for account administration only — not visible to customers.</p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
@@ -402,7 +434,7 @@ export function Step5BusinessDetails({ draft, update }: { draft: VendorOnboardin
             <Label className="capitalize">{key === "website" ? "Official website" : key}</Label>
             <Input
               value={s[key]}
-              onChange={(e) => update({ step5: { ...s, [key]: e.target.value } })}
+              onChange={(e) => update({ step5: { [key]: e.target.value } })}
               placeholder={key === "website" ? "https://…" : `@handle or URL`}
             />
           </div>
@@ -484,7 +516,7 @@ export function Step7Preferences({ draft, update }: { draft: VendorOnboardingDra
   function toggleChip(field: "specialties" | "tags", value: string) {
     const list = s[field];
     const next = list.includes(value) ? list.filter((x) => x !== value) : [...list, value];
-    update({ step7: { ...s, [field]: next } });
+    update({ step7: { [field]: next } });
   }
 
   return (
@@ -499,7 +531,7 @@ export function Step7Preferences({ draft, update }: { draft: VendorOnboardingDra
           <select
             className="w-full rounded-lg border border-border bg-input px-3 py-2 text-sm"
             value={s.bookingApproval}
-            onChange={(e) => update({ step7: { ...s, bookingApproval: e.target.value as typeof s.bookingApproval } })}
+            onChange={(e) => update({ step7: { bookingApproval: e.target.value as typeof s.bookingApproval } })}
           >
             <option value="instant">Instant booking</option>
             <option value="approval_required">Approval required</option>
@@ -507,20 +539,20 @@ export function Step7Preferences({ draft, update }: { draft: VendorOnboardingDra
         </div>
         <div className="space-y-2">
           <Label>Minimum notice (hours)</Label>
-          <Input type="number" value={s.minimumNoticeHours} onChange={(e) => update({ step7: { ...s, minimumNoticeHours: Number(e.target.value) } })} />
+          <Input type="number" value={s.minimumNoticeHours} onChange={(e) => update({ step7: { minimumNoticeHours: Number(e.target.value) } })} />
         </div>
         <div className="space-y-2">
           <Label>Max advance booking (days)</Label>
-          <Input type="number" value={s.maxAdvanceBookingDays} onChange={(e) => update({ step7: { ...s, maxAdvanceBookingDays: Number(e.target.value) } })} />
+          <Input type="number" value={s.maxAdvanceBookingDays} onChange={(e) => update({ step7: { maxAdvanceBookingDays: Number(e.target.value) } })} />
         </div>
       </div>
       <div className="space-y-2">
         <Label>Cancellation policy</Label>
-        <Textarea rows={2} value={s.cancellationPolicy} onChange={(e) => update({ step7: { ...s, cancellationPolicy: e.target.value } })} />
+        <Textarea rows={2} value={s.cancellationPolicy} onChange={(e) => update({ step7: { cancellationPolicy: e.target.value } })} />
       </div>
       <div className="space-y-2">
         <Label>Reschedule policy</Label>
-        <Textarea rows={2} value={s.reschedulePolicy} onChange={(e) => update({ step7: { ...s, reschedulePolicy: e.target.value } })} />
+        <Textarea rows={2} value={s.reschedulePolicy} onChange={(e) => update({ step7: { reschedulePolicy: e.target.value } })} />
       </div>
       <div className="space-y-2">
         <Label>Specialties (powers Evendor search)</Label>
@@ -531,10 +563,10 @@ export function Step7Preferences({ draft, update }: { draft: VendorOnboardingDra
             </Badge>
           ))}
         </div>
-        <Input
+        <CommaListField
+          items={s.keywords}
           placeholder="Add custom keywords, comma-separated"
-          value={s.keywords.join(", ")}
-          onChange={(e) => update({ step7: { ...s, keywords: e.target.value.split(",").map((k) => k.trim()).filter(Boolean) } })}
+          onCommit={(keywords) => update({ step7: { keywords } })}
         />
       </div>
     </div>
@@ -551,7 +583,7 @@ export function Step8Payouts({ draft, update }: { draft: VendorOnboardingDraft; 
       </div>
       <BankAccountFields
         value={s as Partial<BankAccountInput>}
-        onChange={(next) => update({ step8: { ...s, ...next } })}
+        onChange={(next) => update({ step8: next })}
       />
     </div>
   );

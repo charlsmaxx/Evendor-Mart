@@ -48,7 +48,7 @@ export async function POST(
       listingId: booking.listingId,
       promptReview: true,
       message:
-        "Thank you! Earnings are now available for the vendor to withdraw after settlement checks.",
+        "Thank you! The vendor can request payout after Evendor's payout checks.",
     });
   }, { route: "/api/bookings/[id]/confirm" });
 }

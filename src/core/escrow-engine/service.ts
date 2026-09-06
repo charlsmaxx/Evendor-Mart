@@ -62,18 +62,17 @@ export async function releaseEscrow(
       data: { escrowStatus: "RELEASED" },
     });
 
-    // PAID means "escrow released into the vendor's Evendor balance". Moving that
-    // balance to a bank account is a separate Withdrawal.
+    // PENDING = eligible for a vendor payout request. PAID is reserved for a
+    // recorded manual business payment, not this completion step.
     await tx.payout.upsert({
       where: { bookingId },
-      update: { status: "PAID", processedAt: new Date() },
+      update: { status: "PENDING" },
       create: {
         bookingId,
         vendorId: booking.vendorId,
         amount: payoutAmount,
-        status: "PAID",
+        status: "PENDING",
         reference: payoutReference(),
-        processedAt: new Date(),
       },
     });
 
@@ -392,15 +391,14 @@ export async function resolveDispute(
     if (payoutAmount > 0) {
       await tx.payout.upsert({
         where: { bookingId: booking.id },
-        update: { amount: payoutAmount, status: "PAID", processedAt: new Date() },
+        update: { amount: payoutAmount, status: "PENDING", notes: `Dispute resolution: ${resolution}` },
         create: {
           bookingId: booking.id,
           vendorId: booking.vendorId,
           amount: payoutAmount,
-          status: "PAID",
+          status: "PENDING",
           reference: payoutReference(),
           notes: `Dispute resolution: ${resolution}`,
-          processedAt: new Date(),
         },
       });
     }
@@ -450,10 +448,10 @@ export async function resolveDispute(
   if (booking.customerId) {
     const resolutionCopy =
       resolution === "FULL_REFUND"
-        ? "Evendor notice: This dispute was resolved with a full refund to the customer. Escrow funds will not be released to the vendor."
+        ? "Evendor notice: This dispute was resolved with a full refund to the customer. The vendor will not be paid for this booking."
         : resolution === "FULL_PAYOUT"
-          ? "Evendor notice: This dispute was resolved in the vendor's favour. Escrow funds have been released to the vendor."
-          : "Evendor notice: This dispute was resolved with a partial outcome. Part of the escrow was released to the vendor and the remainder refunded to the customer.";
+          ? "Evendor notice: This dispute was resolved in the vendor's favour. The vendor may request payout under Evendor's payout rules."
+          : "Evendor notice: This dispute was resolved with a partial outcome. Part of the amount may be payable to the vendor and the remainder refunded to the customer.";
     await postDisputeAdminChatMessage({
       customerId: booking.customerId,
       vendorId: booking.vendorId,

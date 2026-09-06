@@ -1,10 +1,11 @@
+import { BrandLoader } from "@/components/loading/brand-loader";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function DashboardSkeleton() {
   return (
     <div className="mx-auto max-w-4xl space-y-10">
       <section className="flex flex-col items-center text-center">
-        <Skeleton className="h-24 w-24 rounded-full" />
+        <BrandLoader size="lg" />
         <Skeleton className="mt-4 h-8 w-48" />
         <Skeleton className="mt-2 h-4 w-64" />
       </section>

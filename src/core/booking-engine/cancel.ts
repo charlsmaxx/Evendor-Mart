@@ -104,7 +104,7 @@ export async function cancelBooking(opts: {
     feeAmount = amounts.feeAmount;
 
     if (heldPayment?.escrowStatus === "RELEASED") {
-      throw new BookingCancelError("Escrow has already been released for this booking.");
+      throw new BookingCancelError("This booking can no longer be cancelled because completion has already been recorded.");
     }
   }
 

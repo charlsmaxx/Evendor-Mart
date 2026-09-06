@@ -567,9 +567,9 @@ export function BookingForm({
               <span className="text-primary">{formatCurrency(finalAmount)}</span>
             </div>
             <p className="text-xs text-muted-foreground">
-              You pay this amount in full now via Paystack. Evendor holds the payment in escrow until the
-              job is confirmed. Platform fees are deducted before the vendor payout. Refunds follow the
-              cancellation policy below.
+              You pay this amount in full now via Paystack. Evendor collects the payment until the
+              job is confirmed under Evendor&apos;s completion rules. Platform fees are deducted
+              before the vendor payout. Refunds follow the cancellation policy below.
             </p>
             <p className="text-xs font-semibold text-primary/80">
               🎁 You&apos;ll earn {formatCurrency(cashbackToEarn)} in Evendor Rewards on this booking
@@ -593,7 +593,11 @@ export function BookingForm({
               required
             />
             <span>
-              I agree to this cancellation policy, the vendor&apos;s terms,{" "}
+              I agree to this cancellation policy, the{" "}
+              <Link href="/vendor-terms" className="underline underline-offset-2">
+                Vendor Agreement
+              </Link>
+              ,{" "}
               <Link href="/terms" className="underline underline-offset-2">
                 Evendor Terms of Service
               </Link>
@@ -601,7 +605,7 @@ export function BookingForm({
               <Link href="/privacy" className="underline underline-offset-2">
                 Privacy Policy
               </Link>
-              , escrow holding, and refund conditions shown above.
+              , payment collection, and refund conditions shown above.
             </span>
           </label>
         </div>

@@ -27,20 +27,28 @@ export async function GET() {
       _count: true,
     }),
     prisma.payout.findMany({
-      where: { status: "PENDING" },
+      where: {
+        status: { in: ["REQUESTED", "UNDER_REVIEW", "APPROVED", "ON_HOLD", "PENDING"] },
+      },
       include: {
         booking: {
           select: {
             id: true,
             totalAmount: true,
             eventDate: true,
+            status: true,
+            completionConfirmedAt: true,
+            completionConfirmedBy: true,
             listing: { select: { title: true } },
+            customer: { select: { fullName: true } },
+            dispute: { select: { status: true } },
+            payments: { select: { status: true, amount: true, paystackRef: true } },
           },
         },
-        vendor: { select: { businessName: true } },
+        vendor: { select: { id: true, businessName: true } },
       },
-      orderBy: { createdAt: "desc" },
-      take: 20,
+      orderBy: { updatedAt: "desc" },
+      take: 40,
     }),
     prisma.payout.aggregate({
       where: { status: { in: ["PAID", "PROCESSING"] } },
@@ -92,7 +100,27 @@ export async function GET() {
   return jsonOk({
     escrowBalance: escrowHeld._sum.amount ?? 0,
     escrowCount: escrowHeld._count,
-    pendingPayouts,
+    pendingPayouts: pendingPayouts.map((p) => ({
+      id: p.id,
+      amount: p.amount,
+      status: p.status,
+      requestedAt: p.requestedAt?.toISOString() ?? null,
+      createdAt: p.createdAt.toISOString(),
+      vendor: p.vendor,
+      booking: {
+        id: p.booking.id,
+        totalAmount: p.booking.totalAmount,
+        eventDate: p.booking.eventDate,
+        status: p.booking.status,
+        listing: p.booking.listing,
+        customerName: p.booking.customer?.fullName ?? "Customer",
+        disputeStatus: p.booking.dispute?.status ?? null,
+        paymentStatus:
+          p.booking.payments.find((pay) => pay.status === "SUCCESS")?.status ??
+          p.booking.payments[0]?.status ??
+          null,
+      },
+    })),
     releasedTotal: releasedPayouts._sum.amount ?? 0,
     releasedCount: releasedPayouts._count,
     disputedFunds: disputedFunds._sum.amount ?? 0,

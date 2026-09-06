@@ -1,4 +1,3 @@
-import { after } from "next/server";
 import { NextRequest } from "next/server";
 import { z } from "zod";
 import { requireAuth } from "@/lib/auth";
@@ -6,15 +5,11 @@ import { jsonNoStore, jsonError, handleApiRoute } from "@/lib/api-response";
 import { prisma } from "@/lib/prisma";
 import { getVendorWalletStats } from "@/lib/vendor-wallet";
 import { payoutLimiter, authLimiter, checkRateLimit } from "@/lib/rate-limit";
+import { readVendorBankAccount } from "@/core/payment-engine/payout-service";
 import {
-  MAX_WITHDRAWAL_AMOUNT,
-  MIN_WITHDRAWAL_AMOUNT,
-  WithdrawalError,
-  processWithdrawal,
-  requestWithdrawal,
-  readVendorBankAccount,
-} from "@/core/payment-engine/payout-service";
-import { isPaystackConfigured } from "@/core/payment-engine/paystack";
+  PayoutRequestError,
+  requestBookingPayout,
+} from "@/core/payment-engine/manual-payout";
 import {
   PayoutAuthError,
   getPayoutAuthStatus,
@@ -25,8 +20,6 @@ import {
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-/** Allow Paystack transfer work started via `after()` enough time on Pro; Hobby still returns fast. */
-export const maxDuration = 60;
 
 export async function GET() {
   return handleApiRoute(async () => {
@@ -45,7 +38,7 @@ export async function GET() {
 
     return jsonNoStore({
       ...wallet,
-      payoutsEnabled: isPaystackConfigured() && !!bank && bank.verified !== false,
+      payoutsEnabled: !!bank && bank.verified !== false,
       payoutPasswordSet: payoutAuth.passwordSet,
       webauthnEnabled: payoutAuth.webauthnEnabled,
       bankAccount: bank
@@ -59,15 +52,8 @@ export async function GET() {
   }, { route: "GET /api/vendor/payouts" });
 }
 
-const withdrawSchema = z.object({
-  amount: z
-    .number()
-    .int("Enter a whole naira amount")
-    .min(MIN_WITHDRAWAL_AMOUNT, `Minimum withdrawal is ₦${MIN_WITHDRAWAL_AMOUNT.toLocaleString()}`)
-    .max(
-      MAX_WITHDRAWAL_AMOUNT,
-      `Single withdrawals are capped at ₦${MAX_WITHDRAWAL_AMOUNT.toLocaleString()}`
-    ),
+const requestSchema = z.object({
+  bookingId: z.string().uuid("Select a completed booking to request payout."),
   payoutPassword: z.string().optional(),
   webauthn: z
     .object({
@@ -86,7 +72,7 @@ export async function POST(req: NextRequest) {
 
     const rate = await checkRateLimit(payoutLimiter, `withdraw:${user.id}`);
     if (!rate.success) {
-      return jsonError("Too many withdrawal attempts. Try again later.", 429);
+      return jsonError("Too many payout requests. Try again later.", 429);
     }
 
     const vendor = await prisma.vendorProfile.findUnique({
@@ -95,25 +81,22 @@ export async function POST(req: NextRequest) {
     });
     if (!vendor) return jsonError("Vendor not found", 404);
 
-    const parsed = withdrawSchema.safeParse(await req.json().catch(() => null));
+    const body = await req.json().catch(() => null);
+    const parsed = requestSchema.safeParse(body);
     if (!parsed.success) {
+      const askedAmount = body && typeof body === "object" && "amount" in body;
       return jsonError(
-        parsed.error.issues[0]?.message ?? "Invalid withdrawal amount",
+        askedAmount
+          ? "Payout is requested per completed booking. The amount is calculated by Evendor, not entered on this page."
+          : (parsed.error.issues[0]?.message ?? "Invalid payout request"),
         400
-      );
-    }
-
-    if (!isPaystackConfigured()) {
-      return jsonError(
-        "Payouts are not configured yet. Add PAYSTACK_SECRET_KEY on the server.",
-        503
       );
     }
 
     const payoutAuth = getPayoutAuthStatus(vendor.metadata);
     if (!payoutAuth.passwordSet) {
       return jsonError(
-        "Set a withdrawal password before sending funds to your bank.",
+        "Set a payout password before requesting payout.",
         403,
         "PAYOUT_PASSWORD_NOT_SET"
       );
@@ -149,50 +132,21 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      // Record first so the client always gets a JSON response. Awaiting Paystack for the
-      // full transfer often blew the serverless deadline → browser "Failed to fetch".
-      const { withdrawal } = await requestWithdrawal({
+      const payout = await requestBookingPayout({
         vendorId: vendor.id,
-        amount: parsed.data.amount,
+        bookingId: parsed.data.bookingId,
         requestedById: user.id,
       });
-
-      const processPromise = processWithdrawal(withdrawal.id).catch((error) => {
-        console.error(`[payouts] processWithdrawal ${withdrawal.id} failed:`, error);
-        return null;
-      });
-
-      const processed = await Promise.race([
-        processPromise,
-        new Promise<null>((resolve) => setTimeout(() => resolve(null), 8_000)),
-      ]);
-
-      if (!processed) {
-        after(async () => {
-          await processPromise;
-        });
-      }
-
-      if (processed?.status === "FAILED" || processed?.status === "REVERSED") {
-        return jsonError(
-          processed.failureReason ??
-            "We could not complete the transfer. Your balance is unchanged.",
-          502
-        );
-      }
-
       return jsonNoStore({
-        id: withdrawal.id,
-        reference: withdrawal.reference,
-        amount: withdrawal.amount,
-        status: processed?.status ?? "PENDING",
+        id: payout.id,
+        bookingId: payout.bookingId,
+        amount: payout.amount,
+        status: payout.status,
         message:
-          processed?.status === "PAID"
-            ? "Payout successful."
-            : "Payout processing. Funds are being sent to your bank — refresh in a minute to check status.",
+          "Payout request submitted. Evendor will review it before payment is made.",
       });
     } catch (err) {
-      if (err instanceof WithdrawalError) return jsonError(err.message, err.status);
+      if (err instanceof PayoutRequestError) return jsonError(err.message, err.status);
       throw err;
     }
   }, { route: "POST /api/vendor/payouts" });

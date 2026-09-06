@@ -37,10 +37,10 @@ export default function TermsPage() {
 
       <LegalSection id="who-we-are" title="1. Who we are">
         <p>
-          Evendor is an online marketplace that helps customers discover, compare, and book event
-          halls and event service vendors in Nigeria. Evendor is a platform operator. Except where
-          these Terms say otherwise, Evendor is not the venue owner, caterer, photographer, or other
-          supplier of the underlying event service.
+          Evendor is an online marketplace/platform that helps customers discover, book and pay for
+          event halls and event-related services in Nigeria. Evendor may engage independent service
+          providers, vendors or suppliers to fulfil services booked through the Platform. Except
+          where these Terms say otherwise, those providers are not Evendor employees.
         </p>
         <p>
           You can contact us at{" "}
@@ -76,10 +76,12 @@ export default function TermsPage() {
           any vendor terms before paying.
         </p>
         <p>
-          A booking on Evendor creates a contract between the customer and the vendor for the
-          listed service or venue, on the booking details shown at checkout (including date, package,
-          add-ons, price, and the applicable cancellation policy). Evendor provides the booking
-          tools, messaging, and payment holding described in these Terms.
+          A booking on Evendor is an arrangement for the listed service or venue on the details shown
+          at checkout (including date, package, add-ons, price, and the applicable cancellation
+          policy). Evendor provides the booking tools, messaging, and payment collection described in
+          these Terms, and may engage the vendor/service provider to fulfil the booking. The
+          vendor/service provider is responsible for delivering the services they have agreed to
+          provide, in line with the booking details and Evendor&apos;s policies.
         </p>
       </LegalSection>
 
@@ -88,13 +90,35 @@ export default function TermsPage() {
           Bookings are paid in full at the time of booking unless we clearly state otherwise for a
           specific product. Payments are processed by Paystack. Card and bank details entered on
           Paystack&apos;s checkout are handled by Paystack, not stored as full card numbers on
-          Evendor.
+          Evendor. Customer payments are received through that processor and settle into
+          Evendor&apos;s registered business payout account according to the processor&apos;s
+          settlement schedule.
         </p>
         <p>
-          Amounts paid for a booking are held by Evendor (Evendor Escrow) until the customer
-          confirms the job is done, a vendor completion flow is confirmed under our processes, a
+          Evendor may subsequently pay the applicable independent service provider/vendor after the
+          booking satisfies Evendor&apos;s payout conditions. Vendor earnings shown in a dashboard
+          are not necessarily immediately payable. A vendor may request payout only when the booking
+          is eligible under Evendor&apos;s payout rules. Payout requests are subject to review and
+          verification. Evendor does not guarantee immediate vendor payout merely because a customer
+          has paid. Exact payout timing depends on booking status, payout rules, payment settlement
+          and any applicable review.
+        </p>
+        <p>
+          Amounts paid for a booking remain with Evendor until the customer confirms the job is done,
+          the existing 48-hour completion process applies without an unresolved problem report, a
           dispute is resolved, or another release/refund rule in these Terms or the listing
-          cancellation policy applies. Evendor may deduct its platform fees before paying a vendor.
+          cancellation policy applies. A customer reporting a problem can cause payout to be placed
+          on hold while the issue is reviewed. Evendor may deduct its applicable commission, fees,
+          refunds, adjustments or other amounts permitted by the applicable agreement before paying
+          a vendor. Payout amounts are calculated from Evendor&apos;s authoritative booking and
+          payment records.
+        </p>
+        <p>
+          Evendor may delay, reject, suspend, or place a payout on hold where there is an unresolved
+          customer complaint, a dispute, cancellation, refund issue, suspected fraud, payment
+          reversal/chargeback risk, incomplete service, invalid vendor payout information, a
+          violation of Evendor&apos;s terms or policies, or another legitimate financial or
+          compliance reason.
         </p>
         <p>
           Checkout shows the booking total, any rewards applied, the amount to pay, and the
@@ -102,8 +126,10 @@ export default function TermsPage() {
           paying.
         </p>
         <p>
-          Vendors receive payouts to a verified bank account they provide, subject to eligibility,
-          identity/security checks, and Paystack transfer rules. Evendor is not a bank.
+          Vendors receive payouts to a verified bank account they provide, after eligibility checks
+          and admin review of a payout request. Vendors must keep payout information accurate.
+          Evendor is not a bank, is not a licensed escrow provider, and is not a regulated payment
+          institution merely because it collects customer payments and later pays vendors.
         </p>
       </LegalSection>
 
@@ -111,15 +137,16 @@ export default function TermsPage() {
         <p>
           Each listing or package may have its own cancellation windows and refund percentages.
           Those terms are displayed before payment and form part of the booking. Refunds, if any,
-          follow that policy and our escrow/dispute processes. Platform fees and non-refundable
+          follow that policy and our dispute and payout processes. Platform fees and non-refundable
           amounts described at checkout may not be returned.
         </p>
         <p>
           Customers and vendors may raise a dispute through Evendor where the service was not
           provided as booked. We may request evidence, pause a payout, refund a customer, pay a
-          vendor, or split funds as we reasonably decide based on the information available. Our
-          decision on escrow release in a dispute is final as between the parties and Evendor,
-          without limiting any non-waivable legal rights.
+          vendor, or split amounts as we reasonably decide based on the information available. Our
+          decision on payout or refund in a dispute is final as between the parties and Evendor,
+          without limiting any non-waivable legal rights. Evendor may maintain records of payments,
+          bookings, cancellations, refunds, disputes and payouts.
         </p>
       </LegalSection>
 
@@ -149,9 +176,15 @@ export default function TermsPage() {
           listings that appear misleading, unlawful, or harmful to customers.
         </p>
         <p>
-          Payouts depend on completed eligible bookings, absence of open disputes where funds are
-          held, and successful bank transfer. You must keep withdrawal credentials secure. You must
-          not attempt to bypass escrow for marketplace bookings.
+          Payouts depend on completed eligible bookings, absence of an unresolved problem report or
+          dispute where payout is on hold, accurate bank details, and Evendor&apos;s review of a
+          payout request. Earnings shown as pending are not immediately payable. You must not attempt
+          to bypass Evendor payment collection for marketplace bookings. Additional vendor
+          commercial terms are in the{" "}
+          <Link href="/vendor-terms" className="font-medium text-primary hover:underline">
+            Vendor Agreement
+          </Link>
+          .
         </p>
         <p>
           Optional vendor tools (for example analytics, manual/offline booking records, staff access,

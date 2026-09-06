@@ -143,6 +143,12 @@ enum DisputeStatus {
 enum PayoutStatus {
   PENDING
   PROCESSING
+  REQUESTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  ON_HOLD
+  PAYMENT_FAILED
   PAID
   FAILED
   REVERSED
@@ -703,6 +709,7 @@ model Payout {
   id                   String               @id @default(uuid())
   vendorId             String
   bookingId            String               @unique
+  /// Authoritative vendor payable in whole NGN. Never overwritten after create.
   amount               Int
   status               PayoutStatus         @default(PENDING)
   reference            String               @unique
@@ -712,6 +719,27 @@ model Payout {
   reconciliationNote   String?
   processedAt          DateTime?
   notes                String?
+  requestedAt          DateTime?
+  requestedById        String?
+  reviewedAt           DateTime?
+  reviewedById         String?
+  approvedAt           DateTime?
+  approvedById         String?
+  paidById             String?
+  rejectedAt           DateTime?
+  rejectedById         String?
+  rejectionReason      String?
+  holdReason           String?
+  /// Provider-independent label, e.g. manual_business_payout.
+  paymentMethod        String?
+  destinationBank      String?
+  destinationAccountName String?
+  destinationAccountLast4 String?
+  transferReference    String?
+  /// Actual amount recorded as paid. Null until a manual payment is recorded.
+  paidAmount           Int?
+  adjustmentAmount     Int                  @default(0)
+  adjustmentReason     String?
   createdAt            DateTime             @default(now())
   updatedAt            DateTime             @updatedAt
 
@@ -719,6 +747,7 @@ model Payout {
   booking Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
   @@index([vendorId, status])
+  @@index([status, requestedAt])
 }
 
 /// A vendor-initiated cash-out of released escrow to their bank account.

@@ -197,6 +197,11 @@ export function AccountSettingsForm() {
           and{" "}
           <Link href="/privacy" className="font-medium text-primary hover:underline">
             Privacy Policy
+          </Link>
+          {" "}
+          and{" "}
+          <Link href="/vendor-terms" className="font-medium text-primary hover:underline">
+            Vendor Agreement
           </Link>{" "}
           apply to your account. If we publish a new required version, we&apos;ll ask you to review it
           before continuing.

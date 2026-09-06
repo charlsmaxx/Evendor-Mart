@@ -190,7 +190,7 @@ export function WithdrawalAuthDialog({
     try {
       await onConfirmPassword(password);
     } catch (err) {
-      setLocalError(err instanceof Error ? err.message : "Withdrawal failed.");
+      setLocalError(err instanceof Error ? err.message : "Payout request failed.");
     }
   }
 
@@ -321,7 +321,7 @@ export function WithdrawalAuthDialog({
 
   const titles: Record<Mode, string> = {
     set: "Set a withdrawal password",
-    confirm: "Confirm withdrawal",
+    confirm: "Confirm payout request",
     change: "Change withdrawal password",
     recover: "Reset withdrawal password",
     "enable-biometrics": "Enable fingerprint or Face ID",
@@ -340,7 +340,7 @@ export function WithdrawalAuthDialog({
         {mode === "set" && (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Before sending {formatCurrency(amount)} to your bank, set a withdrawal password.
+              Before requesting {formatCurrency(amount)}, set a payout password.
               You can also enable this phone&apos;s fingerprint or Face ID after that.
             </p>
             <div className="space-y-1.5">
@@ -374,8 +374,9 @@ export function WithdrawalAuthDialog({
         {mode === "confirm" && (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Confirm you want to withdraw <span className="font-semibold text-foreground">{formatCurrency(amount)}</span>{" "}
-              to your payout account.
+              Confirm you are requesting payout of{" "}
+              <span className="font-semibold text-foreground">{formatCurrency(amount)}</span>. Evendor
+              will review the request before payment is made.
             </p>
             <div className="space-y-1.5">
               <Label htmlFor="payout-password">Withdrawal password</Label>
@@ -579,7 +580,7 @@ export function WithdrawalAuthDialog({
           )}
           {mode === "confirm" && (
             <Button variant="gradient" disabled={working || password.length < 6} onClick={() => void handleConfirm()}>
-              {working ? "Processing payout…" : "Confirm withdrawal"}
+              {working ? "Submitting request…" : "Confirm payout request"}
             </Button>
           )}
           {mode === "change" && (

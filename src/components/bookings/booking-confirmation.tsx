@@ -94,9 +94,10 @@ export function BookingConfirmation({
     return (
       <div id="review" className="space-y-4">
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4">
-          <p className="font-semibold text-emerald-800">Payment released — thank you</p>
+          <p className="font-semibold text-emerald-800">Booking completed — thank you</p>
           <p className="mt-1 text-sm text-emerald-700">
-            The vendor can now withdraw their earnings after settlement checks.
+            The vendor can request payout after Evendor&apos;s payout checks. Requesting payout is
+            not the same as being paid.
           </p>
         </div>
         <BookingReviewPrompt
@@ -124,7 +125,7 @@ export function BookingConfirmation({
         </p>
         <p className="mt-1 text-sm text-muted-foreground">
           {canConfirm
-            ? "Approving releases the vendor's pending earnings for payout. Reporting a problem keeps your payment locked until our team resolves it."
+            ? "Approving confirms the job is done so the vendor can request payout. Reporting a problem keeps payment on hold until our team resolves it."
             : "If something went wrong, report a problem to keep your payment locked while we investigate. You can confirm the job is done after the event or once the vendor marks it delivered."}
         </p>
       </div>
@@ -139,7 +140,7 @@ export function BookingConfirmation({
               onClick={() => confirmMutation.mutate()}
             >
               <CheckCircle2 className="h-4 w-4" />
-              {confirmMutation.isPending ? "Releasing payment…" : "Approve — the job is done"}
+              {confirmMutation.isPending ? "Confirming…" : "Approve — the job is done"}
             </Button>
           )}
           {canDispute && (

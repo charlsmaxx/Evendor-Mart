@@ -225,6 +225,10 @@ export function defaultDraft(businessKind: BusinessKind): VendorOnboardingDraft 
   };
 }
 
+export type DraftUpdater = (
+  patch: Partial<VendorOnboardingDraft> | ((prev: VendorOnboardingDraft) => Partial<VendorOnboardingDraft>)
+) => void;
+
 export function mergeDraft(
   base: VendorOnboardingDraft,
   patch: Partial<VendorOnboardingDraft>

@@ -5,8 +5,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { Banknote, Wallet, Clock, CheckCircle2, XCircle, Send, AlertTriangle } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { payoutStatusLabel } from "@/lib/payout-labels";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { VendorPageHeader, VendorSummaryCard, VendorSection, VendorSkeleton } from "@/components/vendor/vendor-ui";
 import { PayoutAccountForm } from "@/components/vendor/payout-account-form";
 import {
@@ -27,35 +27,47 @@ type Withdrawal = {
   createdAt: string;
 };
 
+type BookingPayout = {
+  id: string;
+  bookingId: string;
+  reference: string;
+  amount: number;
+  status: string;
+  canRequest?: boolean;
+  processedAt: string | null;
+  createdAt: string;
+  bookingTitle: string;
+  eventDate: string;
+};
+
 type PayoutData = {
   availableBalance: number;
   pendingEarnings: number;
-  escrowBalance: number;
-  pendingRelease: number;
+  payoutRequested?: number;
+  payoutApproved?: number;
+  payoutPaid?: number;
+  payoutOnHold?: number;
   withdrawnAmount: number;
   withdrawalsInFlight: number;
-  minWithdrawal: number;
+  legacyLedgerBalance?: number;
   payoutsEnabled: boolean;
   payoutPasswordSet?: boolean;
   webauthnEnabled?: boolean;
   bankAccount: { bankName: string; accountName: string; accountNumberLast4: string } | null;
-  payouts: {
-    id: string;
-    reference: string;
-    amount: number;
-    status: string;
-    processedAt: string | null;
-    createdAt: string;
-    bookingTitle: string;
-    eventDate: string;
-  }[];
+  payouts: BookingPayout[];
   withdrawals: Withdrawal[];
 };
 
 const STATUS_ICON: Record<string, React.ElementType> = {
   PAID: CheckCircle2,
+  APPROVED: CheckCircle2,
   PROCESSING: Clock,
   PENDING: Clock,
+  REQUESTED: Send,
+  UNDER_REVIEW: Clock,
+  ON_HOLD: AlertTriangle,
+  REJECTED: XCircle,
+  PAYMENT_FAILED: XCircle,
   FAILED: XCircle,
   REVERSED: XCircle,
 };
@@ -68,10 +80,9 @@ async function readApiError(res: Response) {
 }
 
 export default function VendorPayoutsPage() {
-  const [amount, setAmount] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [authOpen, setAuthOpen] = useState(false);
-  const [pendingAmount, setPendingAmount] = useState(0);
+  const [pendingPayout, setPendingPayout] = useState<BookingPayout | null>(null);
   const qc = useQueryClient();
 
   const { data, isLoading } = useQuery({
@@ -84,9 +95,9 @@ export default function VendorPayoutsPage() {
     },
   });
 
-  const withdraw = useMutation({
+  const requestPayout = useMutation({
     mutationFn: async (payload: {
-      amount: number;
+      bookingId: string;
       payoutPassword?: string;
       webauthn?: WebauthnAssertionPayload;
     }) => {
@@ -98,9 +109,7 @@ export default function VendorPayoutsPage() {
           body: JSON.stringify(payload),
         });
       } catch {
-        throw new Error(
-          "Could not reach the server. Refresh this page — if a withdrawal appears below, it is already processing."
-        );
+        throw new Error("Could not reach the server. Refresh this page and check whether the request already appears.");
       }
       if (!res.ok) throw await readApiError(res);
       const json = await res.json().catch(() => null);
@@ -108,8 +117,8 @@ export default function VendorPayoutsPage() {
     },
     onMutate: () => setError(null),
     onSuccess: () => {
-      setAmount("");
       setAuthOpen(false);
+      setPendingPayout(null);
       qc.invalidateQueries({ queryKey: ["vendor-payouts"] });
       qc.invalidateQueries({ queryKey: ["vendor-revenue"] });
       qc.invalidateQueries({ queryKey: ["vendor-overview"] });
@@ -121,13 +130,6 @@ export default function VendorPayoutsPage() {
   });
 
   if (isLoading || !data) return <VendorSkeleton />;
-
-  const requested = Math.floor(Number(amount) || 0);
-  const canSubmit =
-    data.payoutsEnabled &&
-    requested >= data.minWithdrawal &&
-    requested <= data.availableBalance &&
-    !withdraw.isPending;
 
   async function savePassword(
     password: string,
@@ -152,40 +154,49 @@ export default function VendorPayoutsPage() {
     <div className="space-y-8">
       <VendorPageHeader
         title="Earnings & Payouts"
-        subtitle="Track pending earnings, withdraw available funds to your bank, and follow every transfer."
+        subtitle="Pending earnings are not payable yet. Request payout on a completed booking — Evendor reviews each request before payment is made."
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <VendorSummaryCard
+          label="Pending Earnings"
+          value={formatCurrency(data.pendingEarnings)}
+          sub="Not payable until the job is completed"
+          icon={Banknote}
+        />
+        <VendorSummaryCard
           label="Available for Payout"
           value={formatCurrency(data.availableBalance)}
-          sub={
-            data.availableBalance > 0
-              ? "Ready to withdraw"
-              : "Becomes available after service is completed"
-          }
+          sub="Eligible to request — not paid yet"
           accent
           icon={Wallet}
         />
         <VendorSummaryCard
-          label="Pending Earnings"
-          value={formatCurrency(data.pendingEarnings)}
-          sub="Payout pending — not withdrawable yet"
-          icon={Banknote}
-        />
-        <VendorSummaryCard
-          label="Payout Processing"
-          value={formatCurrency(data.withdrawalsInFlight)}
-          sub="Transfer to your bank in progress"
+          label="Payout Under Review"
+          value={formatCurrency((data.payoutRequested ?? 0) + (data.payoutApproved ?? 0))}
+          sub="Requested or approved, awaiting payment"
           icon={Send}
         />
         <VendorSummaryCard
-          label="Paid"
-          value={formatCurrency(data.withdrawnAmount)}
-          sub="Successfully sent to your bank"
+          label="Payout Paid"
+          value={formatCurrency(data.payoutPaid ?? 0)}
+          sub="Recorded as paid by Evendor"
           icon={CheckCircle2}
         />
       </div>
+
+      {(data.payoutOnHold ?? 0) > 0 && (
+        <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          {formatCurrency(data.payoutOnHold ?? 0)} is on hold and cannot be paid until Evendor completes review.
+        </p>
+      )}
+
+      {(data.legacyLedgerBalance ?? 0) > 0 && (
+        <p className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+          Earlier earnings of {formatCurrency(data.legacyLedgerBalance ?? 0)} were credited before this
+          payout-request process. Evendor will settle those separately — they cannot be requested again here.
+        </p>
+      )}
 
       <PayoutAccountForm
         current={
@@ -200,68 +211,29 @@ export default function VendorPayoutsPage() {
       />
 
       <div className="rounded-2xl border border-border/80 bg-card/80 p-6 backdrop-blur-sm">
-        <h3 className="font-semibold">Withdraw Funds</h3>
+        <h3 className="font-semibold">Request payout</h3>
         {!data.payoutsEnabled && (
           <p className="mt-1 flex items-center gap-2 text-sm text-amber-600">
             <AlertTriangle className="h-4 w-4" />
-            Add a verified payout account above to enable withdrawals.
+            Add a verified payout account above before requesting payout.
           </p>
         )}
-        {data.payoutsEnabled && data.availableBalance < data.minWithdrawal && (
-          <p className="mt-1 text-sm text-muted-foreground">
-            Payout unavailable until your service is successfully completed and enough
-            earnings are available (min {formatCurrency(data.minWithdrawal)}).
-          </p>
-        )}
-        {data.payoutsEnabled && (
-          <p className="mt-1 text-sm text-muted-foreground">
-            {data.payoutPasswordSet
-              ? "Withdrawals require your withdrawal password or this device’s fingerprint / Face ID."
-              : "You’ll set a withdrawal password before the first payout is sent."}
-          </p>
-        )}
-
-        <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-          <Input
-            type="number"
-            inputMode="numeric"
-            min={data.minWithdrawal}
-            placeholder={`Amount in NGN (min ${data.minWithdrawal.toLocaleString()})`}
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            className="max-w-xs"
-            disabled={!data.payoutsEnabled}
-          />
-          <Button
-            variant="gradient"
-            disabled={!canSubmit}
-            onClick={() => {
-              setError(null);
-              setPendingAmount(requested);
-              setAuthOpen(true);
-            }}
-          >
-            Request Withdrawal
-          </Button>
-        </div>
-
-        <p className="mt-2 text-xs text-muted-foreground">
-          Available: {formatCurrency(data.availableBalance)} · Minimum{" "}
-          {formatCurrency(data.minWithdrawal)}
+        <p className="mt-1 text-sm text-muted-foreground">
+          You are requesting payout for a specific completed booking. The amount is calculated by
+          Evendor. Your request will be reviewed before payment is made. This is not an instant transfer.
         </p>
-
         {error && !authOpen && <p className="mt-2 text-sm text-red-600">{error}</p>}
-        {withdraw.isSuccess && !error && !authOpen && (
-          <p className="mt-2 text-sm text-emerald-600">{withdraw.data?.message}</p>
+        {requestPayout.isSuccess && !error && !authOpen && (
+          <p className="mt-2 text-sm text-emerald-600">{requestPayout.data?.message}</p>
         )}
       </div>
 
       <WithdrawalAuthDialog
         open={authOpen}
-        amount={pendingAmount}
+        amount={pendingPayout?.amount ?? 0}
         passwordSet={!!data.payoutPasswordSet}
         webauthnEnabled={!!data.webauthnEnabled}
-        submitting={withdraw.isPending}
+        submitting={requestPayout.isPending}
         error={authOpen ? error : null}
         onOpenChange={setAuthOpen}
         onSetPassword={async (password, confirmPassword) => {
@@ -273,7 +245,12 @@ export default function VendorPayoutsPage() {
               throw err;
             }
           }
-          await withdraw.mutateAsync({ amount: pendingAmount, payoutPassword: password });
+          if (pendingPayout) {
+            await requestPayout.mutateAsync({
+              bookingId: pendingPayout.bookingId,
+              payoutPassword: password,
+            });
+          }
         }}
         onChangePassword={async (currentPassword, password, confirmPassword) => {
           await savePassword(password, confirmPassword, { currentPassword });
@@ -284,20 +261,71 @@ export default function VendorPayoutsPage() {
           setError(null);
         }}
         onConfirmPassword={async (password) => {
-          await withdraw.mutateAsync({ amount: pendingAmount, payoutPassword: password });
+          if (!pendingPayout) return;
+          await requestPayout.mutateAsync({
+            bookingId: pendingPayout.bookingId,
+            payoutPassword: password,
+          });
         }}
         onConfirmBiometrics={async (webauthn) => {
-          await withdraw.mutateAsync({ amount: pendingAmount, webauthn });
+          if (!pendingPayout) return;
+          await requestPayout.mutateAsync({
+            bookingId: pendingPayout.bookingId,
+            webauthn,
+          });
         }}
         onBiometricsEnabled={() => {
           qc.invalidateQueries({ queryKey: ["vendor-payouts"] });
         }}
       />
 
-      <VendorSection title="Withdrawals">
-        {data.withdrawals.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">No withdrawals yet.</p>
+      <VendorSection title="Booking payouts">
+        {data.payouts.length === 0 ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            No completed bookings are available for payout yet.
+          </p>
         ) : (
+          <div className="space-y-2">
+            {data.payouts.map((p) => {
+              const Icon = STATUS_ICON[p.status] ?? Clock;
+              const canRequest = !!p.canRequest && data.payoutsEnabled && !requestPayout.isPending;
+              return (
+                <div key={p.id} className="flex flex-wrap items-center gap-4 rounded-xl border border-border/60 p-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+                    <Icon className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium">{p.bookingTitle}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Booking #{p.bookingId.slice(0, 8)} · {format(new Date(p.eventDate), "MMM d, yyyy")}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-primary">{formatCurrency(p.amount)}</p>
+                    <p className="text-xs text-muted-foreground">{payoutStatusLabel(p.status)}</p>
+                  </div>
+                  {canRequest ? (
+                    <Button
+                      variant="gradient"
+                      size="sm"
+                      onClick={() => {
+                        setError(null);
+                        setPendingPayout(p);
+                        setAuthOpen(true);
+                      }}
+                    >
+                      Request Payout
+                    </Button>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </VendorSection>
+
+      {data.withdrawals.length > 0 && (
+        <VendorSection title="Earlier bank transfers">
           <div className="space-y-2">
             {data.withdrawals.map((w) => {
               const Icon = STATUS_ICON[w.status] ?? Clock;
@@ -315,9 +343,6 @@ export default function VendorPayoutsPage() {
                     <p className="text-xs text-muted-foreground">
                       {format(new Date(w.createdAt), "MMM d, yyyy HH:mm")} · {w.reference}
                     </p>
-                    {failed && w.failureReason && (
-                      <p className="mt-1 text-xs text-red-600">{w.failureReason}</p>
-                    )}
                   </div>
                   <div className="text-right">
                     <p className="font-bold text-primary">{formatCurrency(w.amount)}</p>
@@ -327,37 +352,8 @@ export default function VendorPayoutsPage() {
               );
             })}
           </div>
-        )}
-      </VendorSection>
-
-      <VendorSection title="Released Earnings">
-        {data.payouts.length === 0 ? (
-          <p className="py-8 text-center text-sm text-muted-foreground">No released bookings yet.</p>
-        ) : (
-          <div className="space-y-2">
-            {data.payouts.map((p) => {
-              const Icon = STATUS_ICON[p.status] ?? Clock;
-              return (
-                <div key={p.id} className="flex items-center gap-4 rounded-xl border border-border/60 p-4">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-                    <Icon className="h-5 w-5 text-muted-foreground" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium">{p.bookingTitle}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Ref: {p.reference} · {format(new Date(p.createdAt), "MMM d, yyyy")}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-primary">{formatCurrency(p.amount)}</p>
-                    <p className="text-xs capitalize text-muted-foreground">{p.status.toLowerCase()}</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </VendorSection>
+        </VendorSection>
+      )}
     </div>
   );
 }

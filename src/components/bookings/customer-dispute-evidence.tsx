@@ -90,8 +90,8 @@ export function CustomerDisputeEvidence({ bookingId }: { bookingId: string }) {
 
       <div className="space-y-2 border-t border-amber-200/80 pt-3">
         <p className="text-xs text-amber-800">
-          Changed your mind? You can cancel this dispute. Escrow stays locked until you confirm
-          the job or the automatic release window ends.
+          Changed your mind? You can cancel this dispute. Payment stays on hold until you confirm
+          the job or the automatic completion window ends.
         </p>
         <Button
           type="button"

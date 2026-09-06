@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "How Evendor works",
     description:
-      "Browse verified vendors, compare options, and book with escrow-protected payments.",
+      "Browse verified vendors, compare options, and book with payments held until the job is done.",
   },
 };
 

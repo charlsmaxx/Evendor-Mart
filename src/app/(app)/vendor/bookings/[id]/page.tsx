@@ -4,6 +4,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { format } from "date-fns";
+import { formatCurrency } from "@/lib/utils";
+import { payoutStatusLabel } from "@/lib/payout-labels";
 import {
   ArrowLeft,
   Calendar,
@@ -18,7 +20,6 @@ import {
   Banknote,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { formatCurrency } from "@/lib/utils";
 import { VendorPageHeader, VendorSkeleton, BOOKING_STATUS_STYLES } from "@/components/vendor/vendor-ui";
 import { EvidenceFileUpload, EvidenceLink } from "@/components/vendor/evidence-file-upload";
 import { BookingSnapshotCard } from "@/components/bookings/booking-snapshot-card";
@@ -191,16 +192,16 @@ export default function VendorBookingDetailPage() {
 
       <div className="rounded-2xl border border-border/80 bg-card/80 p-5 backdrop-blur-sm space-y-3">
         <h3 className="font-semibold flex items-center gap-2">
-          <Banknote className="h-4 w-4 text-primary" /> Payment & escrow
+          <Banknote className="h-4 w-4 text-primary" /> Payment
         </h3>
         <Row label="Total" value={formatCurrency(data.totalAmount)} bold />
         <Row
           label="Payment"
           value={payment?.status === "SUCCESS" ? "✓ Paid in full" : "Pending"}
         />
-        <Row label="Escrow" value={payment?.escrowStatus ?? "NONE"} />
+        <Row label="Payment hold" value={payment?.escrowStatus ?? "NONE"} />
         {data.payout && (
-          <Row label="Payout" value={`${formatCurrency(data.payout.amount)} (${data.payout.status})`} />
+          <Row label="Payout" value={`${formatCurrency(data.payout.amount)} (${payoutStatusLabel(data.payout.status)})`} />
         )}
       </div>
 

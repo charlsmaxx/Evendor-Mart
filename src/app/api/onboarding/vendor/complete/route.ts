@@ -2,7 +2,8 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth, hasCurrentLegalAcceptance } from "@/lib/auth";
 import { jsonOk, jsonError } from "@/lib/api-response";
-import { loadVendorDraft } from "@/lib/vendor-onboarding/persist";
+import { loadVendorDraft, saveVendorDraft } from "@/lib/vendor-onboarding/persist";
+import { parseDraft } from "@/lib/vendor-onboarding/types";
 import { upsertPublishedVendorListing } from "@/lib/vendor-listings";
 import { syncListingPortfolioMedia } from "@/lib/vendor-media-server";
 import { generateVendorSeo } from "@/lib/vendor-onboarding/seo";
@@ -12,6 +13,7 @@ import { z } from "zod";
 
 const completeSchema = z.object({
   businessKind: z.enum(["VENUE", "SERVICE"]),
+  draft: z.unknown().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -28,14 +30,24 @@ export async function POST(req: NextRequest) {
   const { businessKind } = parsed.data;
 
   try {
+    if (parsed.data.draft) {
+      await saveVendorDraft(user.id, businessKind, parseDraft(parsed.data.draft, businessKind));
+    }
+
     const { draft, vendorId } = await loadVendorDraft(user.id, businessKind);
-    if (!vendorId) return jsonError("Save your progress first", 400);
+    if (!vendorId) return jsonError("Save your progress first, then click Publish again.", 400);
 
     if (!draft.step1.businessName.trim()) return jsonError("Business name is required", 400);
     if (!draft.step8.accountName) return jsonError("Verify your bank account before publishing", 400);
 
     const primaryService = draft.step3.services.find((s) => s.name && s.priceMin > 0) ?? draft.step3.services[0];
     const seo = generateVendorSeo(draft);
+
+    const existingVendor = await prisma.vendorProfile.findUnique({
+      where: { id: vendorId },
+      select: { metadata: true },
+    });
+    const prevMeta = (existingVendor?.metadata as Record<string, unknown> | null) ?? {};
 
     const vendor = await prisma.vendorProfile.update({
       where: { id: vendorId },
@@ -52,6 +64,7 @@ export async function POST(req: NextRequest) {
           unavailableDates: draft.step6.unavailableDates,
         } as Prisma.InputJsonValue,
         metadata: {
+          ...prevMeta,
           businessKind,
           coverImageUrl: draft.step1.coverImageUrl,
           tagline: draft.step1.tagline,
@@ -88,7 +101,7 @@ export async function POST(req: NextRequest) {
                 verified: true,
                 verifiedAt: new Date().toISOString(),
               }
-            : undefined,
+            : prevMeta.bankAccount,
           onboardingComplete: true,
         } as Prisma.InputJsonValue,
       },
@@ -133,9 +146,8 @@ export async function POST(req: NextRequest) {
     });
 
     return jsonOk({
-      vendor,
       listing,
-      redirectTo: businessKind === "VENUE" ? "/vendor/listings" : "/dashboard",
+      redirectTo: `/listings/${listing.slug}`,
     });
   } catch (e) {
     return jsonError(e instanceof Error ? e.message : "Could not complete onboarding", 500);

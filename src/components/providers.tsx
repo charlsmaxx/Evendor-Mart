@@ -7,6 +7,7 @@ import { ClientErrorBoundary } from "@/components/client-error-boundary";
 import { GlobalErrorHandlers } from "@/components/global-error-handlers";
 import { WebVitalsReporter } from "@/components/observability/web-vitals-reporter";
 import { InstallPrompt } from "@/components/pwa/install-prompt";
+import { NavigationProgress } from "@/components/loading/navigation-progress";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -43,6 +44,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <GlobalErrorHandlers />
       <WebVitalsReporter />
       <ClientErrorBoundary scope="app-root">{children}</ClientErrorBoundary>
+      <NavigationProgress />
       <InstallPrompt />
     </QueryClientProvider>
   );
