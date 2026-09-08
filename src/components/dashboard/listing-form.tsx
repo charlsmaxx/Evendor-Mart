@@ -10,11 +10,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { ImageUploadField } from "@/components/vendor/profile-image-upload";
 import {
   VenueOfferingsPicker,
-  buildAmenitiesPayload,
-  buildServicesPayload,
   parseAmenitiesFromStorage,
   parseServicesFromStorage,
 } from "@/components/vendor/venue-offerings-picker";
+import { buildAmenitiesPayload, buildServicesPayload } from "@/lib/venue-offerings";
 
 export type ListingFormData = {
   id: string;

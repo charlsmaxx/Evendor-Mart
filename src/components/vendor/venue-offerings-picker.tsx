@@ -10,6 +10,8 @@ import {
 } from "@/lib/venue-offerings";
 import { TagListInput } from "@/components/vendor/tag-list-input";
 
+export { buildAmenitiesPayload, buildServicesPayload } from "@/lib/venue-offerings";
+
 function OfferingGroup({
   group,
   selected,
@@ -133,15 +135,6 @@ export function VenueOfferingsPicker({
       </div>
     </div>
   );
-}
-
-/** Merge amenity keys + custom labels for API storage */
-export function buildAmenitiesPayload(keys: string[], custom: string[]) {
-  return [...keys, ...custom.map((c) => c.trim()).filter(Boolean)];
-}
-
-export function buildServicesPayload(keys: string[], custom: string[]) {
-  return [...keys, ...custom.map((c) => c.trim()).filter(Boolean)];
 }
 
 export function parseAmenitiesFromStorage(stored: string[] = []) {

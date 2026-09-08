@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,12 +10,13 @@ import { Plus, Trash2 } from "lucide-react";
 import { slugify } from "@/lib/utils";
 import { VendorMediaFields } from "@/components/onboarding/venue-photos-fields";
 import { BankAccountFields } from "@/components/onboarding/bank-account-fields";
-import { VenueOfferingsPicker, buildAmenitiesPayload, buildServicesPayload } from "@/components/vendor/venue-offerings-picker";
+import { VenueOfferingsPicker } from "@/components/vendor/venue-offerings-picker";
 import {
   PORTFOLIO_CATEGORIES,
   SERVICE_VENDOR_CATEGORIES,
   SPECIALTY_SUGGESTIONS,
   createEmptyService,
+  type Step1Business as Step1BusinessDraft,
   type VendorOnboardingDraft,
   type DraftUpdater,
 } from "@/lib/vendor-onboarding/types";
@@ -61,6 +62,25 @@ function CommaListField({
   );
 }
 
+function step1Equal(left: Step1BusinessDraft, right: Step1BusinessDraft) {
+  return (
+    left.businessName === right.businessName &&
+    left.slug === right.slug &&
+    left.avatarUrl === right.avatarUrl &&
+    left.coverImageUrl === right.coverImageUrl &&
+    left.category === right.category &&
+    left.secondaryCategory === right.secondaryCategory &&
+    left.tagline === right.tagline &&
+    left.description === right.description &&
+    left.aboutVendor === right.aboutVendor &&
+    left.yearsExperience === right.yearsExperience &&
+    left.teamSize === right.teamSize &&
+    left.establishedYear === right.establishedYear &&
+    left.languages.length === right.languages.length &&
+    left.languages.every((language, index) => language === right.languages[index])
+  );
+}
+
 export function Step1Business({
   draft,
   update,
@@ -70,12 +90,53 @@ export function Step1Business({
   update: DraftUpdater;
   isVenue: boolean;
 }) {
-  const s = draft.step1;
+  const [localStep1, setLocalStep1] = useState<Step1BusinessDraft>(() => draft.step1);
+  const localStep1Ref = useRef(localStep1);
+  const syncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dirty = useRef(false);
   const [slugStatus, setSlugStatus] = useState<"idle" | "checking" | "ok" | "taken">("idle");
+
+  const syncStep1 = useCallback(() => {
+    if (syncTimer.current) {
+      clearTimeout(syncTimer.current);
+      syncTimer.current = null;
+    }
+    dirty.current = false;
+    update({ step1: localStep1Ref.current });
+  }, [update]);
+
+  const scheduleSync = useCallback(() => {
+    if (syncTimer.current) clearTimeout(syncTimer.current);
+    syncTimer.current = setTimeout(syncStep1, 300);
+  }, [syncStep1]);
+
+  const setStep1Field = useCallback((patch: Partial<Step1BusinessDraft>, flush = false) => {
+    const next = { ...localStep1Ref.current, ...patch };
+    localStep1Ref.current = next;
+    dirty.current = true;
+    setLocalStep1(next);
+    if (flush) syncStep1();
+    else scheduleSync();
+  }, [scheduleSync, syncStep1]);
+
+  useEffect(() => {
+    if (!dirty.current && !step1Equal(localStep1Ref.current, draft.step1)) {
+      localStep1Ref.current = draft.step1;
+      setLocalStep1(draft.step1);
+    }
+  }, [draft.step1]);
+
+  useEffect(() => {
+    return () => {
+      syncStep1();
+    };
+  }, [syncStep1]);
+
+  const s = localStep1;
 
   async function checkSlug(value: string) {
     const slug = slugify(value);
-    update({ step1: { slug } });
+    setStep1Field({ slug }, true);
     if (slug.length < 3) {
       setSlugStatus("idle");
       return;
@@ -84,7 +145,7 @@ export function Step1Business({
     const res = await fetch(`/api/onboarding/vendor/slug?slug=${encodeURIComponent(slug)}`);
     const json = await res.json();
     setSlugStatus(json.data?.available ? "ok" : "taken");
-    if (json.data?.slug) update({ step1: { slug: json.data.slug } });
+    if (json.data?.slug) setStep1Field({ slug: json.data.slug }, true);
   }
 
   return (
@@ -98,8 +159,8 @@ export function Step1Business({
         avatarUrl={s.avatarUrl}
         coverImageUrl={s.coverImageUrl}
         featuredImages={[]}
-        onAvatarChange={(url) => update({ step1: { avatarUrl: url } })}
-        onCoverChange={(url) => update({ step1: { coverImageUrl: url } })}
+        onAvatarChange={(url) => setStep1Field({ avatarUrl: url }, true)}
+        onCoverChange={(url) => setStep1Field({ coverImageUrl: url }, true)}
         onFeaturedChange={() => {}}
         showFeatured={false}
         showClips={false}
@@ -111,28 +172,29 @@ export function Step1Business({
         <Label>Business name *</Label>
         <Input
           value={s.businessName}
-          onChange={(e) => update({ step1: { businessName: e.target.value } })}
-          onBlur={(e) => {
-            if (!s.slug) void checkSlug(e.target.value);
+          onChange={(e) => setStep1Field({ businessName: e.target.value })}
+          onBlur={() => {
+            if (!localStep1Ref.current.slug) void checkSlug(localStep1Ref.current.businessName);
+            else syncStep1();
           }}
           placeholder="Chuks Photography"
         />
       </div>
 
-      <div className="space-y-2">
+      {/* <div className="space-y-2">
         <Label>Profile URL</Label>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground shrink-0">evendor.com/vendors/</span>
+          <span className="text-sm text-muted-foreground shrink-0">evendor.ng/vendors/</span>
           <Input
             value={s.slug}
-            onChange={(e) => update({ step1: { slug: slugify(e.target.value) } })}
+            onChange={(e) => setStep1Field({ slug: slugify(e.target.value) })}
             onBlur={(e) => void checkSlug(e.target.value)}
             placeholder="chuks-photography"
           />
         </div>
         {slugStatus === "ok" && <p className="text-xs text-emerald-600">URL available</p>}
         {slugStatus === "taken" && <p className="text-xs text-red-600">URL taken — try another</p>}
-      </div>
+      </div> */}
 
       {!isVenue && (
         <div className="grid gap-4 sm:grid-cols-2">
@@ -141,7 +203,7 @@ export function Step1Business({
             <select
               className="w-full rounded-lg border border-border bg-input px-3 py-2 text-sm"
               value={s.category}
-              onChange={(e) => update({ step1: { category: e.target.value } })}
+              onChange={(e) => setStep1Field({ category: e.target.value }, true)}
             >
               {SERVICE_VENDOR_CATEGORIES.map((c) => (
                 <option key={c.value} value={c.value}>{c.label}</option>
@@ -153,7 +215,7 @@ export function Step1Business({
             <select
               className="w-full rounded-lg border border-border bg-input px-3 py-2 text-sm"
               value={s.secondaryCategory ?? ""}
-              onChange={(e) => update({ step1: { secondaryCategory: e.target.value } })}
+              onChange={(e) => setStep1Field({ secondaryCategory: e.target.value }, true)}
             >
               <option value="">Optional</option>
               {SERVICE_VENDOR_CATEGORIES.map((c) => (
@@ -168,7 +230,8 @@ export function Step1Business({
         <Label>Business tagline</Label>
         <Input
           value={s.tagline}
-          onChange={(e) => update({ step1: { tagline: e.target.value } })}
+          onChange={(e) => setStep1Field({ tagline: e.target.value })}
+          onBlur={syncStep1}
           placeholder="Luxury wedding stories, beautifully told"
         />
       </div>
@@ -178,30 +241,47 @@ export function Step1Business({
         <Textarea
           rows={4}
           value={s.description}
-          onChange={(e) => update({ step1: { description: e.target.value } })}
+          onChange={(e) => setStep1Field({ description: e.target.value })}
+          onBlur={syncStep1}
           placeholder="Describe your business, style, and what makes you unique…"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <div>
+          <Label>About you</Label>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Tell customers a little about yourself, your experience, and what makes your business special.
+          </p>
+        </div>
+        <Textarea
+          rows={4}
+          value={s.aboutVendor ?? ""}
+          onChange={(e) => setStep1Field({ aboutVendor: e.target.value })}
+          onBlur={syncStep1}
+          placeholder="Tell customers about yourself, your experience, and what makes you unique..."
         />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label>Years of experience</Label>
-          <Input value={s.yearsExperience} onChange={(e) => update({ step1: { yearsExperience: e.target.value } })} placeholder="5+" />
+          <Input value={s.yearsExperience} onChange={(e) => setStep1Field({ yearsExperience: e.target.value })} onBlur={syncStep1} placeholder="5+" />
         </div>
         <div className="space-y-2">
           <Label>Team size</Label>
-          <Input value={s.teamSize} onChange={(e) => update({ step1: { teamSize: e.target.value } })} placeholder="Solo / 5 people" />
+          <Input value={s.teamSize} onChange={(e) => setStep1Field({ teamSize: e.target.value })} onBlur={syncStep1} placeholder="Solo / 5 people" />
         </div>
         <div className="space-y-2">
           <Label>Established year</Label>
-          <Input value={s.establishedYear} onChange={(e) => update({ step1: { establishedYear: e.target.value } })} placeholder="2018" />
+          <Input value={s.establishedYear} onChange={(e) => setStep1Field({ establishedYear: e.target.value })} onBlur={syncStep1} placeholder="2018" />
         </div>
         <div className="space-y-2">
           <Label>Languages spoken</Label>
           <CommaListField
             items={s.languages}
             placeholder="English, Yoruba"
-            onCommit={(languages) => update({ step1: { languages } })}
+            onCommit={(languages) => setStep1Field({ languages }, true)}
           />
         </div>
       </div>

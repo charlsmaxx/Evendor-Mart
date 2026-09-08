@@ -147,6 +147,15 @@ export function splitOfferings(values: string[]) {
   return { known, custom };
 }
 
+/** Merge amenity keys + custom labels for API storage */
+export function buildAmenitiesPayload(keys: string[], custom: string[]) {
+  return [...keys, ...custom.map((c) => c.trim()).filter(Boolean)];
+}
+
+export function buildServicesPayload(keys: string[], custom: string[]) {
+  return [...keys, ...custom.map((c) => c.trim()).filter(Boolean)];
+}
+
 export function groupResolvedOfferings(
   items: VenueOfferingItem[],
   groups: VenueOfferingGroup[]

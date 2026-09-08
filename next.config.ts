@@ -37,6 +37,15 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  async redirects() {
+    return [
+      {
+        source: "/listings/basic-package",
+        destination: "/listings/gina-catering-services",
+        permanent: true,
+      },
+    ];
+  },
   images: {
     formats: ["image/avif", "image/webp"],
     // Include larger widths so zoomed hero backgrounds stay sharp on retina phones.

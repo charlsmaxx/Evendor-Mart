@@ -7,7 +7,7 @@ import { parseDraft } from "@/lib/vendor-onboarding/types";
 import { upsertPublishedVendorListing } from "@/lib/vendor-listings";
 import { syncListingPortfolioMedia } from "@/lib/vendor-media-server";
 import { generateVendorSeo } from "@/lib/vendor-onboarding/seo";
-import { buildAmenitiesPayload, buildServicesPayload } from "@/components/vendor/venue-offerings-picker";
+import { buildAmenitiesPayload, buildServicesPayload } from "@/lib/venue-offerings";
 import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
 
     const existingVendor = await prisma.vendorProfile.findUnique({
       where: { id: vendorId },
-      select: { metadata: true },
+      select: { metadata: true, bio: true },
     });
     const prevMeta = (existingVendor?.metadata as Record<string, unknown> | null) ?? {};
 
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
       data: {
         businessName: draft.step1.businessName,
         slug: draft.step1.slug,
-        bio: draft.step1.description,
+        bio: draft.step1.aboutVendor?.trim() || existingVendor?.bio || null,
         city: draft.step2.city,
         country: draft.step2.country,
         availability: {
@@ -113,7 +113,8 @@ export async function POST(req: NextRequest) {
       city: draft.step2.city,
       businessName: draft.step1.businessName,
       bio: draft.step1.description,
-      listingTitle: primaryService?.name || draft.step1.businessName,
+      // A listing represents the vendor's business. Services remain offerings, not listing identity.
+      listingTitle: draft.step1.businessName,
       listingDescription: primaryService?.description || draft.step1.description,
       priceMin: primaryService?.priceMin,
       priceMax: primaryService?.priceMax,

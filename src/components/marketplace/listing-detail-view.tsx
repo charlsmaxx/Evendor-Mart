@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils";
 import { resolvePublicListingCover, getVendorProfileImages } from "@/lib/images";
 import { parseListingMetadata } from "@/lib/listing-metadata";
-import { getEnabledPackages } from "@/lib/vendor-packages";
+import { getEnabledPackages, packageBasePrice } from "@/lib/vendor-packages";
 import { extractProfileContent } from "@/lib/vendor-profile-content";
 import { ListingGalleryHero } from "@/components/marketplace/listing-gallery-hero";
 import { ListingActions } from "@/components/marketplace/listing-actions";
@@ -18,7 +18,6 @@ import { ProfileFaqSection } from "@/components/marketplace/profile-faq";
 import { ServiceRequirementsSection } from "@/components/marketplace/service-requirements";
 import { ServiceAreasSection } from "@/components/marketplace/service-areas";
 import { ServicesOfferedSection } from "@/components/marketplace/services-offered";
-import { CancellationPolicyCard } from "@/components/marketplace/cancellation-policy-card";
 import { TrackVendorView } from "@/components/marketplace/track-vendor-view";
 import type { getPublishedListingBySlug } from "@/core/search-engine/listings";
 
@@ -56,6 +55,20 @@ export function ListingDetailView({ listing }: { listing: ListingData }) {
   const amenities = listing.venueDetails?.amenities ?? [];
   const services = meta.services;
   const isVenue = listing.type === "VENUE";
+  const businessName = vendor.businessName.trim() || listing.title;
+  const serviceContext = listing.title.trim() !== businessName ? listing.title : null;
+  const startingPrice = packages.length
+    ? Math.min(...packages.map(packageBasePrice))
+    : listing.priceMin;
+  const preferences = (vendor.metadata as Record<string, unknown> | null)?.preferences;
+  const preferenceRecord =
+    preferences && typeof preferences === "object"
+      ? (preferences as Record<string, unknown>)
+      : null;
+  const informationalCancellationPolicy =
+    typeof preferenceRecord?.cancellationPolicy === "string"
+      ? preferenceRecord.cancellationPolicy.trim()
+      : "";
   const availableServices = content.servicesOffered.length
     ? content.servicesOffered
     : !isVenue
@@ -86,11 +99,11 @@ export function ListingDetailView({ listing }: { listing: ListingData }) {
           {listing.category.name}
         </Link>
         <ChevronRight className="h-4 w-4" />
-        <span className="truncate text-foreground">{listing.title}</span>
+        <span className="truncate text-foreground">{businessName}</span>
       </nav>
 
       <div className="px-4 sm:px-0">
-        <ListingGalleryHero images={gallery.length ? gallery : [cover]} title={listing.title} />
+        <ListingGalleryHero images={gallery.length ? gallery : [cover]} title={businessName} />
       </div>
 
       <div className="mt-8 grid gap-10 px-4 lg:grid-cols-[1fr_340px] lg:items-start lg:gap-12 sm:px-0">
@@ -108,16 +121,10 @@ export function ListingDetailView({ listing }: { listing: ListingData }) {
               {listing.featured && <Badge variant="featured">Featured</Badge>}
               <Badge variant="secondary">{listing.category.name}</Badge>
             </div>
-            <h1 className="mt-3 font-display text-3xl font-bold md:text-4xl">{listing.title}</h1>
-            <p className="mt-1 text-muted-foreground">
-              by{" "}
-              <Link
-                href={`/vendors/${vendor.slug}`}
-                className="font-medium text-primary hover:underline"
-              >
-                {vendor.businessName}
-              </Link>
-            </p>
+            <h1 className="mt-3 font-display text-3xl font-bold md:text-4xl">{businessName}</h1>
+            {serviceContext && (
+              <p className="mt-1 text-base font-medium text-muted-foreground">{serviceContext}</p>
+            )}
             <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-wrap gap-5 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1.5">
@@ -141,7 +148,7 @@ export function ListingDetailView({ listing }: { listing: ListingData }) {
                   </span>
                 ) : null}
               </div>
-              <ShareListingButton title={listing.title} className="hidden sm:inline-flex" />
+              <ShareListingButton title={businessName} className="hidden sm:inline-flex" />
             </div>
 
             <div
@@ -180,6 +187,8 @@ export function ListingDetailView({ listing }: { listing: ListingData }) {
             </div>
           </section>
 
+          {!isVenue && <VendorPackagesSection packages={packages} />}
+
           {isVenue && (
             <VenueOfferingsDisplay
               capacity={listing.venueDetails?.capacity}
@@ -199,13 +208,33 @@ export function ListingDetailView({ listing }: { listing: ListingData }) {
 
           {!isVenue && <ServiceAreasSection area={content.serviceArea} />}
 
-          <VendorPackagesSection packages={packages} />
+          {isVenue && <VendorPackagesSection packages={packages} />}
 
           <ListingPortfolio items={portfolioItems} />
 
+          {informationalCancellationPolicy && (
+            <section className="rounded-2xl border border-border bg-muted/30 p-6">
+              <h2 className="font-display text-xl font-semibold">Cancellation policy</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Vendor-provided information. Package-specific cancellation terms are shown when you view a package.
+              </p>
+              <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+                {informationalCancellationPolicy}
+              </p>
+            </section>
+          )}
+
           <ProfileFaqSection faqs={content.faqs} />
           <ServiceRequirementsSection requirements={content.serviceRequirements} />
-          <CancellationPolicyCard packages={packages} />
+
+          {vendor.bio?.trim() && (
+            <section className="rounded-2xl border border-border bg-card p-6">
+              <h2 className="font-display text-xl font-semibold">About the vendor</h2>
+              <div className="mt-4">
+                <ExpandableText text={vendor.bio} />
+              </div>
+            </section>
+          )}
 
           {meta.termsAndConditions && (
             <section className="rounded-2xl border border-border bg-muted/30 p-6">
@@ -234,7 +263,7 @@ export function ListingDetailView({ listing }: { listing: ListingData }) {
             <div>
               <p className="text-sm text-muted-foreground">Starting from</p>
               <p className="font-display text-2xl font-bold text-primary">
-                {formatCurrency(listing.priceMin)}
+                {formatCurrency(startingPrice)}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
                 {isVenue ? "Per event · paid in full to book" : "Custom packages available"}

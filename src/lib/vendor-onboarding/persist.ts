@@ -95,7 +95,7 @@ export async function saveVendorDraft(
         data: {
           businessName: draft.step1.businessName || existing.businessName,
           slug,
-          bio: draft.step1.description || existing.bio,
+          bio: draft.step1.aboutVendor?.trim() || existing.bio,
           city: draft.step2.city || existing.city,
           country: draft.step2.country || existing.country,
           category,
@@ -113,7 +113,7 @@ export async function saveVendorDraft(
           userId,
           businessName: draft.step1.businessName || "My Business",
           slug,
-          bio: draft.step1.description || null,
+          bio: draft.step1.aboutVendor?.trim() || null,
           city: draft.step2.city || "Lagos",
           country: draft.step2.country || "Nigeria",
           category,

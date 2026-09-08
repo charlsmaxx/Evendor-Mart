@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "@/core/audit-engine";
 import { syncListingPortfolioMedia } from "@/lib/vendor-media-server";
 import { isVideoMedia } from "@/lib/vendor-media";
+import { revalidateTag } from "next/cache";
 import { z } from "zod";
 import type { Prisma } from "@prisma/client";
 
@@ -178,6 +179,9 @@ export async function PATCH(req: NextRequest) {
         ]
       : []),
   ]);
+
+  revalidateTag("listings", "max");
+  revalidateTag("vendors", "max");
 
   if (featuredImages !== undefined || featuredClips !== undefined) {
     const primaryListing = await prisma.listing.findFirst({

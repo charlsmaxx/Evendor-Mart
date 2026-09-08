@@ -173,7 +173,12 @@ export default function VendorProfilePage() {
           <Input value={profile.businessName} onChange={(e) => update("businessName", e.target.value)} />
         </div>
         <div className="space-y-2">
-          <Label>Bio</Label>
+          <div>
+            <Label>About the vendor</Label>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Tell customers about yourself, your experience, and what makes your business special.
+            </p>
+          </div>
           <Textarea value={profile.bio ?? ""} onChange={(e) => update("bio", e.target.value)} rows={4} />
         </div>
         <div className="grid gap-4 sm:grid-cols-2">

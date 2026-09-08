@@ -17,9 +17,8 @@ import {
 } from "@/components/onboarding/venue-photos-fields";
 import {
   VenueOfferingsPicker,
-  buildAmenitiesPayload,
-  buildServicesPayload,
 } from "@/components/vendor/venue-offerings-picker";
+import { buildAmenitiesPayload, buildServicesPayload } from "@/lib/venue-offerings";
 import type { BankAccountInput } from "@/lib/validations/bank";
 
 const REQUIRE_BANK_VERIFICATION = true;

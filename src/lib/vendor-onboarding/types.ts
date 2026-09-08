@@ -29,6 +29,7 @@ export type Step1Business = {
   secondaryCategory?: string;
   tagline: string;
   description: string;
+  aboutVendor?: string;
   yearsExperience: string;
   teamSize: string;
   languages: string[];
@@ -156,6 +157,7 @@ export function defaultDraft(businessKind: BusinessKind): VendorOnboardingDraft 
       secondaryCategory: "",
       tagline: "",
       description: "",
+      aboutVendor: "",
       yearsExperience: "",
       teamSize: "",
       languages: ["English"],
