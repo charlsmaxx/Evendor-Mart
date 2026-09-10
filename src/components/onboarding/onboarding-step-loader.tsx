@@ -48,7 +48,7 @@ export function OnboardingStepLoader({ step, draft, update, isVenue }: StepProps
     case 1:
       return <Step1Business draft={draft} update={update} isVenue={!!isVenue} />;
     case 2:
-      return <Step2Location draft={draft} update={update} />;
+      return <Step2Location draft={draft} update={update} isVenue={!!isVenue} />;
     case 3:
       return <Step3Services draft={draft} update={update} isVenue={!!isVenue} />;
     case 4:

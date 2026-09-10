@@ -2,6 +2,9 @@ import type { UploadedMedia } from "@/lib/vendor-media";
 import type { VendorAvailabilitySettings } from "@/lib/vendor-availability";
 import type { BankAccountInput } from "@/lib/validations/bank";
 import { SERVICE_VENDOR_CATEGORY_OPTIONS } from "@/lib/categories";
+import type { VendorPackage, CancellationPolicy, PackageBadge } from "@/lib/vendor-packages";
+import type { ProfileFaq, ServiceRequirement } from "@/lib/vendor-profile-content";
+import { defaultModeratePolicy } from "@/lib/vendor-packages";
 
 export const ONBOARDING_TOTAL_STEPS = 8;
 
@@ -101,6 +104,11 @@ export type VendorOnboardingDraft = {
   step6: Step6Availability;
   step7: Step7Preferences;
   step8: Step8Payouts;
+  packages: VendorPackage[];
+  faqs: ProfileFaq[];
+  serviceRequirements: ServiceRequirement[];
+  servicesOffered: string[];
+  cancellationPolicy: CancellationPolicy;
   updatedAt: string;
 };
 
@@ -141,6 +149,40 @@ export function createEmptyService(): VendorServiceItem {
     images: [],
     badge: "",
   };
+}
+
+function mapLegacyBadge(badge?: string): PackageBadge | null {
+  if (!badge) return null;
+  switch (badge) {
+    case "popular":
+      return "POPULAR";
+    case "best_value":
+      return "BEST_VALUE";
+    case "premium":
+      return "PREMIUM";
+    default:
+      return null;
+  }
+}
+
+export function convertLegacyServicesToPackages(services: VendorServiceItem[]): VendorPackage[] {
+  return services
+    .filter((s) => s.name.trim())
+    .map((service) => ({
+      id: service.id,
+      name: service.name,
+      shortDescription: service.description.slice(0, 160),
+      description: service.description,
+      price: service.priceMin,
+      maxPrice: service.priceMax ?? null,
+      fixedPrice: null,
+      estimatedDuration: service.duration ?? "",
+      features: service.included,
+      addOns: [],
+      badge: mapLegacyBadge(service.badge),
+      enabled: true,
+      cancellationPolicy: defaultModeratePolicy(),
+    }));
 }
 
 export function defaultDraft(businessKind: BusinessKind): VendorOnboardingDraft {
@@ -223,6 +265,47 @@ export function defaultDraft(businessKind: BusinessKind): VendorOnboardingDraft 
       tags: [],
     },
     step8: {},
+    packages: [],
+    faqs: [],
+    serviceRequirements: [],
+    servicesOffered: [],
+    cancellationPolicy: {
+      preset: "MODERATE",
+      windows: [
+        {
+          id: `win_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          moreThanHoursBefore: 24 * 30,
+          lessThanOrEqualHoursBefore: Number.MAX_SAFE_INTEGER,
+          refundPercent: 100,
+          allowCancel: true,
+          feeAmount: 0,
+        },
+        {
+          id: `win_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          moreThanHoursBefore: 24 * 14,
+          lessThanOrEqualHoursBefore: 24 * 30,
+          refundPercent: 50,
+          allowCancel: true,
+          feeAmount: 0,
+        },
+        {
+          id: `win_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          moreThanHoursBefore: 24 * 7,
+          lessThanOrEqualHoursBefore: 24 * 14,
+          refundPercent: 25,
+          allowCancel: true,
+          feeAmount: 0,
+        },
+        {
+          id: `win_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          moreThanHoursBefore: null,
+          lessThanOrEqualHoursBefore: 24 * 7,
+          refundPercent: 0,
+          allowCancel: false,
+          feeAmount: 0,
+        },
+      ],
+    },
     updatedAt: new Date().toISOString(),
   };
 }
@@ -246,6 +329,11 @@ export function mergeDraft(
     step6: { ...base.step6, ...patch.step6 },
     step7: { ...base.step7, ...patch.step7 },
     step8: { ...base.step8, ...patch.step8 },
+    packages: patch.packages ?? base.packages,
+    faqs: patch.faqs ?? base.faqs,
+    serviceRequirements: patch.serviceRequirements ?? base.serviceRequirements,
+    servicesOffered: patch.servicesOffered ?? base.servicesOffered,
+    cancellationPolicy: patch.cancellationPolicy ?? base.cancellationPolicy,
     updatedAt: new Date().toISOString(),
   };
 }

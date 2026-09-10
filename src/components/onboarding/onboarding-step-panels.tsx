@@ -16,10 +16,22 @@ import {
   SERVICE_VENDOR_CATEGORIES,
   SPECIALTY_SUGGESTIONS,
   createEmptyService,
+  convertLegacyServicesToPackages,
   type Step1Business as Step1BusinessDraft,
   type VendorOnboardingDraft,
   type DraftUpdater,
 } from "@/lib/vendor-onboarding/types";
+import { PackageEditor } from "@/components/vendor/package-editor";
+import { ProfileContentEditor } from "@/components/vendor/profile-content-editor";
+import type { VendorPackage } from "@/lib/vendor-packages";
+import {
+  policyForPreset,
+  normalizeCancellationPolicy,
+  formatCancellationPolicyLines,
+  type CancellationPolicy,
+  type CancellationPolicyPreset,
+} from "@/lib/vendor-packages";
+import type { ProfileFaq, ServiceRequirement } from "@/lib/vendor-profile-content";
 import { DAY_LABELS, type DayKey } from "@/lib/vendor-availability";
 import type { BankAccountInput } from "@/lib/validations/bank";
 import { MAX_FEATURED_CLIPS, MAX_FEATURED_IMAGES } from "@/lib/vendor-media";
@@ -181,21 +193,6 @@ export function Step1Business({
         />
       </div>
 
-      {/* <div className="space-y-2">
-        <Label>Profile URL</Label>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground shrink-0">evendor.ng/vendors/</span>
-          <Input
-            value={s.slug}
-            onChange={(e) => setStep1Field({ slug: slugify(e.target.value) })}
-            onBlur={(e) => void checkSlug(e.target.value)}
-            placeholder="chuks-photography"
-          />
-        </div>
-        {slugStatus === "ok" && <p className="text-xs text-emerald-600">URL available</p>}
-        {slugStatus === "taken" && <p className="text-xs text-red-600">URL taken — try another</p>}
-      </div> */}
-
       {!isVenue && (
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
@@ -264,32 +261,36 @@ export function Step1Business({
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label>Years of experience</Label>
-          <Input value={s.yearsExperience} onChange={(e) => setStep1Field({ yearsExperience: e.target.value })} onBlur={syncStep1} placeholder="5+" />
-        </div>
-        <div className="space-y-2">
-          <Label>Team size</Label>
-          <Input value={s.teamSize} onChange={(e) => setStep1Field({ teamSize: e.target.value })} onBlur={syncStep1} placeholder="Solo / 5 people" />
-        </div>
-        <div className="space-y-2">
-          <Label>Established year</Label>
-          <Input value={s.establishedYear} onChange={(e) => setStep1Field({ establishedYear: e.target.value })} onBlur={syncStep1} placeholder="2018" />
-        </div>
-        <div className="space-y-2">
-          <Label>Languages spoken</Label>
-          <CommaListField
-            items={s.languages}
-            placeholder="English, Yoruba"
-            onCommit={(languages) => setStep1Field({ languages }, true)}
-          />
-        </div>
+        {!isVenue && (
+          <>
+            <div className="space-y-2">
+              <Label>Years of experience</Label>
+              <Input value={s.yearsExperience} onChange={(e) => setStep1Field({ yearsExperience: e.target.value })} onBlur={syncStep1} placeholder="5+" />
+            </div>
+            <div className="space-y-2">
+              <Label>Team size</Label>
+              <Input value={s.teamSize} onChange={(e) => setStep1Field({ teamSize: e.target.value })} onBlur={syncStep1} placeholder="Solo / 5 people" />
+            </div>
+            <div className="space-y-2">
+              <Label>Established year</Label>
+              <Input value={s.establishedYear} onChange={(e) => setStep1Field({ establishedYear: e.target.value })} onBlur={syncStep1} placeholder="2018" />
+            </div>
+            <div className="space-y-2">
+              <Label>Languages spoken</Label>
+              <CommaListField
+                items={s.languages}
+                placeholder="English, Yoruba"
+                onCommit={(languages) => setStep1Field({ languages }, true)}
+              />
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
 }
 
-export function Step2Location({ draft, update }: { draft: VendorOnboardingDraft; update: DraftUpdater }) {
+export function Step2Location({ draft, update, isVenue }: { draft: VendorOnboardingDraft; update: DraftUpdater; isVenue: boolean }) {
   const s = draft.step2;
   return (
     <div className="space-y-5 animate-in fade-in duration-300">
@@ -310,10 +311,12 @@ export function Step2Location({ draft, update }: { draft: VendorOnboardingDraft;
           <Label>City *</Label>
           <Input value={s.city} onChange={(e) => update({ step2: { city: e.target.value } })} placeholder="Port Harcourt" />
         </div>
-        <div className="space-y-2">
-          <Label>Service radius (km)</Label>
-          <Input value={s.serviceRadiusKm} onChange={(e) => update({ step2: { serviceRadiusKm: e.target.value } })} type="number" min={1} />
-        </div>
+        {!isVenue && (
+          <div className="space-y-2">
+            <Label>Service radius (km)</Label>
+            <Input value={s.serviceRadiusKm} onChange={(e) => update({ step2: { serviceRadiusKm: e.target.value } })} type="number" min={1} />
+          </div>
+        )}
       </div>
       <div className="space-y-2">
         <Label>Business address *</Label>
@@ -324,20 +327,24 @@ export function Step2Location({ draft, update }: { draft: VendorOnboardingDraft;
         <Label>Google Maps link</Label>
         <Input value={s.mapUrl} onChange={(e) => update({ step2: { mapUrl: e.target.value } })} placeholder="https://maps.google.com/…" />
       </div>
-      <div className="flex flex-wrap gap-4 text-sm">
-        <label className="flex items-center gap-2">
-          <input type="checkbox" checked={s.travelsOutsideCity} onChange={(e) => update({ step2: { travelsOutsideCity: e.target.checked } })} />
-          Travels outside city
-        </label>
-        <label className="flex items-center gap-2">
-          <input type="checkbox" checked={s.travelsOutsideState} onChange={(e) => update({ step2: { travelsOutsideState: e.target.checked } })} />
-          Travels outside state
-        </label>
-      </div>
-      <div className="space-y-2">
-        <Label>Travel fee policy</Label>
-        <Textarea rows={2} value={s.travelFeePolicy} onChange={(e) => update({ step2: { travelFeePolicy: e.target.value } })} placeholder="Travel fees may apply outside Port Harcourt…" />
-      </div>
+      {!isVenue && (
+        <>
+          <div className="flex flex-wrap gap-4 text-sm">
+            <label className="flex items-center gap-2">
+              <input type="checkbox" checked={s.travelsOutsideCity} onChange={(e) => update({ step2: { travelsOutsideCity: e.target.checked } })} />
+              Travels outside city
+            </label>
+            <label className="flex items-center gap-2">
+              <input type="checkbox" checked={s.travelsOutsideState} onChange={(e) => update({ step2: { travelsOutsideState: e.target.checked } })} />
+              Travels outside state
+            </label>
+          </div>
+          <div className="space-y-2">
+            <Label>Travel fee policy</Label>
+            <Textarea rows={2} value={s.travelFeePolicy} onChange={(e) => update({ step2: { travelFeePolicy: e.target.value } })} placeholder="Travel fees may apply outside Port Harcourt…" />
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -353,78 +360,73 @@ export function Step3Services({
 }) {
   const s = draft.step3;
 
-  function updateService(index: number, patch: Partial<(typeof s.services)[0]>) {
-    update((prev) => ({
-      step3: {
-        services: prev.step3.services.map((svc, i) => (i === index ? { ...svc, ...patch } : svc)),
-      },
-    }));
+  // For SERVICE vendors: use canonical PackageEditor with draft.packages
+  // For VENUE vendors: keep existing venue-specific UI
+  if (!isVenue) {
+    // Backward compatibility: if packages empty but legacy services exist, convert once
+    const packages = draft.packages.length > 0
+      ? draft.packages
+      : s.services.some((svc) => svc.name.trim())
+        ? convertLegacyServicesToPackages(s.services)
+        : [];
+
+    // Filter out placeholder packages (those with tier = BASIC/PREMIUM/LUXURY)
+    const realPackages = packages.filter((p) => !p.tier);
+
+    return (
+      <div className="space-y-5 animate-in fade-in duration-300">
+        <div>
+          <h2 className="font-display text-xl font-semibold">Services & packages</h2>
+          <p className="text-sm text-muted-foreground">
+            Create unlimited packages with add-ons and cancellation policy. Only active packages
+            appear to customers at booking.
+          </p>
+        </div>
+
+        <PackageEditor
+          value={realPackages}
+          onChange={(next) => {
+            // Filter out any placeholder packages that PackageEditor might add
+            const filtered = next.filter((p) => !p.tier);
+            update({ packages: filtered });
+          }}
+        />
+
+        <div className="space-y-2">
+          <Label>Terms & conditions</Label>
+          <Textarea rows={3} value={s.termsAndConditions ?? ""} onChange={(e) => update({ step3: { termsAndConditions: e.target.value } })} />
+        </div>
+      </div>
+    );
   }
 
+  // VENUE vendor: existing venue-specific UI
   return (
     <div className="space-y-5 animate-in fade-in duration-300">
       <div>
-        <h2 className="font-display text-xl font-semibold">{isVenue ? "Venue offerings" : "Services & packages"}</h2>
+        <h2 className="font-display text-xl font-semibold">Venue offerings</h2>
         <p className="text-sm text-muted-foreground">Add unlimited services customers can compare and book.</p>
       </div>
 
-      {isVenue && (
-        <>
-          <div className="space-y-2">
-            <Label>Guest capacity *</Label>
-            <Input
-              type="number"
-              min={1}
-              value={s.capacity ?? ""}
-              onChange={(e) => update({ step3: { capacity: Number(e.target.value) || undefined } })}
-            />
-          </div>
-          <VenueOfferingsPicker
-            amenities={s.amenities ?? []}
-            services={s.venueServices ?? []}
-            customAmenities={[]}
-            customServices={[]}
-            onAmenitiesChange={(amenities) => update({ step3: { amenities } })}
-            onServicesChange={(venueServices) => update({ step3: { venueServices } })}
-            onCustomAmenitiesChange={() => {}}
-            onCustomServicesChange={() => {}}
-          />
-        </>
-      )}
-
-      {s.services.map((service, index) => (
-        <div key={service.id} className="rounded-xl border border-border p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <p className="font-medium">Service {index + 1}</p>
-            {s.services.length > 1 && (
-              <Button type="button" variant="ghost" size="sm" onClick={() => update((prev) => ({ step3: { services: prev.step3.services.filter((_, i) => i !== index) } }))}>
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-          <Input placeholder="Service name" value={service.name} onChange={(e) => updateService(index, { name: e.target.value })} />
-          <Textarea placeholder="Description" rows={2} value={service.description} onChange={(e) => updateService(index, { description: e.target.value })} />
-          <div className="grid gap-3 sm:grid-cols-3">
-            <Input type="number" placeholder="Starting price" value={service.priceMin || ""} onChange={(e) => updateService(index, { priceMin: Number(e.target.value) })} />
-            <Input type="number" placeholder="Max price (optional)" value={service.priceMax ?? ""} onChange={(e) => updateService(index, { priceMax: Number(e.target.value) || undefined })} />
-            <Input placeholder="Duration" value={service.duration ?? ""} onChange={(e) => updateService(index, { duration: e.target.value })} />
-          </div>
-          <select
-            className="w-full rounded-lg border border-border bg-input px-3 py-2 text-sm"
-            value={service.badge ?? ""}
-            onChange={(e) => updateService(index, { badge: e.target.value as typeof service.badge })}
-          >
-            <option value="">No badge</option>
-            <option value="popular">Popular</option>
-            <option value="best_value">Best Value</option>
-            <option value="premium">Premium</option>
-          </select>
-        </div>
-      ))}
-
-      <Button type="button" variant="outline" className="gap-2" onClick={() => update((prev) => ({ step3: { services: [...prev.step3.services, createEmptyService()] } }))}>
-        <Plus className="h-4 w-4" /> Add another service
-      </Button>
+      <div className="space-y-2">
+        <Label>Guest capacity *</Label>
+        <Input
+          type="number"
+          min={1}
+          value={s.capacity ?? ""}
+          onChange={(e) => update({ step3: { capacity: Number(e.target.value) || undefined } })}
+        />
+      </div>
+      <VenueOfferingsPicker
+        amenities={s.amenities ?? []}
+        services={s.venueServices ?? []}
+        customAmenities={[]}
+        customServices={[]}
+        onAmenitiesChange={(amenities) => update({ step3: { amenities } })}
+        onServicesChange={(venueServices) => update({ step3: { venueServices } })}
+        onCustomAmenitiesChange={() => {}}
+        onCustomServicesChange={() => {}}
+      />
 
       <div className="space-y-2">
         <Label>Terms & conditions</Label>
@@ -492,6 +494,8 @@ export function Step4Portfolio({ draft, update }: { draft: VendorOnboardingDraft
 
 export function Step5BusinessDetails({ draft, update }: { draft: VendorOnboardingDraft; update: DraftUpdater }) {
   const s = draft.step5;
+  const isServiceVendor = draft.businessKind === "SERVICE";
+
   return (
     <div className="space-y-5 animate-in fade-in duration-300">
       <div>
@@ -520,6 +524,44 @@ export function Step5BusinessDetails({ draft, update }: { draft: VendorOnboardin
           </div>
         ))}
       </div>
+
+      {isServiceVendor && (
+        <div className="border-t border-border pt-6">
+          <div>
+            <p className="font-semibold">Profile content</p>
+            <p className="text-sm text-muted-foreground">
+              Services, FAQs, and Service Requirements shown on your public profile.
+            </p>
+          </div>
+          <ProfileContentEditor
+            faqs={draft.faqs}
+            onFaqsChange={(next) => update({ faqs: next })}
+            requirements={draft.serviceRequirements}
+            onRequirementsChange={(next) => update({ serviceRequirements: next })}
+            servicesOffered={draft.servicesOffered}
+            onServicesOfferedChange={(next) => update({ servicesOffered: next })}
+          />
+        </div>
+      )}
+
+      {!isServiceVendor && (
+        <div className="border-t border-border pt-6">
+          <div>
+            <p className="font-semibold">Profile content</p>
+            <p className="text-sm text-muted-foreground">
+              FAQs and Service Requirements shown on your public profile.
+            </p>
+          </div>
+          <ProfileContentEditor
+            faqs={draft.faqs}
+            onFaqsChange={(next) => update({ faqs: next })}
+            requirements={draft.serviceRequirements}
+            onRequirementsChange={(next) => update({ serviceRequirements: next })}
+            servicesOffered={[]}
+            onServicesOfferedChange={() => {}}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -592,12 +634,15 @@ export function Step6Availability({ draft, update }: { draft: VendorOnboardingDr
 
 export function Step7Preferences({ draft, update }: { draft: VendorOnboardingDraft; update: DraftUpdater }) {
   const s = draft.step7;
+  const isServiceVendor = draft.businessKind === "SERVICE";
 
   function toggleChip(field: "specialties" | "tags", value: string) {
     const list = s[field];
     const next = list.includes(value) ? list.filter((x) => x !== value) : [...list, value];
     update({ step7: { [field]: next } });
   }
+
+  const businessCancellationPolicy = isServiceVendor ? draft.cancellationPolicy : null;
 
   return (
     <div className="space-y-5 animate-in fade-in duration-300">
@@ -628,7 +673,92 @@ export function Step7Preferences({ draft, update }: { draft: VendorOnboardingDra
       </div>
       <div className="space-y-2">
         <Label>Cancellation policy</Label>
-        <Textarea rows={2} value={s.cancellationPolicy} onChange={(e) => update({ step7: { cancellationPolicy: e.target.value } })} />
+        {isServiceVendor && businessCancellationPolicy ? (
+          <>
+            <select
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+              value={businessCancellationPolicy.preset}
+              onChange={(e) => {
+                const preset = e.target.value as CancellationPolicyPreset;
+                update({ cancellationPolicy: policyForPreset(preset) });
+              }}
+            >
+              <option value="FLEXIBLE">Flexible</option>
+              <option value="MODERATE">Moderate (recommended)</option>
+              <option value="STRICT">Strict</option>
+              <option value="CUSTOM">Custom windows</option>
+            </select>
+            <ul className="list-inside list-disc space-y-1 text-xs text-muted-foreground">
+              {formatCancellationPolicyLines(businessCancellationPolicy).map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+            {businessCancellationPolicy.preset === "CUSTOM" && (
+              <div className="space-y-2">
+                {businessCancellationPolicy.windows.map((win, idx) => (
+                  <div key={win.id} className="grid gap-2 rounded border border-border/50 p-2 sm:grid-cols-4">
+                    <Input
+                      type="number"
+                      placeholder="More than (hours)"
+                      value={win.moreThanHoursBefore ?? ""}
+                      onChange={(e) => {
+                        const windows = [...businessCancellationPolicy.windows];
+                        windows[idx] = {
+                          ...win,
+                          moreThanHoursBefore: e.target.value === "" ? null : Number(e.target.value),
+                        };
+                        update({ cancellationPolicy: { ...businessCancellationPolicy, windows } });
+                      }}
+                    />
+                    <Input
+                      type="number"
+                      placeholder="Within (hours)"
+                      value={win.lessThanOrEqualHoursBefore}
+                      onChange={(e) => {
+                        const windows = [...businessCancellationPolicy.windows];
+                        windows[idx] = {
+                          ...win,
+                          lessThanOrEqualHoursBefore: Number(e.target.value) || 0,
+                        };
+                        update({ cancellationPolicy: { ...businessCancellationPolicy, windows } });
+                      }}
+                    />
+                    <Input
+                      type="number"
+                      placeholder="Refund %"
+                      min={0}
+                      max={100}
+                      value={win.refundPercent}
+                      onChange={(e) => {
+                        const windows = [...businessCancellationPolicy.windows];
+                        windows[idx] = {
+                          ...win,
+                          refundPercent: Math.min(100, Math.max(0, Number(e.target.value) || 0)),
+                        };
+                        update({ cancellationPolicy: { ...businessCancellationPolicy, windows } });
+                      }}
+                    />
+                    <Input
+                      type="number"
+                      placeholder="Fee (NGN)"
+                      value={win.feeAmount || ""}
+                      onChange={(e) => {
+                        const windows = [...businessCancellationPolicy.windows];
+                        windows[idx] = {
+                          ...win,
+                          feeAmount: Number(e.target.value) || 0,
+                        };
+                        update({ cancellationPolicy: { ...businessCancellationPolicy, windows } });
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        ) : (
+          <Textarea rows={2} value={s.cancellationPolicy} onChange={(e) => update({ step7: { cancellationPolicy: e.target.value } })} />
+        )}
       </div>
       <div className="space-y-2">
         <Label>Reschedule policy</Label>

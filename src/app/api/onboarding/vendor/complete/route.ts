@@ -8,6 +8,17 @@ import { upsertPublishedVendorListing } from "@/lib/vendor-listings";
 import { syncListingPortfolioMedia } from "@/lib/vendor-media-server";
 import { generateVendorSeo } from "@/lib/vendor-onboarding/seo";
 import { buildAmenitiesPayload, buildServicesPayload } from "@/lib/venue-offerings";
+import {
+  normalizePackages,
+  normalizeCancellationPolicy,
+  type VendorPackage,
+} from "@/lib/vendor-packages";
+import {
+  normalizeFaqs,
+  normalizeServiceRequirements,
+  normalizeServicesOffered,
+} from "@/lib/vendor-profile-content";
+import { revalidateTag } from "next/cache";
 import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 
@@ -48,6 +59,26 @@ export async function POST(req: NextRequest) {
       select: { metadata: true, bio: true },
     });
     const prevMeta = (existingVendor?.metadata as Record<string, unknown> | null) ?? {};
+
+    const isServiceVendor = businessKind === "SERVICE";
+
+    // Prepare canonical packages: only save real packages (filter out legacy tier placeholders)
+    const realPackages = isServiceVendor && draft.packages.length > 0
+      ? draft.packages.filter((p: VendorPackage) => !p.tier)
+      : undefined;
+
+    // Prepare profile content for SERVICE vendors (includes servicesOffered)
+    const servicesOffered = isServiceVendor
+      ? normalizeServicesOffered(draft.servicesOffered)
+      : undefined;
+    // FAQs and Service Requirements for BOTH SERVICE and VENUE vendors
+    const faqs = normalizeFaqs(draft.faqs);
+    const serviceRequirements = normalizeServiceRequirements(draft.serviceRequirements);
+
+    // Prepare structured cancellation policy for SERVICE vendors
+    const cancellationPolicy = isServiceVendor
+      ? normalizeCancellationPolicy(draft.cancellationPolicy)
+      : undefined;
 
     const vendor = await prisma.vendorProfile.update({
       where: { id: vendorId },
@@ -91,7 +122,17 @@ export async function POST(req: NextRequest) {
             youtube: draft.step5.youtube,
             website: draft.step5.website,
           },
+          // Legacy services offerings (for backward compatibility)
           servicesOfferings: draft.step3.services,
+          // Canonical profile content for BOTH SERVICE and VENUE vendors
+          faqs,
+          serviceRequirements,
+          // Canonical profile content for SERVICE vendors only
+          ...(isServiceVendor && servicesOffered !== undefined ? { servicesOffered } : {}),
+          // Canonical packages for SERVICE vendors (only if real packages exist)
+          ...(realPackages !== undefined ? { packages: realPackages } : {}),
+          // Business-level cancellation policy for SERVICE vendors
+          ...(cancellationPolicy !== undefined ? { cancellationPolicy } : {}),
           bankAccount: draft.step8.accountName
             ? {
                 bankCode: draft.step8.bankCode,
@@ -106,6 +147,7 @@ export async function POST(req: NextRequest) {
         } as Prisma.InputJsonValue,
       },
     });
+    revalidateTag("vendors");
 
     const listing = await upsertPublishedVendorListing({
       vendorId: vendor.id,
