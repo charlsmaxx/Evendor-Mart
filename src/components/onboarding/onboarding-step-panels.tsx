@@ -452,7 +452,7 @@ export function Step4Portfolio({ draft, update }: { draft: VendorOnboardingDraft
     const next = s.portfolioCategories.includes(cat)
       ? s.portfolioCategories.filter((c) => c !== cat)
       : [...s.portfolioCategories, cat];
-    update({ step4: { portfolioCategories: next } });
+    update({ step4: { ...s, portfolioCategories: next } });
   }
 
   return (
@@ -470,10 +470,10 @@ export function Step4Portfolio({ draft, update }: { draft: VendorOnboardingDraft
         onAvatarChange={() => {}}
         onCoverChange={() => {}}
         onFeaturedChange={(slots) =>
-          update({ step4: { featuredImages: slots.filter((x): x is NonNullable<typeof x> => Boolean(x)) } })
+          update({ step4: { ...s, featuredImages: slots.filter((x): x is NonNullable<typeof x> => Boolean(x)) } })
         }
         onClipsChange={(slots) =>
-          update({ step4: { featuredClips: slots.filter((x): x is NonNullable<typeof x> => Boolean(x)) } })
+          update({ step4: { ...s, featuredClips: slots.filter((x): x is NonNullable<typeof x> => Boolean(x)) } })
         }
         showProfile={false}
         title="Featured work"
