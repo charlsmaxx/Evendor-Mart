@@ -387,7 +387,7 @@ export function Step3Services({
 
         <div className="space-y-2">
           <Label>Terms & conditions</Label>
-          <Textarea rows={3} value={s.termsAndConditions ?? ""} onChange={(e) => update({ step3: { termsAndConditions: e.target.value } })} />
+          <Textarea rows={3} value={s.termsAndConditions ?? ""} onChange={(e) => update({ step3: { ...s, termsAndConditions: e.target.value } })} />
         </div>
       </div>
     );
@@ -403,22 +403,22 @@ export function Step3Services({
 
        <div className="space-y-2">
          <Label>Guest capacity *</Label>
-         <Input
-           type="number"
-           min={1}
-           value={s.capacity ?? ""}
-           onChange={(e) => update({ step3: { capacity: Number(e.target.value) || undefined } })}
-         />
+<Input
+            type="number"
+            min={1}
+            value={s.capacity ?? ""}
+            onChange={(e) => update({ step3: { ...s, capacity: Number(e.target.value) || undefined } })}
+          />
        </div>
 <VenueOfferingsPicker
           amenities={s.amenities ?? []}
           services={s.venueServices ?? []}
           customAmenities={s.customAmenities ?? []}
           customServices={s.customServices ?? []}
-          onAmenitiesChange={(amenities) => update({ step3: { amenities } })}
-          onServicesChange={(venueServices) => update({ step3: { venueServices } })}
-          onCustomAmenitiesChange={(customAmenities) => update({ step3: { customAmenities } })}
-          onCustomServicesChange={(customServices) => update({ step3: { customServices } })}
+          onAmenitiesChange={(amenities) => update({ step3: { ...s, amenities } })}
+          onServicesChange={(venueServices) => update({ step3: { ...s, venueServices } })}
+          onCustomAmenitiesChange={(customAmenities) => update({ step3: { ...s, customAmenities } })}
+          onCustomServicesChange={(customServices) => update({ step3: { ...s, customServices } })}
         />
 
        <div className="border-t border-border pt-6">
@@ -435,10 +435,10 @@ export function Step3Services({
         />
        </div>
 
-       <div className="space-y-2">
-         <Label>Terms & conditions</Label>
-         <Textarea rows={3} value={s.termsAndConditions ?? ""} onChange={(e) => update({ step3: { termsAndConditions: e.target.value } })} />
-       </div>
+<div className="space-y-2">
+          <Label>Terms & conditions</Label>
+          <Textarea rows={3} value={s.termsAndConditions ?? ""} onChange={(e) => update({ step3: { ...s, termsAndConditions: e.target.value } })} />
+        </div>
      </div>
    );
  }
