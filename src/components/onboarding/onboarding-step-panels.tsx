@@ -301,47 +301,47 @@ export function Step2Location({ draft, update, isVenue }: { draft: VendorOnboard
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label>Country</Label>
-          <Input value={s.country} onChange={(e) => update({ step2: { country: e.target.value } })} />
+          <Input value={s.country} onChange={(e) => update({ step2: { ...s, country: e.target.value } })} />
         </div>
         <div className="space-y-2">
           <Label>State *</Label>
-          <Input value={s.state} onChange={(e) => update({ step2: { state: e.target.value } })} placeholder="Rivers" />
+          <Input value={s.state} onChange={(e) => update({ step2: { ...s, state: e.target.value } })} placeholder="Rivers" />
         </div>
         <div className="space-y-2">
           <Label>City *</Label>
-          <Input value={s.city} onChange={(e) => update({ step2: { city: e.target.value } })} placeholder="Port Harcourt" />
+          <Input value={s.city} onChange={(e) => update({ step2: { ...s, city: e.target.value } })} placeholder="Port Harcourt" />
         </div>
         {!isVenue && (
           <div className="space-y-2">
             <Label>Service radius (km)</Label>
-            <Input value={s.serviceRadiusKm} onChange={(e) => update({ step2: { serviceRadiusKm: e.target.value } })} type="number" min={1} />
+            <Input value={s.serviceRadiusKm} onChange={(e) => update({ step2: { ...s, serviceRadiusKm: e.target.value } })} type="number" min={1} />
           </div>
         )}
       </div>
       <div className="space-y-2">
         <Label>Business address *</Label>
-        <Input value={s.address} onChange={(e) => update({ step2: { address: e.target.value } })} placeholder="Street, area, landmark" />
+        <Input value={s.address} onChange={(e) => update({ step2: { ...s, address: e.target.value } })} placeholder="Street, area, landmark" />
         <p className="text-xs text-muted-foreground">Exact address is not shown publicly — only city/area for search.</p>
       </div>
       <div className="space-y-2">
         <Label>Google Maps link</Label>
-        <Input value={s.mapUrl} onChange={(e) => update({ step2: { mapUrl: e.target.value } })} placeholder="https://maps.google.com/…" />
+        <Input value={s.mapUrl} onChange={(e) => update({ step2: { ...s, mapUrl: e.target.value } })} placeholder="https://maps.google.com/…" />
       </div>
       {!isVenue && (
         <>
           <div className="flex flex-wrap gap-4 text-sm">
             <label className="flex items-center gap-2">
-              <input type="checkbox" checked={s.travelsOutsideCity} onChange={(e) => update({ step2: { travelsOutsideCity: e.target.checked } })} />
+              <input type="checkbox" checked={s.travelsOutsideCity} onChange={(e) => update({ step2: { ...s, travelsOutsideCity: e.target.checked } })} />
               Travels outside city
             </label>
             <label className="flex items-center gap-2">
-              <input type="checkbox" checked={s.travelsOutsideState} onChange={(e) => update({ step2: { travelsOutsideState: e.target.checked } })} />
+              <input type="checkbox" checked={s.travelsOutsideState} onChange={(e) => update({ step2: { ...s, travelsOutsideState: e.target.checked } })} />
               Travels outside state
             </label>
           </div>
           <div className="space-y-2">
             <Label>Travel fee policy</Label>
-            <Textarea rows={2} value={s.travelFeePolicy} onChange={(e) => update({ step2: { travelFeePolicy: e.target.value } })} placeholder="Travel fees may apply outside Port Harcourt…" />
+            <Textarea rows={2} value={s.travelFeePolicy} onChange={(e) => update({ step2: { ...s, travelFeePolicy: e.target.value } })} placeholder="Travel fees may apply outside Port Harcourt…" />
           </div>
         </>
       )}
