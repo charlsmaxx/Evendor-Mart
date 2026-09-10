@@ -63,7 +63,8 @@ export async function POST(req: NextRequest) {
     const isServiceVendor = businessKind === "SERVICE";
 
     // Prepare canonical packages: only save real packages (filter out legacy tier placeholders)
-    const realPackages = isServiceVendor && draft.packages.length > 0
+    // For BOTH SERVICE and VENUE vendors
+    const realPackages = draft.packages.length > 0
       ? draft.packages.filter((p: VendorPackage) => !p.tier)
       : undefined;
 

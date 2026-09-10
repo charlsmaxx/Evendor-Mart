@@ -181,7 +181,7 @@ export function Step1Business({
       />
 
       <div className="space-y-2">
-        <Label>Business name *</Label>
+        <Label>{isVenue ? "Event Center's Name *" : "Business name *"}</Label>
         <Input
           value={s.businessName}
           onChange={(e) => setStep1Field({ businessName: e.target.value })}
@@ -189,7 +189,7 @@ export function Step1Business({
             if (!localStep1Ref.current.slug) void checkSlug(localStep1Ref.current.businessName);
             else syncStep1();
           }}
-          placeholder="Chuks Photography"
+          placeholder={isVenue ? "Enter your event center's name" : "Chuks Photography"}
         />
       </div>
 
@@ -234,13 +234,13 @@ export function Step1Business({
       </div>
 
       <div className="space-y-2">
-        <Label>Business description *</Label>
+        <Label>{isVenue ? "Event Center Description *" : "Business description *"}</Label>
         <Textarea
           rows={4}
           value={s.description}
           onChange={(e) => setStep1Field({ description: e.target.value })}
           onBlur={syncStep1}
-          placeholder="Describe your business, style, and what makes you unique…"
+          placeholder={isVenue ? "Describe your event center, its atmosphere, facilities, and what makes it special..." : "Describe your business, style, and what makes you unique…"}
         />
       </div>
 
@@ -370,9 +370,6 @@ export function Step3Services({
         ? convertLegacyServicesToPackages(s.services)
         : [];
 
-    // Filter out placeholder packages (those with tier = BASIC/PREMIUM/LUXURY)
-    const realPackages = packages.filter((p) => !p.tier);
-
     return (
       <div className="space-y-5 animate-in fade-in duration-300">
         <div>
@@ -384,12 +381,8 @@ export function Step3Services({
         </div>
 
         <PackageEditor
-          value={realPackages}
-          onChange={(next) => {
-            // Filter out any placeholder packages that PackageEditor might add
-            const filtered = next.filter((p) => !p.tier);
-            update({ packages: filtered });
-          }}
+          value={packages}
+          onChange={(next) => update({ packages: next })}
         />
 
         <div className="space-y-2">
@@ -400,41 +393,55 @@ export function Step3Services({
     );
   }
 
-  // VENUE vendor: existing venue-specific UI
-  return (
-    <div className="space-y-5 animate-in fade-in duration-300">
-      <div>
-        <h2 className="font-display text-xl font-semibold">Venue offerings</h2>
-        <p className="text-sm text-muted-foreground">Add unlimited services customers can compare and book.</p>
-      </div>
+   // VENUE vendor: existing venue-specific UI + canonical PackageEditor
+   return (
+     <div className="space-y-5 animate-in fade-in duration-300">
+       <div>
+         <h2 className="font-display text-xl font-semibold">Venue offerings</h2>
+         <p className="text-sm text-muted-foreground">Add unlimited services customers can compare and book.</p>
+       </div>
 
-      <div className="space-y-2">
-        <Label>Guest capacity *</Label>
-        <Input
-          type="number"
-          min={1}
-          value={s.capacity ?? ""}
-          onChange={(e) => update({ step3: { capacity: Number(e.target.value) || undefined } })}
+       <div className="space-y-2">
+         <Label>Guest capacity *</Label>
+         <Input
+           type="number"
+           min={1}
+           value={s.capacity ?? ""}
+           onChange={(e) => update({ step3: { capacity: Number(e.target.value) || undefined } })}
+         />
+       </div>
+<VenueOfferingsPicker
+          amenities={s.amenities ?? []}
+          services={s.venueServices ?? []}
+          customAmenities={s.customAmenities ?? []}
+          customServices={s.customServices ?? []}
+          onAmenitiesChange={(amenities) => update({ step3: { amenities } })}
+          onServicesChange={(venueServices) => update({ step3: { venueServices } })}
+          onCustomAmenitiesChange={(customAmenities) => update({ step3: { customAmenities } })}
+          onCustomServicesChange={(customServices) => update({ step3: { customServices } })}
         />
-      </div>
-      <VenueOfferingsPicker
-        amenities={s.amenities ?? []}
-        services={s.venueServices ?? []}
-        customAmenities={[]}
-        customServices={[]}
-        onAmenitiesChange={(amenities) => update({ step3: { amenities } })}
-        onServicesChange={(venueServices) => update({ step3: { venueServices } })}
-        onCustomAmenitiesChange={() => {}}
-        onCustomServicesChange={() => {}}
-      />
 
-      <div className="space-y-2">
-        <Label>Terms & conditions</Label>
-        <Textarea rows={3} value={s.termsAndConditions ?? ""} onChange={(e) => update({ step3: { termsAndConditions: e.target.value } })} />
-      </div>
-    </div>
-  );
-}
+       <div className="border-t border-border pt-6">
+         <div>
+           <h3 className="font-semibold">Venue packages & pricing</h3>
+           <p className="text-sm text-muted-foreground">
+             Create packages with pricing, features, and cancellation policy for customers to book.
+           </p>
+         </div>
+
+<PackageEditor
+          value={draft.packages}
+          onChange={(next) => update({ packages: next })}
+        />
+       </div>
+
+       <div className="space-y-2">
+         <Label>Terms & conditions</Label>
+         <Textarea rows={3} value={s.termsAndConditions ?? ""} onChange={(e) => update({ step3: { termsAndConditions: e.target.value } })} />
+       </div>
+     </div>
+   );
+ }
 
 export function Step4Portfolio({ draft, update }: { draft: VendorOnboardingDraft; update: DraftUpdater }) {
   const s = draft.step4;
@@ -530,7 +537,7 @@ export function Step5BusinessDetails({ draft, update }: { draft: VendorOnboardin
           <div>
             <p className="font-semibold">Profile content</p>
             <p className="text-sm text-muted-foreground">
-              Services, FAQs, and Service Requirements shown on your public profile.
+              FAQs and Service Requirements shown on your public profile.
             </p>
           </div>
           <ProfileContentEditor
@@ -540,6 +547,7 @@ export function Step5BusinessDetails({ draft, update }: { draft: VendorOnboardin
             onRequirementsChange={(next) => update({ serviceRequirements: next })}
             servicesOffered={draft.servicesOffered}
             onServicesOfferedChange={(next) => update({ servicesOffered: next })}
+            showServicesOffered={false}
           />
         </div>
       )}

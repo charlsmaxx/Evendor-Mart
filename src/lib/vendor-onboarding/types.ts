@@ -56,6 +56,8 @@ export type Step3Services = {
   capacity?: number;
   amenities?: string[];
   venueServices?: string[];
+  customAmenities?: string[];
+  customServices?: string[];
   termsAndConditions?: string;
 };
 

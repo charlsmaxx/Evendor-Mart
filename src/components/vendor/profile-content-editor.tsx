@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,7 +21,70 @@ type ProfileContentEditorProps = {
   onRequirementsChange: (requirements: ServiceRequirement[]) => void;
   servicesOffered: string[];
   onServicesOfferedChange: (services: string[]) => void;
+  showServicesOffered?: boolean;
 };
+
+type ServicesTagEditorProps = {
+  value: string[];
+  onChange: (next: string[]) => void;
+};
+
+function ServicesTagEditor({
+  value,
+  onChange,
+}: ServicesTagEditorProps) {
+  const [draft, setDraft] = useState("");
+  const valueRef = useRef(value);
+  valueRef.current = value;
+
+  function addService() {
+    const next = draft.trim();
+    const currentValue = valueRef.current ?? [];
+    if (!next || currentValue.includes(next)) return;
+    onChange([...currentValue, next]);
+    setDraft("");
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap gap-2">
+        {value.map((service) => (
+          <span
+            key={service}
+            className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/40 px-3 py-1 text-sm"
+          >
+            {service}
+            <button
+              type="button"
+              onClick={() => onChange((valueRef.current ?? []).filter((s) => s !== service))}
+              aria-label={`Remove ${service}`}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </span>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        <Input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              addService();
+            }
+          }}
+          placeholder="e.g. Wedding Photography"
+          className="flex-1"
+        />
+        <Button type="button" variant="outline" onClick={addService}>
+          Add
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 export function ProfileContentEditor({
   faqs,
@@ -29,18 +93,21 @@ export function ProfileContentEditor({
   onRequirementsChange,
   servicesOffered,
   onServicesOfferedChange,
+  showServicesOffered = true,
 }: ProfileContentEditorProps) {
   return (
     <div className="space-y-8">
-      <section className="space-y-3">
-        <div>
-          <p className="font-semibold">Services offered</p>
-          <p className="text-sm text-muted-foreground">
-            Listed on your public profile and selectable when customers book.
-          </p>
-        </div>
-        <ServicesTagEditor value={servicesOffered} onChange={onServicesOfferedChange} />
-      </section>
+      {showServicesOffered && (
+        <section className="space-y-3">
+          <div>
+            <p className="font-semibold">Services offered</p>
+            <p className="text-sm text-muted-foreground">
+              Listed on your public profile and selectable when customers book.
+            </p>
+          </div>
+          <ServicesTagEditor value={servicesOffered} onChange={onServicesOfferedChange} />
+        </section>
+      )}
 
       <section className="space-y-3">
         <div className="flex items-start justify-between gap-3">
@@ -152,9 +219,50 @@ export function ProfileContentEditor({
         {requirements.length === 0 && (
           <p className="text-sm text-muted-foreground">No requirements yet.</p>
         )}
-        {requirements.map((req) => (
-          <div key={req.id} className="flex items-start gap-2 rounded-xl border border-border p-3">
-            <div className="flex-1 space-y-1">
+{requirements.map((req) => (
+          <div
+            key={req.id}
+            className="group rounded-xl border border-border p-3"
+          >
+            <div className="flex justify-end gap-1 pb-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() =>
+                  onRequirementsChange(reorderById(requirements, req.id, "up"))
+                }
+                aria-label="Move up"
+                className="opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <ArrowUp className="h-4 w-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() =>
+                  onRequirementsChange(reorderById(requirements, req.id, "down"))
+                }
+                aria-label="Move down"
+                className="opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <ArrowDown className="h-4 w-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() =>
+                  onRequirementsChange(requirements.filter((r) => r.id !== req.id))
+                }
+                aria-label="Delete requirement"
+                className="opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="space-y-1">
               <Label className="sr-only">Requirement</Label>
               <Input
                 value={req.text}
@@ -168,89 +276,9 @@ export function ProfileContentEditor({
                 placeholder="Customer must provide uninterrupted electricity."
               />
             </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={() =>
-                onRequirementsChange(reorderById(requirements, req.id, "up"))
-              }
-              aria-label="Move up"
-            >
-              <ArrowUp className="h-4 w-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={() =>
-                onRequirementsChange(reorderById(requirements, req.id, "down"))
-              }
-              aria-label="Move down"
-            >
-              <ArrowDown className="h-4 w-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={() =>
-                onRequirementsChange(requirements.filter((r) => r.id !== req.id))
-              }
-              aria-label="Delete requirement"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
           </div>
         ))}
       </section>
-    </div>
-  );
-}
-
-function ServicesTagEditor({
-  value,
-  onChange,
-}: {
-  value: string[];
-  onChange: (next: string[]) => void;
-}) {
-  return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap gap-2">
-        {value.map((service) => (
-          <span
-            key={service}
-            className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/40 px-3 py-1 text-sm"
-          >
-            {service}
-            <button
-              type="button"
-              onClick={() => onChange(value.filter((s) => s !== service))}
-              aria-label={`Remove ${service}`}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          </span>
-        ))}
-      </div>
-      <form
-        className="flex gap-2"
-        onSubmit={(e) => {
-          e.preventDefault();
-          const fd = new FormData(e.currentTarget);
-          const next = String(fd.get("service") ?? "").trim();
-          if (!next || value.includes(next)) return;
-          onChange([...value, next]);
-          e.currentTarget.reset();
-        }}
-      >
-        <Input name="service" placeholder="e.g. Wedding Photography" className="flex-1" />
-        <Button type="submit" variant="outline">
-          Add
-        </Button>
-      </form>
     </div>
   );
 }

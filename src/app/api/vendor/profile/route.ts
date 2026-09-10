@@ -180,8 +180,8 @@ export async function PATCH(req: NextRequest) {
       : []),
   ]);
 
-  revalidateTag("listings", "max");
-  revalidateTag("vendors", "max");
+  revalidateTag("listings");
+  revalidateTag("vendors");
 
   if (featuredImages !== undefined || featuredClips !== undefined) {
     const primaryListing = await prisma.listing.findFirst({
