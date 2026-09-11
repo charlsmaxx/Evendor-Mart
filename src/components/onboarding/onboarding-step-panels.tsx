@@ -516,7 +516,7 @@ export function Step5BusinessDetails({ draft, update }: { draft: VendorOnboardin
       </div>
       <div className="space-y-2">
         <Label>Business email (private)</Label>
-        <Input type="email" value={s.businessEmail} onChange={(e) => update({ step5: { businessEmail: e.target.value } })} placeholder="admin@yourbusiness.com" />
+        <Input type="email" value={s.businessEmail} onChange={(e) => update({ step5: { ...s, businessEmail: e.target.value } })} placeholder="admin@yourbusiness.com" />
         <p className="text-xs text-muted-foreground">Used for account administration only — not visible to customers.</p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
@@ -525,7 +525,7 @@ export function Step5BusinessDetails({ draft, update }: { draft: VendorOnboardin
             <Label className="capitalize">{key === "website" ? "Official website" : key}</Label>
             <Input
               value={s[key]}
-              onChange={(e) => update({ step5: { [key]: e.target.value } })}
+              onChange={(e) => update({ step5: { ...s, [key]: e.target.value } })}
               placeholder={key === "website" ? "https://…" : `@handle or URL`}
             />
           </div>
@@ -647,7 +647,7 @@ export function Step7Preferences({ draft, update }: { draft: VendorOnboardingDra
   function toggleChip(field: "specialties" | "tags", value: string) {
     const list = s[field];
     const next = list.includes(value) ? list.filter((x) => x !== value) : [...list, value];
-    update({ step7: { [field]: next } });
+    update({ step7: { ...s, [field]: next } });
   }
 
   const businessCancellationPolicy = isServiceVendor ? draft.cancellationPolicy : null;
@@ -664,7 +664,7 @@ export function Step7Preferences({ draft, update }: { draft: VendorOnboardingDra
           <select
             className="w-full rounded-lg border border-border bg-input px-3 py-2 text-sm"
             value={s.bookingApproval}
-            onChange={(e) => update({ step7: { bookingApproval: e.target.value as typeof s.bookingApproval } })}
+            onChange={(e) => update({ step7: { ...s, bookingApproval: e.target.value as typeof s.bookingApproval } })}
           >
             <option value="instant">Instant booking</option>
             <option value="approval_required">Approval required</option>
@@ -672,11 +672,11 @@ export function Step7Preferences({ draft, update }: { draft: VendorOnboardingDra
         </div>
         <div className="space-y-2">
           <Label>Minimum notice (hours)</Label>
-          <Input type="number" value={s.minimumNoticeHours} onChange={(e) => update({ step7: { minimumNoticeHours: Number(e.target.value) } })} />
+          <Input type="number" value={s.minimumNoticeHours} onChange={(e) => update({ step7: { ...s, minimumNoticeHours: Number(e.target.value) } })} />
         </div>
         <div className="space-y-2">
           <Label>Max advance booking (days)</Label>
-          <Input type="number" value={s.maxAdvanceBookingDays} onChange={(e) => update({ step7: { maxAdvanceBookingDays: Number(e.target.value) } })} />
+          <Input type="number" value={s.maxAdvanceBookingDays} onChange={(e) => update({ step7: { ...s, maxAdvanceBookingDays: Number(e.target.value) } })} />
         </div>
       </div>
       <div className="space-y-2">
@@ -765,12 +765,12 @@ export function Step7Preferences({ draft, update }: { draft: VendorOnboardingDra
             )}
           </>
         ) : (
-          <Textarea rows={2} value={s.cancellationPolicy} onChange={(e) => update({ step7: { cancellationPolicy: e.target.value } })} />
+          <Textarea rows={2} value={s.cancellationPolicy} onChange={(e) => update({ step7: { ...s, cancellationPolicy: e.target.value } })} />
         )}
       </div>
       <div className="space-y-2">
         <Label>Reschedule policy</Label>
-        <Textarea rows={2} value={s.reschedulePolicy} onChange={(e) => update({ step7: { reschedulePolicy: e.target.value } })} />
+        <Textarea rows={2} value={s.reschedulePolicy} onChange={(e) => update({ step7: { ...s, reschedulePolicy: e.target.value } })} />
       </div>
       <div className="space-y-2">
         <Label>Specialties (powers Evendor search)</Label>
@@ -784,7 +784,7 @@ export function Step7Preferences({ draft, update }: { draft: VendorOnboardingDra
         <CommaListField
           items={s.keywords}
           placeholder="Add custom keywords, comma-separated"
-          onCommit={(keywords) => update({ step7: { keywords } })}
+          onCommit={(keywords) => update({ step7: { ...s, keywords } })}
         />
       </div>
     </div>
