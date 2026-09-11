@@ -57,7 +57,12 @@ export function VendorOnboardingWizard({ businessKind }: { businessKind: Busines
         if (serverSlug && !draftRef.current.step1.slug) {
           setDraft((prev) => {
             if (prev.step1.slug) return prev;
-            const next = mergeDraft(prev, { step1: { slug: serverSlug } });
+            const next = mergeDraft(prev, {
+              step1: {
+                ...prev.step1,
+                slug: serverSlug,
+              },
+            });
             draftRef.current = next;
             return next;
           });
