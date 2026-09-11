@@ -445,7 +445,7 @@ export async function getAdminPayoutReview(payoutId: string) {
           id: true,
           businessName: true,
           userId: true,
-          vendorCategory: true,
+          category: true,
           metadata: true,
         },
       },
@@ -503,7 +503,7 @@ export async function getAdminPayoutReview(payoutId: string) {
     vendor: {
       id: payout.vendor.id,
       businessName: payout.vendor.businessName,
-      category: payout.vendor.vendorCategory,
+      category: payout.vendor.category,
     },
     booking: {
       id: payout.booking.id,
