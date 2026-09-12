@@ -5,6 +5,8 @@ import { requireAuth } from "@/lib/auth";
 import { requireAdminSection } from "@/lib/rbac";
 import { jsonOk, jsonError } from "@/lib/api-response";
 import { z } from "zod";
+import { cacheDelete } from "@/lib/redis";
+import { revalidateTag } from "next/cache";
 
 const patchSchema = z.object({
   listingId: z.string().uuid(),
@@ -60,6 +62,20 @@ export async function PATCH(req: NextRequest) {
     entityId: listing.id,
     metadata: parsed.data,
   });
+
+  if (parsed.data.featured !== undefined) {
+    await Promise.all([
+      cacheDelete("featured:v2:4"),
+      cacheDelete("featured:v2:8"),
+      cacheDelete("featured:v2:12"),
+      cacheDelete("featured:v2:vendors:4"),
+      cacheDelete("featured:v2:vendors:8"),
+      cacheDelete("featured:v2:venues:4"),
+      cacheDelete("featured:v2:venues:8"),
+      cacheDelete("featured:v2:venues:12"),
+    ]);
+    revalidateTag("listings");
+  }
 
   return jsonOk(listing);
 }

@@ -49,3 +49,13 @@ export async function cacheSet(key: string, value: unknown, ttlSeconds = 60) {
     /* noop */
   }
 }
+
+export async function cacheDelete(key: string): Promise<void> {
+  const client = getRedis();
+  if (!client) return;
+  try {
+    await client.del(key);
+  } catch {
+    /* noop */
+  }
+}

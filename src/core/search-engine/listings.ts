@@ -167,6 +167,88 @@ export async function getFeaturedListings(limit = 4) {
   return DEMO_LISTINGS.filter((l) => l.featured).slice(0, limit);
 }
 
+export async function getFeaturedVendors(limit = 4) {
+  const cacheKey = `featured:v2:vendors:${limit}`;
+  const cached = await cacheGet<VendorCardData[]>(cacheKey);
+  if (cached) return cached;
+
+  try {
+    const rows = await prisma.listing.findMany({
+      where: { status: "PUBLISHED", featured: true, type: "SERVICE" },
+      select: listingCardSelect,
+      take: limit,
+      orderBy: { ratingAvg: "desc" },
+    });
+    if (rows.length) {
+      const listings = rows.map((l) => ({
+        id: l.id,
+        slug: l.slug,
+        vendorSlug: l.vendor.slug,
+        title: l.title,
+        city: l.city,
+        coverImage: resolvePublicListingCover(l, l.vendor),
+        priceMin: l.priceMin,
+        priceMax: l.priceMax,
+        ratingAvg: l.ratingAvg,
+        reviewCount: l.reviewCount,
+        verified: l.verified,
+        featured: l.featured,
+        vendorName: l.vendor.businessName,
+        type: l.type,
+      })) as VendorCardData[];
+      await cacheSet(cacheKey, listings, FEATURED_CACHE_TTL_SECONDS);
+      return listings;
+    }
+  } catch {
+    /* fallback */
+  }
+  return DEMO_LISTINGS.filter((l) => l.featured && l.type === "SERVICE").slice(0, limit);
+}
+
+export async function getFeaturedVenues(limit = 8) {
+  const cacheKey = `featured:v2:venues:${limit}`;
+  const cached = await cacheGet<VendorCardData[]>(cacheKey);
+  if (cached) return cached;
+
+  try {
+    const rows = await prisma.listing.findMany({
+      where: { status: "PUBLISHED", featured: true, type: "VENUE" },
+      select: {
+        ...listingCardSelect,
+        venueDetails: {
+          select: { capacity: true, amenities: true, address: true },
+        },
+      },
+      take: limit,
+      orderBy: { ratingAvg: "desc" },
+    });
+    if (rows.length) {
+      const listings = rows.map((l) => ({
+        id: l.id,
+        slug: l.slug,
+        vendorSlug: l.vendor.slug,
+        title: l.title,
+        city: l.city,
+        coverImage: resolvePublicListingCover(l, l.vendor),
+        priceMin: l.priceMin,
+        priceMax: l.priceMax,
+        ratingAvg: l.ratingAvg,
+        reviewCount: l.reviewCount,
+        verified: l.verified,
+        featured: l.featured,
+        vendorName: l.vendor.businessName,
+        type: l.type,
+        venueDetails: l.venueDetails,
+      })) as (VendorCardData & { venueDetails: { capacity: number; amenities: string[]; address: string | null } | null })[];
+      await cacheSet(cacheKey, listings, FEATURED_CACHE_TTL_SECONDS);
+      return listings;
+    }
+  } catch {
+    /* fallback */
+  }
+  return DEMO_LISTINGS.filter((l) => l.featured && l.type === "VENUE").slice(0, limit);
+}
+
 export async function getListingBySlug(slug: string) {
   try {
     const listing = await prisma.listing.findUnique({

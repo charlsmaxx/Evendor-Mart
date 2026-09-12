@@ -22,6 +22,11 @@ export interface VendorCardData {
   featured: boolean;
   vendorName: string;
   type: "SERVICE" | "VENUE";
+  venueDetails?: {
+    capacity: number;
+    amenities: string[];
+    address: string | null;
+  } | null;
 }
 
 export const VendorCard = memo(function VendorCard({

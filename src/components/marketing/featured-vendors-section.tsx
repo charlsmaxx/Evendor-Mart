@@ -1,10 +1,10 @@
 import { SectionShell } from "@/components/shared/section-shell";
 import { VendorCard } from "@/components/marketplace/vendor-card";
-import { getFeaturedListings } from "@/lib/listings";
+import { getFeaturedVendors } from "@/core/search-engine/listings";
 import { GlowButton } from "@/components/shared/glow-button";
 
 export async function FeaturedVendorsSection() {
-  const listings = await getFeaturedListings(4);
+  const listings = await getFeaturedVendors(4);
 
   return (
     <SectionShell id="featured">

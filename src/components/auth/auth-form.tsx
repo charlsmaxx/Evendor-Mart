@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LegalNotice } from "@/components/auth/legal-notice";
 import { LEGAL_SIGNUP_ERROR_MESSAGE } from "@/lib/legal";
+import { Eye, EyeOff } from "lucide-react";
 
 type Mode = "login" | "register" | "otp";
 
@@ -64,6 +65,8 @@ export function AuthForm({ mode }: { mode: Mode }) {
   const [loading, setLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [confirmEmailSent, setConfirmEmailSent] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!getSupabaseEnv()) {
@@ -79,6 +82,31 @@ export function AuthForm({ mode }: { mode: Mode }) {
       reportClientError("auth", LEGAL_SIGNUP_ERROR_MESSAGE);
     }
   }, [authError]);
+
+  function classifyAuthError(message: string): string {
+    const lower = message.toLowerCase();
+    if (
+      lower === "failed to fetch" ||
+      lower.includes("network") ||
+      lower.includes("fetch failed")
+    ) {
+      return "Unable to connect to the authentication service. Please check your connection and try again.";
+    }
+    if (lower.includes("email not confirmed")) {
+      return "Please confirm your email address before signing in.";
+    }
+    if (
+      lower.includes("invalid login credentials") ||
+      lower.includes("invalid credentials") ||
+      lower.includes("wrong password") ||
+      lower.includes("user not found") ||
+      lower.includes("no user found") ||
+      lower.includes("invalid email or password")
+    ) {
+      return "Incorrect email or password. Please check your credentials and try again.";
+    }
+    return message;
+  }
 
   async function syncDbUser() {
     const res = await fetch("/api/auth/sync-user", { method: "POST", credentials: "same-origin" });
@@ -101,6 +129,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
     setLoading(true);
     setConfirmEmailSent(false);
+    setErrorMessage(null);
 
     try {
       const supabase = createClient();
@@ -116,6 +145,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
 
         if (signUpError) {
           logAuthError(signUpError.message, signUpError);
+          setErrorMessage(signUpError.message);
           return;
         }
 
@@ -141,6 +171,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
         });
         if (signInError) {
           logAuthError(signInError.message, signInError);
+          setErrorMessage(classifyAuthError(signInError.message));
           return;
         }
         await syncDbUser();
@@ -151,6 +182,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
     } catch (err) {
       const message = err instanceof Error ? err.message : "Something went wrong";
       logAuthError(message, err);
+      setErrorMessage(classifyAuthError(message));
     } finally {
       setLoading(false);
     }
@@ -259,13 +291,16 @@ export function AuthForm({ mode }: { mode: Mode }) {
           id="email"
           type="email"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            setErrorMessage(null);
+          }}
           required
           className="mt-1"
         />
       </div>
       {mode !== "otp" && (
-        <div>
+        <div className="relative">
           <div className="flex items-center justify-between gap-3">
             <Label htmlFor="password">Password</Label>
             {mode === "login" && (
@@ -274,15 +309,28 @@ export function AuthForm({ mode }: { mode: Mode }) {
               </Link>
             )}
           </div>
-          <Input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={8}
-            className="mt-1"
-          />
+          <div className="relative mt-1">
+            <Input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setErrorMessage(null);
+              }}
+              required
+              minLength={8}
+              className="pr-10"
+            />
+            <button
+              type="button"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              onClick={() => setShowPassword((prev) => !prev)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
         </div>
       )}
     </>
@@ -326,6 +374,11 @@ export function AuthForm({ mode }: { mode: Mode }) {
           </div>
           <form onSubmit={handleEmailAuth} className="space-y-4">
             {emailFields}
+            {errorMessage && (
+              <p className="text-sm text-destructive" role="alert">
+                {errorMessage}
+              </p>
+            )}
             <Button type="submit" variant="gradient" className="w-full" disabled={loading || !getSupabaseEnv()}>
               {loading ? "Please wait..." : EMAIL_REGISTER_LABEL}
             </Button>
@@ -340,6 +393,11 @@ export function AuthForm({ mode }: { mode: Mode }) {
           )}
           <form onSubmit={mode === "otp" ? handleOtp : handleEmailAuth} className={mode === "otp" ? "mt-4 space-y-4" : "mt-6 space-y-4"}>
             {emailFields}
+            {errorMessage && (
+              <p className="text-sm text-destructive" role="alert">
+                {errorMessage}
+              </p>
+            )}
             <Button type="submit" variant="gradient" className="w-full" disabled={loading || !getSupabaseEnv()}>
               {loading ? "Please wait..." : mode === "otp" ? OTP_LABEL : EMAIL_LOGIN_LABEL}
             </Button>
