@@ -29,6 +29,10 @@ export const createBookingSchema = z
     selectedServices: z.array(z.string().min(1).max(120)).max(40).optional().default([]),
     /** Customer must accept the package cancellation policy before pay. */
     acceptCancellationPolicy: z.boolean().optional().default(false),
+    /** Venue refundable caution fee (server-authoritative, validated against listing metadata). */
+    cautionFeeAmount: z.number().int().min(0).optional().default(0),
+    /** Service vendor agreed additional charges (customer-entered, validated server-side). */
+    agreedAdditionalChargeAmount: z.number().int().min(0).optional().default(0),
   })
   .refine(
     (data) => {

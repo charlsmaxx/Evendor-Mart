@@ -90,7 +90,7 @@ export async function releaseEscrow(
 
   if (booking.customerId) {
     try {
-      await earnReward(booking.customerId, bookingId, booking.totalAmount);
+      await earnReward(booking.customerId, bookingId, booking.baseBookingAmount);
     } catch (error) {
       // Escrow is already released — do not roll back payout. Wallet load will
       // retry via creditMissedCompletedBookingRewards.
@@ -361,7 +361,7 @@ export async function resolveDispute(
         ? 0
         : (partialVendorPercent ?? Math.round(VENDOR_PAYOUT_PERCENT / 2));
 
-  const payoutAmount = Math.round(booking.totalAmount * (payoutPct / 100));
+  const payoutAmount = Math.round(booking.baseBookingAmount * (payoutPct / 100));
 
   await prisma.$transaction(async (tx) => {
     await tx.dispute.update({
@@ -432,9 +432,15 @@ export async function resolveDispute(
     booking.customerId &&
     (resolution === "FULL_PAYOUT" || resolution === "PARTIAL")
   ) {
-    // FULL_PAYOUT: cashback on full booking. PARTIAL: on vendor payout portion (net paid).
-    const amountForCashback =
-      resolution === "FULL_PAYOUT" ? booking.totalAmount : payoutAmount;
+    // FULL_PAYOUT: cashback on full base booking amount.
+    // PARTIAL: proportionally on base booking amount.
+    const payoutPct =
+      resolution === "FULL_PAYOUT"
+        ? 100
+        : Math.round((payoutAmount / booking.baseBookingAmount) * 100);
+    const amountForCashback = Math.round(
+      booking.baseBookingAmount * (payoutPct / 100)
+    );
     try {
       await earnReward(booking.customerId, booking.id, amountForCashback);
     } catch (error) {

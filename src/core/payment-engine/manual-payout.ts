@@ -465,7 +465,7 @@ export async function getAdminPayoutReview(payoutId: string) {
   const customerPaid = payout.booking.payments
     .filter((p) => p.status === "SUCCESS")
     .reduce((sum, p) => sum + p.amount, 0);
-  const commissionAmount = Math.max(0, payout.booking.totalAmount - vendorShareAmount(payout.booking.totalAmount));
+  const commissionAmount = Math.max(0, payout.booking.baseBookingAmount - vendorShareAmount(payout.booking.baseBookingAmount));
   const previousAttempts = await prisma.auditLog.findMany({
     where: { entityType: "Payout", entityId: payout.id },
     orderBy: { createdAt: "desc" },

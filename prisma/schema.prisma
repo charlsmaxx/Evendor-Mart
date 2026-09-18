@@ -435,6 +435,10 @@ model Booking {
   vendorCompletedAt     DateTime?
   completionConfirmedAt DateTime?
   completionConfirmedBy String?
+  /// Amount breakdown for commission/rewards calculations
+  baseBookingAmount           Int @default(0)
+  cautionFeeAmount            Int @default(0)
+  agreedAdditionalChargeAmount Int @default(0)
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
 

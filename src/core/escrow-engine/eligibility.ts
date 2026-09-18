@@ -86,7 +86,7 @@ export async function isBookingPayoutEligible(
     };
   }
 
-  const gross = booking.totalAmount;
+  const gross = booking.baseBookingAmount;
   const vendorPayableAmount = vendorShareAmount(gross);
   const commissionAmount = Math.max(0, gross - vendorPayableAmount);
 

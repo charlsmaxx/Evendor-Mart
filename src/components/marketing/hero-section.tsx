@@ -98,7 +98,7 @@ export function HeroSection() {
           </h1>
 
           <p className="mt-3 text-[15px] leading-relaxed text-[#5c534c]">
-            Discover and book the best event halls and professional vendors for any
+            Discover the right venue. Find trusted vendors. Book everything you need for any
             occasion.{" "}
             <span className="font-medium text-[#7A2E3D]">Simple, secure and reliable.</span>
           </p>
@@ -206,8 +206,9 @@ export function HeroSection() {
           </h1>
 
           <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/85 sm:mt-5 sm:text-lg">
-            Discover and book the best event halls and professional vendors for any
-            occasion. Simple, secure and reliable.
+            Discover the right venue. Find trusted vendors. Book everything you need for any
+            occasion.{" "}
+            <span className="font-medium">Simple, secure and reliable.</span>
           </p>
 
           <div className="mt-5 sm:mt-8">

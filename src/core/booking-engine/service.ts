@@ -74,6 +74,10 @@ interface ReserveInput extends SlotInput {
   applyRewards?: boolean;
   /** Contract snapshot: package, add-ons, category answers, cancellation policy. */
   bookingSnapshot?: Prisma.InputJsonValue;
+  /** Amount breakdown for commission/rewards calculations */
+  baseBookingAmount: number;
+  cautionFeeAmount: number;
+  agreedAdditionalChargeAmount: number;
 }
 
 export interface ManualBookingInput extends SlotInput {
@@ -241,6 +245,9 @@ export async function reserveSlot(input: ReserveInput) {
             notes: input.notes,
             status: "RESERVED",
             reservationExpiresAt: reservationExpiresAt(),
+            baseBookingAmount: input.baseBookingAmount,
+            cautionFeeAmount: input.cautionFeeAmount,
+            agreedAdditionalChargeAmount: input.agreedAdditionalChargeAmount,
             ...(input.bookingSnapshot != null
               ? { bookingSnapshot: input.bookingSnapshot }
               : {}),
@@ -249,7 +256,7 @@ export async function reserveSlot(input: ReserveInput) {
         });
 
         const rewardsRedeemed = input.applyRewards
-          ? await redeemRewardsInTx(tx, input.customerId, booking.id, input.totalAmount)
+          ? await redeemRewardsInTx(tx, input.customerId, booking.id, input.baseBookingAmount)
           : 0;
 
         // What Paystack actually charges. The vendor's share is still computed from

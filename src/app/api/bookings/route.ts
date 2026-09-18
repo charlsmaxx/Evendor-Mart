@@ -75,6 +75,112 @@ const vendorBookingsQuerySchema = paginationQuerySchema.extend({
   filter: z.enum(VENDOR_BOOKING_FILTERS).default("all"),
 });
 
+function computeAmountBreakdown(
+  listing: {
+    id: string;
+    title: string;
+    description: string | null;
+    priceMin: number;
+    priceMax: number;
+    city: string;
+    coverImage: string | null;
+    type: "VENUE" | "SERVICE";
+    status: string;
+    vendorId: string;
+    metadata: Prisma.JsonValue | null;
+    vendor: {
+      id: string;
+      metadata: Prisma.JsonValue | null;
+      businessName: string;
+      category: string;
+    } | null;
+  } | null,
+  parsed: { totalAmount: number; packageId?: string; selectedAddOns?: { addOnId: string; quantity: number }[]; cautionFeeAmount?: number; agreedAdditionalChargeAmount?: number }
+): { baseBookingAmount: number; cautionFeeAmount: number; agreedAdditionalChargeAmount: number; totalAmount: number } {
+  if (!listing || !listing.vendor) {
+    throw new Error("Invalid listing or vendor");
+  }
+  const isVenue = listing.type === "VENUE";
+  const selectedPkg = findPackageById(listing.vendor.metadata, parsed.packageId);
+
+  // Server-authoritative base amount calculation
+  let baseBookingAmount: number;
+  if (selectedPkg) {
+    baseBookingAmount = calcPackageTotal(selectedPkg, parsed.selectedAddOns ?? []);
+  } else if (isVenue) {
+    // For non-package venue bookings, the authoritative base price is the listing's priceMin.
+    // The client MUST pay priceMin + cautionFeeAmount. We do NOT derive base from client total.
+    baseBookingAmount = listing.priceMin;
+  } else {
+    // Service booking without package (custom amount)
+    baseBookingAmount = parsed.totalAmount; // Will be adjusted after additional charge validation
+  }
+
+  // Validate and derive caution fee (venue only)
+  let cautionFeeAmount = 0;
+  if (isVenue) {
+    // Get authoritative caution fee from listing metadata
+    const vendorMeta = (listing.vendor!.metadata as Record<string, unknown> | null) ?? null;
+    const listingMeta = listing.metadata as Record<string, unknown> | null;
+    // Check listing metadata first, then vendor metadata for backward compatibility
+    const metadataCautionFee = (listingMeta?.cautionFeeAmount ?? vendorMeta?.cautionFeeAmount) as number | undefined;
+    const authoritativeCautionFee = typeof metadataCautionFee === "number" ? metadataCautionFee : 0;
+
+    // Client may send cautionFeeAmount; validate against authoritative source
+    const clientCautionFee = parsed.cautionFeeAmount ?? 0;
+    if (clientCautionFee !== authoritativeCautionFee) {
+      throw new Error(`Invalid caution fee. Expected ₦${authoritativeCautionFee.toLocaleString()}.`);
+    }
+    cautionFeeAmount = authoritativeCautionFee;
+  }
+
+  // Validate additional charges (service only)
+  let agreedAdditionalChargeAmount = 0;
+  if (!isVenue) {
+    agreedAdditionalChargeAmount = parsed.agreedAdditionalChargeAmount ?? 0;
+    if (agreedAdditionalChargeAmount < 0) {
+      throw new Error("Agreed additional charge cannot be negative.");
+    }
+  } else {
+    // Venue bookings must not have additional charges
+    if ((parsed.agreedAdditionalChargeAmount ?? 0) !== 0) {
+      throw new Error("Venue bookings cannot have agreed additional charges.");
+    }
+  }
+
+  // For non-package venue: base is already set to priceMin (authoritative).
+  // For non-package service: base = submitted total - additional charges
+  if (!selectedPkg && !isVenue) {
+    baseBookingAmount = parsed.totalAmount - agreedAdditionalChargeAmount;
+    if (baseBookingAmount < listing.priceMin) {
+      throw new Error(`Base amount is below this listing's starting price (₦${listing.priceMin.toLocaleString()}).`);
+    }
+  }
+
+  // Validate total matches sum of components
+  const expectedTotal = baseBookingAmount + cautionFeeAmount + agreedAdditionalChargeAmount;
+  if (Math.abs(parsed.totalAmount - expectedTotal) > 1) {
+    throw new Error(`Booking total must equal base + caution fee + additional charges (₦${expectedTotal.toLocaleString()}).`);
+  }
+
+  // Preserve original price ceiling check for non-package bookings
+  if (!selectedPkg) {
+    const priceCeiling = Math.max(listing.priceMax, listing.priceMin) * 2;
+    if (expectedTotal > priceCeiling) {
+      throw new Error(
+        `Total amount is far above this listing's listed range. Contact the vendor for a custom quote.`
+      );
+    }
+  }
+
+  return {
+    baseBookingAmount,
+    cautionFeeAmount,
+    agreedAdditionalChargeAmount,
+    totalAmount: expectedTotal,
+  };
+}
+
 export async function POST(req: NextRequest) {
   const user = await requireAuth();
   if (!user) return jsonError("Unauthorized", 401);
@@ -91,51 +197,80 @@ export async function POST(req: NextRequest) {
     return jsonError(parsed.error.issues[0]?.message ?? "Invalid booking details.", 400);
   }
 
+  // MVP guard: additional charges and caution fees are not yet available
+  if ((parsed.data.cautionFeeAmount ?? 0) > 0 || (parsed.data.agreedAdditionalChargeAmount ?? 0) > 0) {
+    return jsonError("Additional charges and caution fees are not currently available.", 400);
+  }
+
   const listing = await prisma.listing.findUnique({
     where: { id: parsed.data.listingId },
-    include: { vendor: true },
-  });
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      priceMin: true,
+      priceMax: true,
+      city: true,
+      coverImage: true,
+      type: true,
+      status: true,
+      vendorId: true,
+      metadata: true,
+      vendor: {
+        select: {
+          id: true,
+          metadata: true,
+          businessName: true,
+          category: true,
+        },
+      },
+    },
+  }) as {
+    id: string;
+    title: string;
+    description: string | null;
+    priceMin: number;
+    priceMax: number;
+    city: string;
+    coverImage: string | null;
+    type: "VENUE" | "SERVICE";
+    status: string;
+    vendorId: string;
+    metadata: Prisma.JsonValue | null;
+    vendor: {
+      id: string;
+      metadata: Prisma.JsonValue | null;
+      businessName: string;
+      category: string;
+    } | null;
+  } | null;
   if (!listing || listing.status !== "PUBLISHED") {
     return jsonError("Listing not available", 404);
   }
 
-  const totalAmount = parsed.data.totalAmount;
+  // Compute authoritative amount breakdown
+  let breakdown: { baseBookingAmount: number; cautionFeeAmount: number; agreedAdditionalChargeAmount: number; totalAmount: number };
+  try {
+    breakdown = computeAmountBreakdown(listing, parsed.data);
+  } catch (err) {
+    return jsonError(err instanceof Error ? err.message : "Invalid booking amounts.", 400);
+  }
+
+  const { baseBookingAmount, cautionFeeAmount, agreedAdditionalChargeAmount, totalAmount } = breakdown;
   const priceFloor = listing.priceMin;
   const priceCeiling = Math.max(listing.priceMax, listing.priceMin) * 2;
 
-  const selectedPkg = findPackageById(listing.vendor.metadata, parsed.data.packageId);
+  const selectedPkg = findPackageById(listing.vendor!.metadata, parsed.data.packageId);
   if (parsed.data.packageId && !selectedPkg) {
     return jsonError("Selected package is not available.", 400);
   }
 
-  if (selectedPkg) {
-    const expected = calcPackageTotal(selectedPkg, parsed.data.selectedAddOns ?? []);
-    // Allow small client rounding drift; reject spoofed totals.
-    if (Math.abs(totalAmount - expected) > 1) {
-      return jsonError(
-        `Booking total must match the selected package and add-ons (₦${expected.toLocaleString()}).`,
-        400
-      );
-    }
-  } else {
-    if (totalAmount < priceFloor) {
-      return jsonError(
-        `Amount is below this listing's starting price (₦${priceFloor.toLocaleString()}).`,
-        400
-      );
-    }
-    if (totalAmount > priceCeiling) {
-      return jsonError(
-        `Amount is far above this listing's listed range. Contact the vendor for a custom quote.`,
-        400
-      );
-    }
-  }
+  // Package validation already done in computeAmountBreakdown
 
   const cancellationPolicy = selectedPkg
     ? normalizeCancellationPolicy(selectedPkg.cancellationPolicy)
     : normalizeCancellationPolicy(
-        (listing.vendor.metadata as Record<string, unknown> | null)?.cancellationPolicy
+        (listing.vendor!.metadata as Record<string, unknown> | null)?.cancellationPolicy
       );
 
   if (!parsed.data.acceptCancellationPolicy) {
@@ -185,8 +320,8 @@ export async function POST(req: NextRequest) {
     priceMax: listing.priceMax,
     city: listing.city,
     coverImage: listing.coverImage,
-    vendorBusinessName: listing.vendor.businessName,
-    vendorCategory: listing.vendor.category,
+    vendorBusinessName: listing.vendor!.businessName,
+    vendorCategory: listing.vendor!.category,
     snapshotAt: new Date().toISOString(),
     package: selectedPkg
       ? {
@@ -205,11 +340,14 @@ export async function POST(req: NextRequest) {
     cancellationPolicyLines: formatCancellationPolicyLines(cancellationPolicy),
     policyAcceptedAt: new Date().toISOString(),
     pricing: {
-      packageBase: selectedPkg ? packageBasePrice(selectedPkg) : totalAmount,
+      packageBase: selectedPkg ? packageBasePrice(selectedPkg) : baseBookingAmount,
       addOnsTotal: selectedAddOnsDetailed.reduce(
         (s, a) => s + (a as { lineTotal: number }).lineTotal,
         0
       ),
+      baseBookingAmount,
+      cautionFeeAmount,
+      agreedAdditionalChargeAmount,
       totalAmount,
     },
   };
@@ -231,6 +369,9 @@ export async function POST(req: NextRequest) {
       notes: parsed.data.notes,
       applyRewards: parsed.data.applyRewards,
       bookingSnapshot: snapshot as Prisma.InputJsonValue,
+      baseBookingAmount,
+      cautionFeeAmount,
+      agreedAdditionalChargeAmount,
     });
 
     await writeAuditLog({

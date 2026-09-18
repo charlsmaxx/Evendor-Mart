@@ -114,13 +114,13 @@ export async function creditMissedCompletedBookingRewards(userId: string): Promi
       payments: { some: { status: "SUCCESS" } },
       rewardTransactions: { none: { type: "EARNED", status: "CONFIRMED" } },
     },
-    select: { id: true, totalAmount: true },
+    select: { id: true, baseBookingAmount: true },
   });
 
   let credited = 0;
   for (const booking of bookings) {
     try {
-      const tx = await earnReward(userId, booking.id, booking.totalAmount);
+      const tx = await earnReward(userId, booking.id, booking.baseBookingAmount);
       if (tx) credited += tx.amount;
     } catch (error) {
       console.error(
@@ -556,12 +556,12 @@ export async function getWalletSummary(userId: string) {
         payments: { some: { status: "SUCCESS" } },
         rewardTransactions: { none: { type: "EARNED", status: "CONFIRMED" } },
       },
-      select: { totalAmount: true },
+      select: { baseBookingAmount: true },
     }),
   ]);
 
   const pendingBalance = pendingBookings.reduce(
-    (sum, booking) => sum + calcCashback(booking.totalAmount),
+    (sum, booking) => sum + calcCashback(booking.baseBookingAmount),
     0
   );
 
