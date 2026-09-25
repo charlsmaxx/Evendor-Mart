@@ -74,6 +74,7 @@ export type Step5BusinessDetails = {
   tiktok: string;
   youtube: string;
   website: string;
+  businessPhone: string;
 };
 
 export type Step6Availability = VendorAvailabilitySettings;
@@ -237,6 +238,7 @@ export function defaultDraft(businessKind: BusinessKind): VendorOnboardingDraft 
       tiktok: "",
       youtube: "",
       website: "",
+      businessPhone: "",
     },
     step6: {
       workingHours: {

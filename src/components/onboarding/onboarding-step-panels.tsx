@@ -519,6 +519,11 @@ export function Step5BusinessDetails({ draft, update }: { draft: VendorOnboardin
         <Input type="email" value={s.businessEmail} onChange={(e) => update({ step5: { ...s, businessEmail: e.target.value } })} placeholder="admin@yourbusiness.com" />
         <p className="text-xs text-muted-foreground">Used for account administration only — not visible to customers.</p>
       </div>
+      <div className="space-y-2">
+        <Label>Business phone (private)</Label>
+        <Input type="tel" value={s.businessPhone} onChange={(e) => update({ step5: { ...s, businessPhone: e.target.value } })} placeholder="08012345678 or +2348012345678" />
+        <p className="text-xs text-muted-foreground">Used by Evendor to contact your business. Never shown to customers.</p>
+      </div>
       <div className="grid gap-4 sm:grid-cols-2">
         {(["instagram", "facebook", "tiktok", "youtube", "website"] as const).map((key) => (
           <div key={key} className="space-y-2">

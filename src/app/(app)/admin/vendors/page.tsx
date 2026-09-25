@@ -19,6 +19,7 @@ type AdminVendor = {
   cancellationRate: number | null;
   disputeRate: number | null;
   listingCount?: number;
+  businessPhone: string | null;
   user: { email: string; fullName?: string };
 };
 
@@ -80,6 +81,11 @@ export default function AdminVendorsPage() {
               <p className="text-sm text-[#E5DFD9]/40">
                 {v.user?.email} · {v.city} · {v.listingCount ?? 0} listings
               </p>
+              {v.businessPhone && (
+                <p className="mt-1 flex items-center gap-1 text-xs text-[#E5DFD9]/30 font-mono">
+                  📞 {v.businessPhone}
+                </p>
+              )}
               <p className="mt-1 flex items-center gap-1 text-xs text-[#E5DFD9]/30">
                 <Star className="h-3 w-3 text-amber-400" />
                 {v.ratingAvg.toFixed(1)} ({v.reviewCount} reviews)

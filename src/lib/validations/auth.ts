@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { bankAccountSchema } from "@/lib/validations/bank";
 import { serviceVendorCategories } from "@/lib/categories";
+import { businessPhoneSchema } from "@/lib/validations/phone";
 
 export { serviceVendorCategories } from "@/lib/categories";
 
@@ -47,6 +48,7 @@ export const venueOnboardingSchema = z.object({
   termsAndConditions: z.string().max(10000).nullable().optional(),
   ...listingFields,
   bankAccount: bankAccountSchema.optional(),
+  businessPhone: businessPhoneSchema.optional(),
 });
 
 export const serviceVendorOnboardingSchema = z.object({
@@ -58,6 +60,7 @@ export const serviceVendorOnboardingSchema = z.object({
   termsAndConditions: z.string().max(10000).nullable().optional(),
   ...listingFields,
   bankAccount: bankAccountSchema,
+  businessPhone: businessPhoneSchema.optional(),
 });
 
 /** @deprecated Use venueOnboardingSchema or serviceVendorOnboardingSchema */

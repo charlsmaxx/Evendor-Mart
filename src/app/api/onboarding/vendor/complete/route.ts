@@ -89,6 +89,7 @@ export async function POST(req: NextRequest) {
         bio: draft.step1.aboutVendor?.trim() || existingVendor?.bio || null,
         city: draft.step2.city,
         country: draft.step2.country,
+        businessPhone: draft.step5.businessPhone,
         availability: {
           workingHours: draft.step6.workingHours,
           vacations: draft.step6.vacations,

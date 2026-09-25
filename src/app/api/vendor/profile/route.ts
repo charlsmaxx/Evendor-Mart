@@ -7,6 +7,7 @@ import { syncListingPortfolioMedia } from "@/lib/vendor-media-server";
 import { isVideoMedia } from "@/lib/vendor-media";
 import { revalidateTag } from "next/cache";
 import { z } from "zod";
+import { businessPhoneSchema } from "@/lib/validations/phone";
 import type { Prisma } from "@prisma/client";
 
 const uploadedMediaSchema = z.object({
@@ -20,6 +21,7 @@ const profileSchema = z.object({
   bio: z.string().max(2000).optional(),
   city: z.string().max(80).optional(),
   phone: z.string().max(30).nullable().optional(),
+  businessPhone: z.string().max(30).nullable().optional(),
   avatarUrl: z.string().url().optional().nullable(),
   coverImageUrl: z.string().url().optional().nullable(),
   featuredImages: z.array(uploadedMediaSchema).max(7).optional(),
@@ -101,6 +103,7 @@ export async function GET() {
     email: vendor.user.email,
     fullName: vendor.user.fullName,
     phone: vendor.user.phone,
+    businessPhone: vendor.businessPhone,
     avatarUrl: vendor.user.avatarUrl,
     coverImageUrl: (meta.coverImageUrl as string) ?? vendor.listings[0]?.images[0] ?? null,
     featuredImages,
@@ -130,6 +133,7 @@ export async function PATCH(req: NextRequest) {
 
   const {
     phone,
+    businessPhone,
     avatarUrl,
     socialLinks,
     availability,
@@ -163,6 +167,7 @@ export async function PATCH(req: NextRequest) {
       where: { id: vendor.id },
       data: {
         ...vendorFields,
+        ...(businessPhone !== undefined ? { businessPhone } : {}),
         ...(availability !== undefined ? { availability: availability as Prisma.InputJsonValue } : {}),
         metadata,
       },

@@ -26,6 +26,7 @@ export function VendorOnboardingForm() {
           businessName: fd.get("businessName"),
           category: fd.get("category"),
           city: fd.get("city"),
+          businessPhone: fd.get("businessPhone"),
           bio: fd.get("bio"),
           listingTitle: fd.get("listingTitle") || undefined,
           listingDescription: fd.get("listingDescription") || undefined,
@@ -91,6 +92,10 @@ export function VendorOnboardingForm() {
         <div>
           <Label htmlFor="city">Primary city *</Label>
           <Input id="city" name="city" required placeholder="Lagos" className="mt-1" />
+        </div>
+        <div>
+          <Label htmlFor="businessPhone">Business phone *</Label>
+          <Input id="businessPhone" name="businessPhone" type="tel" required placeholder="08012345678 or +2348012345678" className="mt-1" />
         </div>
         <div>
           <Label htmlFor="bio">About your business</Label>

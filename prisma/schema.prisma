@@ -242,6 +242,7 @@ model VendorProfile {
   bio              String?
   category         VendorCategory
   city             String
+  businessPhone    String?
   country          String           @default("Nigeria")
   verified              Boolean            @default(false)
   featured              Boolean            @default(false)

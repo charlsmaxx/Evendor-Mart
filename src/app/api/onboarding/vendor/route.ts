@@ -39,6 +39,7 @@ export async function POST(req: NextRequest) {
         category: data.category as VendorCategory,
         city: data.city,
         bio: data.bio,
+        businessPhone: data.businessPhone,
         metadata: {
           ...existingMeta,
           businessKind: data.businessKind,
@@ -61,6 +62,7 @@ export async function POST(req: NextRequest) {
         category: data.category as VendorCategory,
         city: data.city,
         bio: data.bio,
+        businessPhone: data.businessPhone,
         metadata: {
           businessKind: data.businessKind,
           ...(data.coverImageUrl ? { coverImageUrl: data.coverImageUrl } : {}),
