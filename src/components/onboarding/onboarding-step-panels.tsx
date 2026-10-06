@@ -570,8 +570,8 @@ export function Step5BusinessDetails({ draft, update }: { draft: VendorOnboardin
             onFaqsChange={(next) => update({ faqs: next })}
             requirements={draft.serviceRequirements}
             onRequirementsChange={(next) => update({ serviceRequirements: next })}
-            servicesOffered={[]}
-            onServicesOfferedChange={() => {}}
+            servicesOffered={draft.servicesOffered}
+            onServicesOfferedChange={(next) => update({ servicesOffered: next })}
           />
         </div>
       )}
