@@ -25,6 +25,13 @@ const networkOnlyApis: RuntimeCaching = {
   handler: new NetworkOnly(),
 };
 
+const cloudinaryVideoNetworkOnly: RuntimeCaching = {
+  matcher: ({ url }) =>
+    url.hostname === "res.cloudinary.com" &&
+    url.pathname.includes("/video/upload/"),
+  handler: new NetworkOnly(),
+};
+
 const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,
   precacheOptions: {
@@ -34,7 +41,7 @@ const serwist = new Serwist({
   clientsClaim: true,
   navigationPreload: true,
   disableDevLogs: true,
-  runtimeCaching: [networkOnlyApis, ...defaultCache],
+  runtimeCaching: [networkOnlyApis, cloudinaryVideoNetworkOnly, ...defaultCache],
   fallbacks: {
     entries: [
       {
