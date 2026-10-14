@@ -23,6 +23,7 @@ const securityHeaders = [
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
+      "media-src 'self' https://res.cloudinary.com",
       "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://js.paystack.co",
       // Service workers are same-origin scripts; explicit worker-src keeps CSP precise.
       "worker-src 'self'",
