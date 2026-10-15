@@ -25,13 +25,6 @@ const networkOnlyApis: RuntimeCaching = {
   handler: new NetworkOnly(),
 };
 
-const cloudinaryVideoNetworkOnly: RuntimeCaching = {
-  matcher: ({ url }) =>
-    url.hostname === "res.cloudinary.com" &&
-    url.pathname.includes("/video/upload/"),
-  handler: new NetworkOnly(),
-};
-
 const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,
   precacheOptions: {
@@ -41,7 +34,7 @@ const serwist = new Serwist({
   clientsClaim: true,
   navigationPreload: true,
   disableDevLogs: true,
-  runtimeCaching: [networkOnlyApis, cloudinaryVideoNetworkOnly, ...defaultCache],
+  runtimeCaching: [networkOnlyApis, ...defaultCache],
   fallbacks: {
     entries: [
       {
@@ -52,6 +45,14 @@ const serwist = new Serwist({
       },
     ],
   },
+});
+
+// Let the browser handle Cloudinary media and byte-range requests directly.
+self.addEventListener("fetch", (event) => {
+  const url = new URL(event.request.url);
+  if (url.hostname === "res.cloudinary.com" && url.pathname.includes("/video/upload/")) {
+    event.stopImmediatePropagation();
+  }
 });
 
 serwist.addEventListeners();
