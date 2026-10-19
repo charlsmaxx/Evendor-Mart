@@ -21,9 +21,6 @@ const FeaturedVendorsSection = dynamic(() =>
     default: m.FeaturedVendorsSection,
   }))
 );
-const TestimonialsSection = dynamic(() =>
-  import("@/components/marketing/testimonials-section").then((m) => ({ default: m.TestimonialsSection }))
-);
 const RewardsSection = dynamic(() =>
   import("@/components/marketing/rewards-section").then((m) => ({ default: m.RewardsSection }))
 );
@@ -45,13 +42,12 @@ export default function HomePage() {
       <HeroSection />
       <HeroCtaSection />
       <ProblemSection />
-      <SocialProofSection />
       <FeaturedVendorsSection />
+      <SocialProofSection />
       <CategoryShowcase />
-      <TestimonialsSection />
+      <RewardsSection />
       <StayAheadSection />
       <SolutionSection />
-      <RewardsSection />
       <CtaSection />
       <EventWebsiteSection />
       <SiteFooter />
