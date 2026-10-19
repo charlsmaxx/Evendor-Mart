@@ -5,8 +5,14 @@ import { requireAuth } from "@/lib/auth";
 import { requireAdminSection } from "@/lib/rbac";
 import { jsonOk, jsonError } from "@/lib/api-response";
 import { z } from "zod";
-import { cacheDelete } from "@/lib/redis";
-import { revalidateTag } from "next/cache";
+import { cacheDelete, cacheDeletePrefix } from "@/lib/redis";
+import { revalidatePath, revalidateTag } from "next/cache";
+import {
+  ARCHIVE_LISTING_DATA,
+  PUBLIC_SEARCH_CACHE_PREFIX,
+  PUBLIC_LISTING_CACHE_KEYS,
+  archiveAfterDatabaseUpdate,
+} from "@/core/admin-engine/archive";
 
 const patchSchema = z.object({
   listingId: z.string().uuid(),
@@ -78,4 +84,62 @@ export async function PATCH(req: NextRequest) {
   }
 
   return jsonOk(listing);
+}
+
+export async function DELETE(req: NextRequest) {
+  const user = await requireAuth();
+  if (!user) return jsonError("Unauthorized", 401);
+  try {
+    await requireAdminSection(user, "listings");
+  } catch {
+    return jsonError("Forbidden", 403);
+  }
+
+  const parsed = z.object({ listingId: z.string().uuid() }).safeParse(await req.json());
+  if (!parsed.success) return jsonError(parsed.error.message, 400);
+
+  const result = await archiveAfterDatabaseUpdate(
+    () =>
+      prisma.$transaction(async (tx) => {
+        const listing = await tx.listing.findUnique({
+          where: { id: parsed.data.listingId },
+          select: { id: true, title: true, type: true, vendorId: true },
+        });
+        if (!listing) return null;
+        if (listing.type !== "VENUE") {
+          return { error: "Only event venue listings can be archived here." } as const;
+        }
+
+        const archived = await tx.listing.update({
+          where: { id: listing.id },
+          data: ARCHIVE_LISTING_DATA,
+          select: { id: true, title: true, type: true, vendorId: true, status: true },
+        });
+        await writeAuditLog(
+          {
+            actorId: user.id,
+            action: "VENUE_ARCHIVE",
+            entityType: "Listing",
+            entityId: listing.id,
+            metadata: { title: listing.title },
+          },
+          tx
+        );
+        return archived;
+      }),
+    async () => {
+      await Promise.all([
+        ...PUBLIC_LISTING_CACHE_KEYS.map((key) => cacheDelete(key)),
+        cacheDeletePrefix(PUBLIC_SEARCH_CACHE_PREFIX),
+      ]);
+      revalidateTag("listings");
+      revalidateTag("vendors");
+      revalidatePath("/");
+    },
+    (archived) => archived !== null && !("error" in archived)
+  );
+
+  if (!result) return jsonError("Listing not found", 404);
+  if ("error" in result) return jsonError(result.error, 400);
+  return jsonOk(result);
 }

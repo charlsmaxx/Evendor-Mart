@@ -5,11 +5,12 @@ import { jsonOk, jsonError } from "@/lib/api-response";
 import { loadVendorDraft, saveVendorDraft } from "@/lib/vendor-onboarding/persist";
 import { parseDraft } from "@/lib/vendor-onboarding/types";
 import { upsertPublishedVendorListing } from "@/lib/vendor-listings";
+import { vendorPackageDraftsSchema } from "@/lib/vendor-onboarding/package-schema";
+import { derivePackageStartingPrice, packagesForOnboardingPrice } from "@/lib/vendor-onboarding/pricing";
 import { syncListingPortfolioMedia } from "@/lib/vendor-media-server";
 import { generateVendorSeo } from "@/lib/vendor-onboarding/seo";
 import { buildAmenitiesPayload, buildServicesPayload } from "@/lib/venue-offerings";
 import {
-  normalizePackages,
   normalizeCancellationPolicy,
   type VendorPackage,
 } from "@/lib/vendor-packages";
@@ -41,8 +42,17 @@ export async function POST(req: NextRequest) {
   const { businessKind } = parsed.data;
 
   try {
-    if (parsed.data.draft) {
-      await saveVendorDraft(user.id, businessKind, parseDraft(parsed.data.draft, businessKind));
+    let suppliedDraft = parsed.data.draft;
+    if (suppliedDraft) {
+      if (typeof suppliedDraft === "object" && suppliedDraft !== null && !Array.isArray(suppliedDraft)) {
+        const packages = (suppliedDraft as Record<string, unknown>).packages;
+        if (packages !== undefined) {
+          const validatedPackages = vendorPackageDraftsSchema.safeParse(packages);
+          if (!validatedPackages.success) return jsonError(validatedPackages.error.message, 400);
+          suppliedDraft = { ...suppliedDraft, packages: validatedPackages.data };
+        }
+      }
+      await saveVendorDraft(user.id, businessKind, parseDraft(suppliedDraft, businessKind));
     }
 
     const { draft, vendorId } = await loadVendorDraft(user.id, businessKind);
@@ -67,6 +77,11 @@ export async function POST(req: NextRequest) {
     const realPackages = draft.packages.length > 0
       ? draft.packages.filter((p: VendorPackage) => !p.tier)
       : undefined;
+    const packagesForPrice = packagesForOnboardingPrice(draft.packages, prevMeta.packages);
+    const packageStartingPrice = derivePackageStartingPrice(packagesForPrice);
+    if (packageStartingPrice === null) {
+      return jsonError("Add at least one enabled package with a valid base price before publishing.", 400);
+    }
 
     // Prepare profile content for SERVICE vendors (includes servicesOffered)
     const servicesOffered = isServiceVendor
@@ -160,8 +175,8 @@ export async function POST(req: NextRequest) {
       // A listing represents the vendor's business. Services remain offerings, not listing identity.
       listingTitle: draft.step1.businessName,
       listingDescription: primaryService?.description || draft.step1.description,
-      priceMin: primaryService?.priceMin,
-      priceMax: primaryService?.priceMax,
+      priceMin: packageStartingPrice,
+      preserveExistingNonzeroPricing: true,
       termsAndConditions: draft.step3.termsAndConditions ?? null,
       coverImage: draft.step1.coverImageUrl ?? undefined,
       featuredImages: draft.step4.featuredImages,

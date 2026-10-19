@@ -5,8 +5,8 @@ import { cacheGet, cacheSet } from "@/lib/redis";
 import { CACHE_TTL } from "@/lib/cache-policy";
 import { createCachedByKey } from "@/lib/server-cache";
 import type { VendorCardData } from "@/components/marketplace/vendor-card";
-import { DEMO_LISTINGS } from "@/data/demo-listings";
 import { resolvePublicListingCover } from "@/core/media-engine/images";
+import { featuredVendorListingWhere } from "@/core/search-engine/featured-vendor-query";
 import crypto from "crypto";
 
 const SEARCH_CACHE_TTL_SECONDS = CACHE_TTL.search;
@@ -30,6 +30,7 @@ const listingCardSelect = {
     select: {
       slug: true,
       businessName: true,
+      featured: true,
       metadata: true,
       portfolioMedia: {
         orderBy: { sortOrder: "asc" as const },
@@ -111,21 +112,7 @@ export async function searchListings(raw: Record<string, string | undefined>) {
     if (listings.length || total === 0) await cacheSet(cacheKey, result, SEARCH_CACHE_TTL_SECONDS);
     return result;
   } catch {
-    const filtered = DEMO_LISTINGS.filter((l) => {
-      if (type === "VENUE" && l.type !== "VENUE") return false;
-      if (type === "SERVICE" && l.type !== "SERVICE") return false;
-      if (city && !l.city.toLowerCase().includes(city.toLowerCase())) return false;
-      if (q && !l.title.toLowerCase().includes(q.toLowerCase())) return false;
-      if (verified && !l.verified) return false;
-      return true;
-    });
-    const start = (page - 1) * limit;
-    return {
-      listings: filtered.slice(start, start + limit),
-      total: filtered.length,
-      page,
-      limit,
-    };
+    return { listings: [], total: 0, page, limit };
   }
 }
 
@@ -164,7 +151,7 @@ export async function getFeaturedListings(limit = 4) {
   } catch {
     /* fallback */
   }
-  return DEMO_LISTINGS.filter((l) => l.featured).slice(0, limit);
+  return [];
 }
 
 export async function getFeaturedVendors(limit = 4) {
@@ -174,7 +161,7 @@ export async function getFeaturedVendors(limit = 4) {
 
   try {
     const rows = await prisma.listing.findMany({
-      where: { status: "PUBLISHED", featured: true, type: "SERVICE" },
+      where: featuredVendorListingWhere,
       select: listingCardSelect,
       take: limit,
       orderBy: { ratingAvg: "desc" },
@@ -192,7 +179,7 @@ export async function getFeaturedVendors(limit = 4) {
         ratingAvg: l.ratingAvg,
         reviewCount: l.reviewCount,
         verified: l.verified,
-        featured: l.featured,
+        featured: l.vendor.featured,
         vendorName: l.vendor.businessName,
         type: l.type,
       })) as VendorCardData[];
@@ -202,7 +189,7 @@ export async function getFeaturedVendors(limit = 4) {
   } catch {
     /* fallback */
   }
-  return DEMO_LISTINGS.filter((l) => l.featured && l.type === "SERVICE").slice(0, limit);
+  return [];
 }
 
 export async function getFeaturedVenues(limit = 8) {
@@ -246,7 +233,7 @@ export async function getFeaturedVenues(limit = 8) {
   } catch {
     /* fallback */
   }
-  return DEMO_LISTINGS.filter((l) => l.featured && l.type === "VENUE").slice(0, limit);
+  return [];
 }
 
 export async function getListingBySlug(slug: string) {

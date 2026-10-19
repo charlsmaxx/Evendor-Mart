@@ -4,6 +4,7 @@ import { jsonOk, jsonError } from "@/lib/api-response";
 import { z } from "zod";
 import { loadVendorDraft, saveVendorDraft } from "@/lib/vendor-onboarding/persist";
 import type { VendorOnboardingDraft } from "@/lib/vendor-onboarding/types";
+import { vendorPackageDraftsSchema } from "@/lib/vendor-onboarding/package-schema";
 
 const patchSchema = z.object({
   businessKind: z.enum(["VENUE", "SERVICE"]),
@@ -16,6 +17,7 @@ const patchSchema = z.object({
   step6: z.record(z.unknown()).optional(),
   step7: z.record(z.unknown()).optional(),
   step8: z.record(z.unknown()).optional(),
+  packages: vendorPackageDraftsSchema.optional(),
 });
 
 export async function GET(req: NextRequest) {

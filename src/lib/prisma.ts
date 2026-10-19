@@ -19,15 +19,21 @@ class Semaphore {
 
   constructor(private readonly max: number) {}
 
-  async acquire(): Promise<void> {
+  async acquire(labels: { model: string; operation: string; attempt: number }): Promise<void> {
     if (this.active < this.max) {
       this.active++;
       return;
     }
+    const waitStarted = performance.now();
+    logStructuredWarn("db_semaphore_wait_start", labels);
     await new Promise<void>((resolve) => {
       this.waiters.push(resolve);
     });
     this.active++;
+    logStructuredWarn("db_semaphore_acquired", {
+      ...labels,
+      waitMs: Math.round(performance.now() - waitStarted),
+    });
   }
 
   release(): void {
@@ -57,6 +63,12 @@ function isConnectionError(error: unknown): boolean {
     );
   }
   return false;
+}
+
+function prismaErrorCode(error: unknown): string | undefined {
+  if (error instanceof Prisma.PrismaClientKnownRequestError) return error.code;
+  if (error instanceof Prisma.PrismaClientInitializationError) return error.errorCode;
+  return undefined;
 }
 
 function appendParam(url: string, key: string, value: string): string {
@@ -130,10 +142,23 @@ function getSemaphore(url: string): Semaphore {
 
 function ensureConnected(base: PrismaClient): Promise<void> {
   if (!globalForPrisma.prismaConnectPromise) {
-    globalForPrisma.prismaConnectPromise = base.$connect().catch((error) => {
-      globalForPrisma.prismaConnectPromise = undefined;
-      throw error;
-    });
+    const connectStarted = performance.now();
+    logStructuredWarn("db_connect_start", {});
+    globalForPrisma.prismaConnectPromise = base.$connect().then(
+      () => {
+        logStructuredWarn("db_connect_success", {
+          elapsedMs: Math.round(performance.now() - connectStarted),
+        });
+      },
+      (error) => {
+        globalForPrisma.prismaConnectPromise = undefined;
+        logStructuredWarn("db_connect_failure", {
+          elapsedMs: Math.round(performance.now() - connectStarted),
+          errorCode: prismaErrorCode(error),
+        });
+        throw error;
+      }
+    );
   }
   return globalForPrisma.prismaConnectPromise;
 }
@@ -169,11 +194,33 @@ function createPrismaClient(): PrismaClient {
         async $allOperations({ model, operation, args, query }) {
           const maxAttempts = 3;
           for (let attempt = 0; attempt < maxAttempts; attempt++) {
-            await semaphore.acquire();
+            await semaphore.acquire({
+              model: model ?? "?",
+              operation,
+              attempt: attempt + 1,
+            });
             const started = slowMs > 0 ? performance.now() : 0;
+            let queryStarted: number | undefined;
+            logStructuredWarn("db_operation_start", {
+              model: model ?? "?",
+              operation,
+              attempt: attempt + 1,
+            });
             try {
               await ensureConnected(base);
+              queryStarted = performance.now();
+              logStructuredWarn("db_query_start", {
+                model: model ?? "?",
+                operation,
+                attempt: attempt + 1,
+              });
               const result = await query(args);
+              logStructuredWarn("db_query_success", {
+                model: model ?? "?",
+                operation,
+                attempt: attempt + 1,
+                elapsedMs: Math.round(performance.now() - queryStarted),
+              });
               if (slowMs > 0) {
                 const elapsed = performance.now() - started;
                 if (elapsed >= slowMs) {
@@ -186,12 +233,44 @@ function createPrismaClient(): PrismaClient {
               }
               return result;
             } catch (error) {
+              if (queryStarted !== undefined) {
+                logStructuredWarn("db_query_failure", {
+                  model: model ?? "?",
+                  operation,
+                  attempt: attempt + 1,
+                  elapsedMs: Math.round(performance.now() - queryStarted),
+                  errorCode: prismaErrorCode(error),
+                });
+              }
               const canRetry = isConnectionError(error) && attempt < maxAttempts - 1;
               if (!canRetry) throw error;
 
               globalForPrisma.prismaConnectPromise = undefined;
               await new Promise((r) => setTimeout(r, 600 * (attempt + 1)));
-              await ensureConnected(base);
+              const reconnectStarted = performance.now();
+              logStructuredWarn("db_retry_reconnect_start", {
+                model: model ?? "?",
+                operation,
+                attempt: attempt + 1,
+              });
+              try {
+                await ensureConnected(base);
+                logStructuredWarn("db_retry_reconnect_success", {
+                  model: model ?? "?",
+                  operation,
+                  attempt: attempt + 1,
+                  elapsedMs: Math.round(performance.now() - reconnectStarted),
+                });
+              } catch (reconnectError) {
+                logStructuredWarn("db_retry_reconnect_failure", {
+                  model: model ?? "?",
+                  operation,
+                  attempt: attempt + 1,
+                  elapsedMs: Math.round(performance.now() - reconnectStarted),
+                  errorCode: prismaErrorCode(reconnectError),
+                });
+                throw reconnectError;
+              }
             } finally {
               semaphore.release();
             }

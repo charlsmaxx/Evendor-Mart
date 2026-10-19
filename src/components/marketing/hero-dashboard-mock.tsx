@@ -24,8 +24,8 @@ const BG_IMAGES = [
 ];
 
 const MINI_LISTINGS = [
-  { title: "Grand Ballroom", city: "Lagos", price: "₦500k+", rating: 4.9 },
-  { title: "DJ SpinMaster", city: "Abuja", price: "₦150k+", rating: 4.8 },
+  { title: "Venue listing", city: "Lagos", price: "₦500k+", rating: 4.9 },
+  { title: "Event service", city: "Abuja", price: "₦150k+", rating: 4.8 },
 ];
 
 const CHART_BARS = [42, 58, 65, 72, 78, 85, 92, 98];

@@ -5,6 +5,7 @@ import { mergeListingMetadata } from "@/lib/listing-metadata";
 import { syncListingPortfolioMedia } from "@/lib/vendor-media-server";
 import type { UploadedMedia } from "@/lib/vendor-media";
 import { vendorCategoryToSlug } from "@/lib/categories";
+import { resolveOnboardingListingPrices } from "@/lib/vendor-onboarding/pricing";
 
 export { vendorCategoryToSlug } from "@/lib/categories";
 
@@ -36,6 +37,7 @@ export type VendorListingInput = {
   listingDescription?: string;
   priceMin?: number;
   priceMax?: number;
+  preserveExistingNonzeroPricing?: boolean;
   coverImage?: string;
   featuredImages?: UploadedMedia[];
   featuredClips?: UploadedMedia[];
@@ -56,13 +58,18 @@ export async function upsertPublishedVendorListing(input: VendorListingInput) {
     input.listingDescription?.trim() ||
     input.bio?.trim() ||
     `${input.businessName} — book with confidence on Evendor.`;
-  const priceMin = input.priceMin ?? 100_000;
-  const priceMax = input.priceMax ?? Math.max(priceMin, 500_000);
   const type = input.vendorCategory === "VENUE" ? ListingType.VENUE : ListingType.SERVICE;
 
   const existing = await prisma.listing.findFirst({
     where: { vendorId: input.vendorId },
     orderBy: { createdAt: "asc" },
+  });
+
+  const { priceMin, priceMax } = resolveOnboardingListingPrices({
+    requestedPriceMin: input.priceMin,
+    requestedPriceMax: input.priceMax,
+    existing,
+    preserveExistingNonzero: input.preserveExistingNonzeroPricing,
   });
 
   const slug = existing?.slug ?? (await uniqueListingSlug(title));

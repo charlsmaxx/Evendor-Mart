@@ -37,3 +37,17 @@ export async function parsePaginatedApiResponse<T>(
 
   return { ok: true, data: json.data ?? [], meta: json.meta };
 }
+
+/** Throw a readable API error for mutations that do not return a successful status. */
+export async function ensureApiResponseOk(res: Response): Promise<void> {
+  if (res.ok) return;
+
+  let body: { error?: { message?: string } };
+  try {
+    body = (await res.json()) as typeof body;
+  } catch {
+    throw new Error(`Request failed (${res.status})`);
+  }
+
+  throw new Error(body.error?.message ?? `Request failed (${res.status})`);
+}

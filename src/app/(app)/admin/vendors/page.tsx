@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { BadgeCheck, Star, ChevronLeft, ChevronRight } from "lucide-react";
+import { Archive, BadgeCheck, Star, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AdminPageHeader } from "@/components/admin/admin-ui";
-import { parsePaginatedApiResponse } from "@/lib/parse-paginated-api-response";
+import { ensureApiResponseOk, parsePaginatedApiResponse } from "@/lib/parse-paginated-api-response";
 
 type AdminVendor = {
   id: string;
@@ -25,6 +25,8 @@ type AdminVendor = {
 
 export default function AdminVendorsPage() {
   const [page, setPage] = useState(1);
+  const [mutationError, setMutationError] = useState<string | null>(null);
+  const [mutationNotice, setMutationNotice] = useState<string | null>(null);
   const qc = useQueryClient();
   const limit = 25;
 
@@ -39,13 +41,45 @@ export default function AdminVendorsPage() {
   });
 
   const mutate = useMutation({
-    mutationFn: (body: { vendorId: string; verified?: boolean; featured?: boolean }) =>
-      fetch("/api/admin/vendors", {
+    mutationFn: async (body: { vendorId: string; verified?: boolean; featured?: boolean }) => {
+      const res = await fetch("/api/admin/vendors", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
-      }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-vendors"] }),
+      });
+      await ensureApiResponseOk(res);
+      return res;
+    },
+    onSuccess: () => {
+      setMutationError(null);
+      setMutationNotice(null);
+      return qc.invalidateQueries({ queryKey: ["admin-vendors"] });
+    },
+    onError: (error) => {
+      setMutationNotice(null);
+      setMutationError(error.message);
+    },
+  });
+
+  const archiveBusiness = useMutation({
+    mutationFn: async (vendor: AdminVendor) => {
+      const res = await fetch("/api/admin/vendors", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ vendorId: vendor.id }),
+      });
+      await ensureApiResponseOk(res);
+      return res;
+    },
+    onSuccess: (_response, vendor) => {
+      setMutationError(null);
+      setMutationNotice(`${vendor.businessName} was archived. Its historical records were retained.`);
+      return qc.invalidateQueries({ queryKey: ["admin-vendors"] });
+    },
+    onError: (error) => {
+      setMutationNotice(null);
+      setMutationError(error.message);
+    },
   });
 
   const vendors = data?.vendors ?? [];
@@ -58,6 +92,16 @@ export default function AdminVendorsPage() {
         title="Vendors"
         subtitle="Manage vendor profiles, verification badges, and featured placement."
       />
+      {mutationError && (
+        <p role="alert" className="text-sm text-red-400">
+          {mutationError}
+        </p>
+      )}
+      {mutationNotice && (
+        <p role="status" className="text-sm text-emerald-400">
+          {mutationNotice}
+        </p>
+      )}
       <div className="space-y-3">
         {vendors.map((v) => (
           <div
@@ -107,6 +151,19 @@ export default function AdminVendorsPage() {
                 onClick={() => mutate.mutate({ vendorId: v.id, featured: !v.featured })}
               >
                 {v.featured ? "Unfeature" : "Feature"}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-red-500/30 text-red-400"
+                onClick={() => {
+                  const confirmed = window.confirm(
+                    `Archive ${v.businessName}? Its listings will be removed from the marketplace. Booking, payment, payout, dispute, and audit history will be retained.`
+                  );
+                  if (confirmed) archiveBusiness.mutate(v);
+                }}
+              >
+                <Archive className="mr-1 h-3.5 w-3.5" /> Archive
               </Button>
             </div>
           </div>

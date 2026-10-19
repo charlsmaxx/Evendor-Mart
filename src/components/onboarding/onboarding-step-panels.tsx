@@ -224,16 +224,6 @@ export function Step1Business({
       )}
 
       <div className="space-y-2">
-        <Label>Business tagline</Label>
-        <Input
-          value={s.tagline}
-          onChange={(e) => setStep1Field({ tagline: e.target.value })}
-          onBlur={syncStep1}
-          placeholder="Luxury wedding stories, beautifully told"
-        />
-      </div>
-
-      <div className="space-y-2">
         <Label>{isVenue ? "Event Center Description *" : "Business description *"}</Label>
         <Textarea
           rows={4}

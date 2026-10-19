@@ -59,3 +59,20 @@ export async function cacheDelete(key: string): Promise<void> {
     /* noop */
   }
 }
+
+/** Delete only keys in a namespaced cache; useful when query keys contain hashes. */
+export async function cacheDeletePrefix(prefix: string): Promise<void> {
+  const client = getRedis();
+  if (!client) return;
+
+  try {
+    let cursor = "0";
+    do {
+      const [nextCursor, keys] = await client.scan(cursor, { match: `${prefix}*`, count: 100 });
+      if (keys.length) await client.del(...keys);
+      cursor = nextCursor;
+    } while (cursor !== "0");
+  } catch {
+    /* Cache invalidation must not fail the database mutation. */
+  }
+}
