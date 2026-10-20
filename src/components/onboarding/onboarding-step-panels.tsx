@@ -532,7 +532,7 @@ export function Step5BusinessDetails({ draft, update }: { draft: VendorOnboardin
           <div>
             <p className="font-semibold">Profile content</p>
             <p className="text-sm text-muted-foreground">
-              FAQs and Service Requirements shown on your public profile.
+              Services, FAQs and Service Requirements shown on your public profile.
             </p>
           </div>
           <ProfileContentEditor
@@ -542,7 +542,8 @@ export function Step5BusinessDetails({ draft, update }: { draft: VendorOnboardin
             onRequirementsChange={(next) => update({ serviceRequirements: next })}
             servicesOffered={draft.servicesOffered}
             onServicesOfferedChange={(next) => update({ servicesOffered: next })}
-            showServicesOffered={false}
+            showServicesOffered
+            faqTitle="FAQs"
           />
         </div>
       )}

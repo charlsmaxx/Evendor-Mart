@@ -22,6 +22,7 @@ type ProfileContentEditorProps = {
   servicesOffered: string[];
   onServicesOfferedChange: (services: string[]) => void;
   showServicesOffered?: boolean;
+  faqTitle?: string;
 };
 
 type ServicesTagEditorProps = {
@@ -94,6 +95,7 @@ export function ProfileContentEditor({
   servicesOffered,
   onServicesOfferedChange,
   showServicesOffered = true,
+  faqTitle = "FAQ",
 }: ProfileContentEditorProps) {
   return (
     <div className="space-y-8">
@@ -112,7 +114,7 @@ export function ProfileContentEditor({
       <section className="space-y-3">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="font-semibold">FAQ</p>
+            <p className="font-semibold">{faqTitle}</p>
             <p className="text-sm text-muted-foreground">
               Answer common customer questions on your profile.
             </p>

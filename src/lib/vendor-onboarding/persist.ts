@@ -9,6 +9,7 @@ import {
   type VendorOnboardingDraft,
 } from "@/lib/vendor-onboarding/types";
 import { generateVendorSeo } from "@/lib/vendor-onboarding/seo";
+import { restoreServiceProfileContentDraft } from "@/lib/vendor-onboarding/profile-draft-restoration";
 import type { Prisma, VendorCategory } from "@prisma/client";
 
 export async function loadVendorDraft(userId: string, businessKind: BusinessKind) {
@@ -18,7 +19,8 @@ export async function loadVendorDraft(userId: string, businessKind: BusinessKind
   const meta = (vendor.metadata as Record<string, unknown>) ?? {};
   const stored = meta.onboardingDraft;
   const kind = (meta.businessKind as BusinessKind) ?? businessKind;
-  return { draft: parseDraft(stored, kind), vendorId: vendor.id };
+  const restored = restoreServiceProfileContentDraft(stored, meta, kind);
+  return { draft: parseDraft(restored, kind), vendorId: vendor.id };
 }
 
 export async function saveVendorDraft(
