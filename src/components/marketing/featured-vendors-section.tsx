@@ -14,13 +14,14 @@ export async function FeaturedVendorsSection() {
           Hand-picked partners trusted by thousands of events.
         </p>
       </div>
-      <div className="mt-12 grid grid-cols-2 gap-6 lg:grid-cols-4">
+      <div className="mt-12 grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-4">
         {listings.map((l) => (
           <VendorCard
             key={l.id}
             listing={l}
             showSave
             hideTypeAndFeaturedBadges
+            compactMobile
           />
         ))}
       </div>

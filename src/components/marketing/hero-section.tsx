@@ -92,9 +92,9 @@ export function HeroSection() {
             Nigeria&apos;s most trusted event booking platform
           </span>
 
-          <h1 className="mt-4 font-display text-[2rem] font-semibold leading-[1.12] tracking-tight text-[#1f1b18]">
-            Events Start at{" "}
-            <span className="text-[#7A2E3D]">Evendor</span>
+          <h1 className="mt-4 font-display text-[1.5rem] font-semibold leading-[1.12] tracking-tight text-[#1f1b18]">
+            Most trusted event vendors{" "}
+            <span className="text-[#7A2E3D]"> & venues</span>
           </h1>
 
           <p className="mt-3 text-[15px] leading-relaxed text-[#5c534c]">
@@ -200,9 +200,9 @@ export function HeroSection() {
           </span>
 
           <h1 className="mt-4 font-display text-3xl font-semibold leading-[1.08] tracking-tight sm:mt-6 sm:text-5xl md:text-6xl lg:text-[3.75rem]">
-             Events 
+             Most trusted event vendors
             <br />
-            Start at Evendor
+            & venues
           </h1>
 
           <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/85 sm:mt-5 sm:text-lg">

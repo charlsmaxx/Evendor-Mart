@@ -33,10 +33,12 @@ export const VendorCard = memo(function VendorCard({
   listing,
   showSave = false,
   hideTypeAndFeaturedBadges = false,
+  compactMobile = false,
 }: {
   listing: VendorCardData;
   showSave?: boolean;
   hideTypeAndFeaturedBadges?: boolean;
+  compactMobile?: boolean;
 }) {
   const href = `/listings/${listing.slug}`;
   const image = listing.coverImage || DEFAULT_LISTING_COVER;
@@ -70,22 +72,34 @@ export const VendorCard = memo(function VendorCard({
             )}
           </div>
         </div>
-        <div className="p-5">
-          <p className="text-xs text-muted-foreground">{listing.vendorName}</p>
-          <h3 className="mt-1 font-display text-lg font-semibold">{listing.title}</h3>
-          <div className="mt-3 flex items-center justify-between text-sm text-muted-foreground">
+        <div className={compactMobile ? "p-2 sm:p-5" : "p-5"}>
+          <p className={compactMobile ? "truncate text-[10px] leading-tight text-muted-foreground sm:text-xs" : "text-xs text-muted-foreground"}>
+            {listing.vendorName}
+          </p>
+          <h3 className={compactMobile
+            ? "mt-0.5 truncate font-display text-sm font-semibold sm:mt-1 sm:text-lg"
+            : "mt-1 font-display text-lg font-semibold"}>
+            {listing.title}
+          </h3>
+          <div className={compactMobile
+            ? "mt-1.5 flex items-center justify-between text-[10px] text-muted-foreground sm:mt-3 sm:text-sm"
+            : "mt-3 flex items-center justify-between text-sm text-muted-foreground"}>
             <span className="flex items-center gap-1">
-              <MapPin className="h-3.5 w-3.5" /> {listing.city}
+              <MapPin className={compactMobile ? "h-3 w-3" : "h-3.5 w-3.5"} /> {listing.city}
             </span>
             <span className="flex items-center gap-1 text-amber-400">
-              <Star className="h-3.5 w-3.5 fill-amber-400" />
+              <Star className={compactMobile ? "h-3 w-3 fill-amber-400" : "h-3.5 w-3.5 fill-amber-400"} />
               {listing.ratingAvg.toFixed(1)} ({listing.reviewCount})
             </span>
           </div>
-          <p className="mt-3 font-medium text-primary">
+          <p className={compactMobile
+            ? "mt-1.5 text-xs font-medium text-primary sm:mt-3 sm:text-base"
+            : "mt-3 font-medium text-primary"}>
             {formatStartingPrice(listing.priceMin)}
           </p>
-          <p className="mt-2 flex items-center gap-1 text-xs font-semibold text-primary/80">
+          <p className={compactMobile
+            ? "mt-1 flex items-center gap-1 text-[10px] font-semibold text-primary/80 sm:mt-2 sm:text-xs"
+            : "mt-2 flex items-center gap-1 text-xs font-semibold text-primary/80"}>
             🎁 Earn 2% Cashback
           </p>
         </div>
