@@ -121,8 +121,17 @@ export default function VendorProfilePage() {
         body: JSON.stringify(payload),
       });
       if (!res.ok) {
-        const j = await res.json();
-        throw new Error(j.error?.message);
+        const responseText = await res.text();
+        let message = `Profile save failed (${res.status}${res.statusText ? ` ${res.statusText}` : ""}).`;
+        try {
+          const responseBody = JSON.parse(responseText);
+          if (typeof responseBody.error?.message === "string") {
+            message = responseBody.error.message;
+          }
+        } catch {
+          // Gateways can return plain text or HTML for timeouts instead of the API JSON shape.
+        }
+        throw new Error(message);
       }
     },
     onSuccess: () => {
@@ -244,8 +253,12 @@ export default function VendorProfilePage() {
               experience: profile.experience,
               address: profile.address,
               socialLinks: profile.socialLinks,
-              featuredImages: featuredImagesPayload(imageSlots),
-              featuredClips: featuredClipsPayload(videoSlots),
+              ...(mediaDirty
+                ? {
+                    featuredImages: featuredImagesPayload(imageSlots),
+                    featuredClips: featuredClipsPayload(videoSlots),
+                  }
+                : {}),
               packages: packageTiers.map((p) => ({
                 ...p,
                 features: p.features.map((f) => f.trim()).filter(Boolean),
@@ -256,6 +269,11 @@ export default function VendorProfilePage() {
           <Save className="h-4 w-4" /> Save Profile
         </Button>
         {save.isSuccess && <p className="text-sm text-emerald-600">Profile updated.</p>}
+        {save.isError && (
+          <p role="alert" className="text-sm text-destructive">
+            {save.error.message}
+          </p>
+        )}
       </div>
 
       <div className="rounded-2xl border border-border/80 bg-card/80 p-6 backdrop-blur-sm space-y-4">
