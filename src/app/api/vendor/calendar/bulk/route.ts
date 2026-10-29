@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 import { jsonOk, jsonError } from "@/lib/api-response";
 import { blockVendorDates } from "@/lib/vendor-calendar-batch";
+import { parseCalendarDate } from "@/lib/calendar-date";
 import { z } from "zod";
 
 const schema = z.object({
@@ -27,11 +28,7 @@ export async function POST(req: NextRequest) {
   const result = await blockVendorDates(vendor.id, parsed.data.dates, parsed.data.reason);
 
   const dayStarts = parsed.data.dates
-    .map((dateStr) => {
-      const date = new Date(dateStr);
-      if (Number.isNaN(date.getTime())) return null;
-      return new Date(date.toDateString());
-    })
+    .map(parseCalendarDate)
     .filter((d): d is Date => d !== null);
 
   const blocked =

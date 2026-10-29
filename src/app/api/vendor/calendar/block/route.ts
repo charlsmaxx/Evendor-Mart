@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth";
 import { jsonOk, jsonError } from "@/lib/api-response";
+import { parseCalendarDate } from "@/lib/calendar-date";
 import { z } from "zod";
 
 const schema = z.object({
@@ -19,8 +20,8 @@ export async function POST(req: NextRequest) {
   const parsed = schema.safeParse(await req.json());
   if (!parsed.success) return jsonError(parsed.error.message, 400);
 
-  const date = new Date(parsed.data.date);
-  if (isNaN(date.getTime())) return jsonError("Invalid date", 400);
+  const date = parseCalendarDate(parsed.data.date);
+  if (!date) return jsonError("Invalid date", 400);
 
   const blocked = await prisma.blockedDate.upsert({
     where: {
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest) {
   }).catch(async () => {
     // Fallback: just create if doesn't exist
     const existing = await prisma.blockedDate.findFirst({
-      where: { vendorId: vendor.id, date: { gte: new Date(date.toDateString()), lte: new Date(date.toDateString() + " 23:59:59") } },
+      where: { vendorId: vendor.id, date: { gte: date, lt: new Date(date.getTime() + 86400000) } },
     });
     if (existing) return existing;
     return prisma.blockedDate.create({ data: { vendorId: vendor.id, date, reason: parsed.data.reason } });

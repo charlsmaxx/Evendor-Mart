@@ -52,7 +52,8 @@ function bookingCustomerName(b: BookingEntry) {
 }
 
 function getDayState(date: Date, bookings: BookingEntry[], blocked: BlockedEntry[]): DayState {
-  if (blocked.some((b) => isSameDay(new Date(b.date), date))) return "blocked";
+  const selectedDateKey = format(date, "yyyy-MM-dd");
+  if (blocked.some((b) => b.date.slice(0, 10) === selectedDateKey)) return "blocked";
   const dayBookings = bookings.filter((b) => isSameDay(new Date(b.eventDate), date));
   if (dayBookings.some((b) => b.status === "COMPLETED")) return "completed";
   if (
@@ -184,7 +185,7 @@ export function VenueCalendar() {
     ? bookings.filter((b) => isSameDay(new Date(b.eventDate), selectedDate))
     : [];
   const selectedDayBlocked = selectedDate
-    ? blocked.filter((b) => isSameDay(new Date(b.date), selectedDate))
+    ? blocked.filter((b) => b.date.slice(0, 10) === format(selectedDate, "yyyy-MM-dd"))
     : [];
   const selectedState = selectedDate ? getDayState(selectedDate, bookings, blocked) : null;
 
@@ -448,8 +449,8 @@ export function VenueCalendar() {
         onCancel={() => setConfirmAction(null)}
         onConfirm={() => {
           const dates = bulkMode && selectedDates.length > 0
-            ? selectedDates.map((d) => d.toISOString())
-            : selectedDate ? [selectedDate.toISOString()] : [];
+            ? selectedDates.map((d) => format(d, "yyyy-MM-dd"))
+            : selectedDate ? [format(selectedDate, "yyyy-MM-dd")] : [];
           if (dates.length) blockMutation.mutate(dates);
         }}
       />

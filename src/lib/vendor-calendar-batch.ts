@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { calendarDateKey, parseCalendarDate } from "@/lib/calendar-date";
 
 /** Block many calendar days in one transaction with minimal round-trips. */
 export async function blockVendorDates(
@@ -6,18 +7,12 @@ export async function blockVendorDates(
   dateStrings: string[],
   reason?: string
 ) {
-  const dayStarts = [
-    ...new Set(
-      dateStrings
-        .map((dateStr) => {
-          const date = new Date(dateStr);
-          if (Number.isNaN(date.getTime())) return null;
-          return new Date(date.toDateString());
-        })
-        .filter((d): d is Date => d !== null)
-        .map((d) => d.toDateString())
-    ),
-  ].map((s) => new Date(s));
+  const uniqueDays = new Map<string, Date>();
+  for (const dateString of dateStrings) {
+    const date = parseCalendarDate(dateString);
+    if (date) uniqueDays.set(calendarDateKey(date), date);
+  }
+  const dayStarts = [...uniqueDays.values()];
 
   if (dayStarts.length === 0) return { created: 0, skipped: 0 };
 
@@ -37,9 +32,9 @@ export async function blockVendorDates(
     select: { date: true },
   });
 
-  const existingDays = new Set(existing.map((row) => row.date.toDateString()));
+  const existingDays = new Set(existing.map((row) => calendarDateKey(row.date)));
   const toCreate = dayStarts
-    .filter((day) => !existingDays.has(day.toDateString()))
+    .filter((day) => !existingDays.has(calendarDateKey(day)))
     .map((date) => ({
       vendorId,
       date,
