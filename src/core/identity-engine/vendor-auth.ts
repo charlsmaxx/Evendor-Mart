@@ -1,12 +1,15 @@
 import { cache } from "react";
 import { prisma } from "@/core/infrastructure/prisma";
 import { requireAuth } from "./auth";
+import { findByAuthenticatedUserId } from "./auth-utils";
 
 export const getVendorByUserId = cache(async (userId: string) => {
-  return prisma.vendorProfile.findUnique({
-    where: { userId },
-    include: { verificationRequest: { select: { status: true } } },
-  });
+  return findByAuthenticatedUserId(userId, (validUserId) =>
+    prisma.vendorProfile.findUnique({
+      where: { userId: validUserId },
+      include: { verificationRequest: { select: { status: true } } },
+    })
+  );
 });
 
 export async function requireVendor() {

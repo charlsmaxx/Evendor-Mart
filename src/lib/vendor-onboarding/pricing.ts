@@ -42,9 +42,8 @@ export function packagesForOnboardingPrice(
   draftPackages: VendorPackage[],
   storedPackages: unknown
 ): VendorPackage[] {
-  const realDraftPackages = draftPackages.filter((pkg) => !pkg.tier);
-  if (draftPackages.length > 0) return realDraftPackages;
+  if (draftPackages.length > 0) return draftPackages;
   return Array.isArray(storedPackages)
-    ? normalizePackages(storedPackages).filter((pkg) => !pkg.tier)
+    ? normalizePackages(storedPackages)
     : [];
 }

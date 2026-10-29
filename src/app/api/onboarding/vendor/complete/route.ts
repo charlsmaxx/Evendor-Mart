@@ -10,10 +10,7 @@ import { derivePackageStartingPrice, packagesForOnboardingPrice } from "@/lib/ve
 import { syncListingPortfolioMedia } from "@/lib/vendor-media-server";
 import { generateVendorSeo } from "@/lib/vendor-onboarding/seo";
 import { buildAmenitiesPayload, buildServicesPayload } from "@/lib/venue-offerings";
-import {
-  normalizeCancellationPolicy,
-  type VendorPackage,
-} from "@/lib/vendor-packages";
+import { normalizeCancellationPolicy } from "@/lib/vendor-packages";
 import {
   normalizeFaqs,
   normalizeServiceRequirements,
@@ -72,10 +69,10 @@ export async function POST(req: NextRequest) {
 
     const isServiceVendor = businessKind === "SERVICE";
 
-    // Prepare canonical packages: only save real packages (filter out legacy tier placeholders)
-    // For BOTH SERVICE and VENUE vendors
+    // Keep enabled legacy tier packages as well as free-form packages. Empty legacy placeholders
+    // are harmless because pricing and public display only use enabled packages with valid prices.
     const realPackages = draft.packages.length > 0
-      ? draft.packages.filter((p: VendorPackage) => !p.tier)
+      ? draft.packages
       : undefined;
     const packagesForPrice = packagesForOnboardingPrice(draft.packages, prevMeta.packages);
     const packageStartingPrice = derivePackageStartingPrice(packagesForPrice);
@@ -146,7 +143,7 @@ export async function POST(req: NextRequest) {
           serviceRequirements,
           // Canonical profile content for SERVICE vendors only
           ...(isServiceVendor && servicesOffered !== undefined ? { servicesOffered } : {}),
-          // Canonical packages for SERVICE vendors (only if real packages exist)
+          // Packages are shared by service vendors and venues.
           ...(realPackages !== undefined ? { packages: realPackages } : {}),
           // Business-level cancellation policy for SERVICE vendors
           ...(cancellationPolicy !== undefined ? { cancellationPolicy } : {}),

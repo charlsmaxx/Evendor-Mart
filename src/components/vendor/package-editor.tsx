@@ -41,7 +41,9 @@ const POLICY_OPTIONS: { value: CancellationPolicyPreset; label: string }[] = [
 ];
 
 export function PackageEditor({ value, onChange }: PackageEditorProps) {
-  const packages = value && value.length > 0 ? value : normalizePackages([]);
+  const packages = value && value.length > 0
+    ? value
+    : [emptyPackage({ name: "Package 1", enabled: true })];
 
   function update(id: string, patch: Partial<VendorPackage>) {
     onChange(packages.map((p) => (p.id === id ? { ...p, ...patch } : p)));
