@@ -13,6 +13,57 @@ export type UploadedFileResult = {
   resourceType: string;
 };
 
+const UPSCALE_BELOW_PIXELS = 1_000_000;
+
+function shouldUpscaleImage(upload: {
+  width?: number;
+  height?: number;
+  format?: string;
+  pages?: number;
+}, purpose: UploadPurpose, enhanceLowResolution: boolean): boolean {
+  const allowedFormat = ["jpg", "jpeg", "png", "webp"].includes(
+    upload.format?.toLowerCase() ?? ""
+  );
+  return (
+    enhanceLowResolution &&
+    (purpose === "profile" || purpose === "portfolio") &&
+    allowedFormat &&
+    (!upload.pages || upload.pages === 1) &&
+    Number.isFinite(upload.width) &&
+    Number.isFinite(upload.height) &&
+    (upload.width ?? 0) > 0 &&
+    (upload.height ?? 0) > 0 &&
+    (upload.width ?? Infinity) <= 2048 &&
+    (upload.height ?? Infinity) <= 2048 &&
+    (upload.width ?? 0) * (upload.height ?? 0) < UPSCALE_BELOW_PIXELS
+  );
+}
+
+function withCloudinaryUpscale(url: string): string {
+  return url.replace("/image/upload/", "/image/upload/e_upscale/");
+}
+
+function loadImage(url: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    const image = new Image();
+    image.onload = () => resolve(true);
+    image.onerror = () => resolve(false);
+    image.src = url;
+  });
+}
+
+async function readyUpscaledUrl(originalUrl: string): Promise<string> {
+  const enhancedUrl = withCloudinaryUpscale(originalUrl);
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    if (await loadImage(enhancedUrl)) return enhancedUrl;
+    if (attempt < 5) {
+      await new Promise((resolve) => setTimeout(resolve, 500 * (attempt + 1)));
+    }
+  }
+  // A Cloudinary transformation issue should not prevent an image upload from succeeding.
+  return originalUrl;
+}
+
 export async function isCloudinaryUploadReady(): Promise<boolean> {
   const res = await fetch("/api/upload/sign");
   const json = await res.json();
@@ -43,7 +94,8 @@ function uploadEndpoint(cloudName: string, file: File): string {
 
 export async function uploadFileToCloudinary(
   file: File,
-  purpose: UploadPurpose = "portfolio"
+  purpose: UploadPurpose = "portfolio",
+  enhanceLowResolution = false
 ): Promise<UploadedFileResult> {
   const sig = await getUploadSignature(purpose);
   const formData = new FormData();
@@ -62,8 +114,13 @@ export async function uploadFileToCloudinary(
     throw new Error(uploadJson.error?.message ?? "Upload failed");
   }
 
+  const originalUrl = uploadJson.secure_url as string;
+  const url = shouldUpscaleImage(uploadJson, purpose, enhanceLowResolution)
+    ? await readyUpscaledUrl(originalUrl)
+    : originalUrl;
+
   return {
-    url: uploadJson.secure_url as string,
+    url,
     publicId: uploadJson.public_id as string,
     fileName: file.name,
     resourceType: uploadJson.resource_type ?? "image",

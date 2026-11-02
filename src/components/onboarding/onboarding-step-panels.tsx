@@ -174,6 +174,7 @@ export function Step1Business({
         onAvatarChange={(url) => setStep1Field({ avatarUrl: url }, true)}
         onCoverChange={(url) => setStep1Field({ coverImageUrl: url }, true)}
         onFeaturedChange={() => {}}
+        enhanceLowResolution={!isVenue}
         showFeatured={false}
         showClips={false}
         title="Logo & cover banner"
@@ -465,6 +466,7 @@ export function Step4Portfolio({ draft, update }: { draft: VendorOnboardingDraft
         onClipsChange={(slots) =>
           update({ step4: { ...s, featuredClips: slots.filter((x): x is NonNullable<typeof x> => Boolean(x)) } })
         }
+        enhanceLowResolution
         showProfile={false}
         title="Featured work"
         description="Upload up to 7 photos and 3 video clips. Drag to reorder in portfolio after publishing."

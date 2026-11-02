@@ -27,11 +27,13 @@ function FeaturedSlot({
   value,
   onChange,
   disabled,
+  enhanceLowResolution,
 }: {
   index: number;
   value: FeaturedImage | null;
   onChange: (next: FeaturedImage | null) => void;
   disabled?: boolean;
+  enhanceLowResolution?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -41,7 +43,7 @@ function FeaturedSlot({
   async function uploadFile(file: File) {
     setUploading(true);
     try {
-      const result = await uploadFileToCloudinary(file, "portfolio");
+      const result = await uploadFileToCloudinary(file, "portfolio", enhanceLowResolution);
       onChange(toMedia(result));
     } catch (e) {
       reportClientError("upload", e instanceof Error ? e.message : "Upload failed");
@@ -217,6 +219,7 @@ export function VendorMediaFields({
   showFeatured = true,
   showClips: showClipsProp,
   showProfile = true,
+  enhanceLowResolution = false,
 }: {
   avatarUrl: string | null;
   coverImageUrl: string | null;
@@ -231,6 +234,7 @@ export function VendorMediaFields({
   showFeatured?: boolean;
   showClips?: boolean;
   showProfile?: boolean;
+  enhanceLowResolution?: boolean;
 }) {
   const { data: cloudinaryReady } = useQuery({
     queryKey: ["cloudinary-status"],
@@ -273,6 +277,7 @@ export function VendorMediaFields({
           onChange={onAvatarChange}
           aspect="square"
           uploadPurpose="profile"
+          enhanceLowResolution={enhanceLowResolution}
           disabled={disabled}
         />
         <ImageUploadField
@@ -281,6 +286,7 @@ export function VendorMediaFields({
           onChange={onCoverChange}
           aspect="cover"
           uploadPurpose="portfolio"
+          enhanceLowResolution={enhanceLowResolution}
           disabled={disabled}
         />
       </div>
@@ -302,6 +308,7 @@ export function VendorMediaFields({
               value={img}
               onChange={(next) => updateFeatured(i, next)}
               disabled={disabled}
+              enhanceLowResolution={enhanceLowResolution}
             />
           ))}
         </div>

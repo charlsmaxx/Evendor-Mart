@@ -9,6 +9,7 @@ export const featuredVendorListingWhere = {
 export const featuredVendorCacheKeys = [
   "featured:v2:vendors:4",
   "featured:v2:vendors:8",
+  "featured:v2:vendors:10",
   "featured:v2:vendors:12",
 ] as const;
 

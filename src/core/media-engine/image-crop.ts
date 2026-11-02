@@ -123,3 +123,16 @@ export function outputSizeForAspect(aspect: CropAspectKey): { width: number; hei
       return { width: 1600, height: 1000 };
   }
 }
+
+/** Keep small source crops at their real pixel size instead of stretching them. */
+export function outputSizeForCrop(
+  area: CropArea,
+  aspect: CropAspectKey
+): { width: number; height: number } {
+  const target = outputSizeForAspect(aspect);
+  const scale = Math.min(1, target.width / area.width, target.height / area.height);
+  return {
+    width: Math.max(1, Math.floor(area.width * scale)),
+    height: Math.max(1, Math.floor(area.height * scale)),
+  };
+}

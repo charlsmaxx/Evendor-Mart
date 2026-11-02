@@ -16,6 +16,7 @@ type ImageUploadFieldProps = {
   onChange: (url: string | null) => void;
   aspect?: CropAspectKey;
   uploadPurpose?: UploadPurpose;
+  enhanceLowResolution?: boolean;
   disabled?: boolean;
 };
 
@@ -31,6 +32,7 @@ export function ImageUploadField({
   onChange,
   aspect = "square",
   uploadPurpose = "profile",
+  enhanceLowResolution = false,
   disabled,
 }: ImageUploadFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -46,7 +48,7 @@ export function ImageUploadField({
   async function uploadFile(file: File) {
     setUploading(true);
     try {
-      const result = await uploadFileToCloudinary(file, uploadPurpose);
+      const result = await uploadFileToCloudinary(file, uploadPurpose, enhanceLowResolution);
       onChange(result.url);
     } catch (e) {
       reportClientError("upload", e instanceof Error ? e.message : "Upload failed");

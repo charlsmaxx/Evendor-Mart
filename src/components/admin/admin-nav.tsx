@@ -18,6 +18,7 @@ import {
   FileText,
   GitCompareArrows,
   UserCog,
+  ArchiveRestore,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMessageBadgeCount, MessageNotificationBadge } from "@/components/messages/message-notification-badge";
@@ -37,6 +38,7 @@ export const ADMIN_NAV: {
   { href: "/admin/bookings", label: "Bookings", icon: CalendarDays, section: "bookings" },
   { href: "/admin/listings", label: "Venues", icon: Building2, section: "listings" },
   { href: "/admin/vendors", label: "Vendors", icon: Store, section: "vendors" },
+  { href: "/admin/archived-businesses", label: "Archived Businesses", icon: ArchiveRestore, section: "vendors" },
   { href: "/admin/users", label: "Customers", icon: Users, section: "users" },
   { href: "/admin/legal", label: "Legal", icon: FileText, section: "users" },
   { href: "/admin/verification", label: "Verification", icon: BadgeCheck, section: "verification" },

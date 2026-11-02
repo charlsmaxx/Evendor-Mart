@@ -110,17 +110,27 @@ export async function DELETE(req: NextRequest) {
       prisma.$transaction(async (tx) => {
         const vendor = await tx.vendorProfile.findUnique({
           where: { id: parsed.data.vendorId },
-          select: { id: true, businessName: true },
+          select: { id: true, slug: true, businessName: true, metadata: true },
         });
         if (!vendor) return null;
 
-        const archivedListings = await tx.listing.updateMany({
+        const listingsToArchive = await tx.listing.findMany({
           where: { vendorId: vendor.id, status: { not: "ARCHIVED" } },
+          select: { id: true, title: true, slug: true, status: true },
+        });
+        await tx.listing.updateMany({
+          where: { id: { in: listingsToArchive.map((listing) => listing.id) } },
           data: ARCHIVE_LISTING_DATA,
         });
+        const metadata = vendor.metadata && typeof vendor.metadata === "object" && !Array.isArray(vendor.metadata)
+          ? vendor.metadata as Record<string, unknown>
+          : {};
         await tx.vendorProfile.update({
           where: { id: vendor.id },
-          data: { featured: false },
+          data: {
+            featured: false,
+            metadata: { ...metadata, adminArchivedAt: new Date().toISOString() },
+          },
         });
         await writeAuditLog(
           {
@@ -130,13 +140,13 @@ export async function DELETE(req: NextRequest) {
             entityId: vendor.id,
             metadata: {
               businessName: vendor.businessName,
-              archivedListings: archivedListings.count,
+              archivedListings: listingsToArchive,
             },
           },
           tx
         );
-        return { ...vendor, archivedListings: archivedListings.count };
-      }),
+        return { id: vendor.id, slug: vendor.slug, businessName: vendor.businessName, listingSlugs: listingsToArchive.map((listing) => listing.slug), archivedListings: listingsToArchive.length };
+      }, { isolationLevel: "Serializable" }),
     async () => {
       await Promise.all([
         ...PUBLIC_LISTING_CACHE_KEYS.map((key) => cacheDelete(key)),
@@ -150,5 +160,7 @@ export async function DELETE(req: NextRequest) {
   );
 
   if (!result) return jsonError("Vendor not found", 404);
+  revalidatePath(`/vendors/${result.slug}`);
+  for (const slug of result.listingSlugs) revalidatePath(`/listings/${slug}`);
   return jsonOk(result);
 }

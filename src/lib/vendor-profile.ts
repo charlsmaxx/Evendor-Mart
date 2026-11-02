@@ -16,13 +16,23 @@ export async function getVendorPublicProfile(slug: string) {
     });
 
     if (vendorBySlug) {
+      const latestArchiveEvent = await prisma.auditLog.findFirst({
+        where: {
+          entityType: "VendorProfile",
+          entityId: vendorBySlug.id,
+          action: { in: ["VENDOR_ARCHIVE", "VENDOR_RESTORE"] },
+        },
+        orderBy: { createdAt: "desc" },
+        select: { action: true },
+      });
+      if (latestArchiveEvent?.action === "VENDOR_ARCHIVE") return null;
       vendorId = vendorBySlug.id;
     } else {
       const listing = await prisma.listing.findFirst({
         where: { slug },
         select: { id: true, vendorId: true, status: true },
       });
-      if (!listing) return null;
+      if (!listing || listing.status === "ARCHIVED") return null;
       vendorId = listing.vendorId;
       if (listing.status === "PUBLISHED") highlightListingId = listing.id;
     }

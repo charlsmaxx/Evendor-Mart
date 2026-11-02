@@ -9,7 +9,7 @@ export async function ProblemSection() {
   const venues = await getFeaturedVenues(8);
 
   return (
-    <section id="problems" className="py-20 md:py-28">
+    <section id="problems" className="pt-20 pb-8 md:pt-28 md:pb-12">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center">
           <h2 className="font-display text-3xl font-bold md:text-4xl">Featured Event Halls</h2>

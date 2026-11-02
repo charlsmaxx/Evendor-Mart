@@ -76,6 +76,7 @@ export async function PATCH(req: NextRequest) {
       cacheDelete("featured:v2:12"),
       cacheDelete("featured:v2:vendors:4"),
       cacheDelete("featured:v2:vendors:8"),
+      cacheDelete("featured:v2:vendors:10"),
       cacheDelete("featured:v2:venues:4"),
       cacheDelete("featured:v2:venues:8"),
       cacheDelete("featured:v2:venues:12"),
@@ -103,7 +104,7 @@ export async function DELETE(req: NextRequest) {
       prisma.$transaction(async (tx) => {
         const listing = await tx.listing.findUnique({
           where: { id: parsed.data.listingId },
-          select: { id: true, title: true, type: true, vendorId: true },
+          select: { id: true, title: true, slug: true, type: true, vendorId: true, status: true },
         });
         if (!listing) return null;
         if (listing.type !== "VENUE") {
@@ -113,7 +114,7 @@ export async function DELETE(req: NextRequest) {
         const archived = await tx.listing.update({
           where: { id: listing.id },
           data: ARCHIVE_LISTING_DATA,
-          select: { id: true, title: true, type: true, vendorId: true, status: true },
+          select: { id: true, title: true, slug: true, type: true, vendorId: true, status: true },
         });
         await writeAuditLog(
           {
@@ -121,12 +122,12 @@ export async function DELETE(req: NextRequest) {
             action: "VENUE_ARCHIVE",
             entityType: "Listing",
             entityId: listing.id,
-            metadata: { title: listing.title },
+            metadata: { title: listing.title, slug: listing.slug, previousStatus: listing.status },
           },
           tx
         );
         return archived;
-      }),
+      }, { isolationLevel: "Serializable" }),
     async () => {
       await Promise.all([
         ...PUBLIC_LISTING_CACHE_KEYS.map((key) => cacheDelete(key)),
@@ -141,5 +142,6 @@ export async function DELETE(req: NextRequest) {
 
   if (!result) return jsonError("Listing not found", 404);
   if ("error" in result) return jsonError(result.error, 400);
+  revalidatePath(`/listings/${result.slug}`);
   return jsonOk(result);
 }

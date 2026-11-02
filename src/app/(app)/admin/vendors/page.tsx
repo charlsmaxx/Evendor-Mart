@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Archive, BadgeCheck, Star, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -91,6 +92,7 @@ export default function AdminVendorsPage() {
       <AdminPageHeader
         title="Vendors"
         subtitle="Manage vendor profiles, verification badges, and featured placement."
+        action={<Button asChild size="sm" variant="outline"><Link href="/admin/archived-businesses">Archived Businesses</Link></Button>}
       />
       {mutationError && (
         <p role="alert" className="text-sm text-red-400">

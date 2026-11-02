@@ -142,7 +142,7 @@ export function PortfolioManager({ listings }: { listings: ListingOption[] }) {
   async function uploadFile(file: File) {
     setUploading(true);
     try {
-      const result = await uploadFileToCloudinary(file, "portfolio");
+      const result = await uploadFileToCloudinary(file, "portfolio", true);
       await saveMedia(result.url, result.publicId);
     } catch (e) {
       reportClientError("portfolio", e instanceof Error ? e.message : "Upload failed");

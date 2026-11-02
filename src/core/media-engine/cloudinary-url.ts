@@ -56,6 +56,11 @@ export function applyCloudinaryTransform(url: string, transform: string): string
   const [, prefix, suffix] = match;
   if (suffix.startsWith(`${transform}/`)) return url;
 
+  // Keep AI upscaling ahead of display-size transforms so it can restore detail first.
+  if (suffix.startsWith("e_upscale/")) {
+    return `${prefix}e_upscale/${transform}/${suffix.slice("e_upscale/".length)}`;
+  }
+
   return `${prefix}${transform}/${suffix}`;
 }
 

@@ -146,6 +146,7 @@ export function ListingForm({
         onChange={setCoverImage}
         aspect="listing"
         uploadPurpose="portfolio"
+        enhanceLowResolution
         disabled={!cloudinaryReady}
       />
       {isEdit && coverImage && cloudinaryReady && (

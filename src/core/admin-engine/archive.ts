@@ -9,6 +9,7 @@ export const PUBLIC_LISTING_CACHE_KEYS = [
   "featured:v2:12",
   "featured:v2:vendors:4",
   "featured:v2:vendors:8",
+  "featured:v2:vendors:10",
   "featured:v2:vendors:12",
   "featured:v2:venues:4",
   "featured:v2:venues:8",
@@ -17,13 +18,32 @@ export const PUBLIC_LISTING_CACHE_KEYS = [
 
 export const PUBLIC_SEARCH_CACHE_PREFIX = "search:v4:";
 
-/** Run public cache invalidation only after the archival transaction commits. */
+export type ArchivedListingSnapshot = {
+  id: string;
+  title: string;
+  slug: string;
+  status: "DRAFT" | "PENDING_REVIEW" | "PUBLISHED" | "REJECTED";
+};
+
+/** Only statuses written by the archive transaction are eligible for restoration. */
+export function isRestorableListingSnapshot(value: unknown): value is ArchivedListingSnapshot[] {
+  if (!Array.isArray(value)) return false;
+  return value.every((entry) => {
+    if (!entry || typeof entry !== "object") return false;
+    const row = entry as Record<string, unknown>;
+    return typeof row.id === "string" && typeof row.title === "string" &&
+      typeof row.slug === "string" &&
+      ["DRAFT", "PENDING_REVIEW", "PUBLISHED", "REJECTED"].includes(String(row.status));
+  });
+}
+
+/** Run public cache invalidation only after the database transaction succeeds. */
 export async function archiveAfterDatabaseUpdate<T>(
   archive: () => Promise<T>,
-  invalidatePublicCaches: () => Promise<void>,
+  invalidatePublicCaches: (result: T) => Promise<void>,
   didArchive: (result: T) => boolean = () => true
 ): Promise<T> {
   const result = await archive();
-  if (didArchive(result)) await invalidatePublicCaches();
+  if (didArchive(result)) await invalidatePublicCaches(result);
   return result;
 }

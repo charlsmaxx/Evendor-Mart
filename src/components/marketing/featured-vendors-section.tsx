@@ -4,10 +4,10 @@ import { getFeaturedVendors } from "@/core/search-engine/listings";
 import { GlowButton } from "@/components/shared/glow-button";
 
 export async function FeaturedVendorsSection() {
-  const listings = await getFeaturedVendors(4);
+  const listings = await getFeaturedVendors(10);
 
   return (
-    <SectionShell id="featured">
+    <SectionShell id="featured" className="pt-8 md:pt-12">
       <div className="text-center sm:text-left">
         <h2 className="font-display text-3xl font-bold md:text-4xl">Featured vendors</h2>
         <p className="mt-2 text-muted-foreground">

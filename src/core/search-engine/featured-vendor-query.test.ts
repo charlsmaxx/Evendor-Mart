@@ -53,6 +53,7 @@ test("vendor feature cache invalidation runs after a successful update", async (
   assert.deepEqual(featuredVendorCacheKeys, [
     "featured:v2:vendors:4",
     "featured:v2:vendors:8",
+    "featured:v2:vendors:10",
     "featured:v2:vendors:12",
   ]);
 });

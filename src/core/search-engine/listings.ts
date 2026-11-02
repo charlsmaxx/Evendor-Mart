@@ -160,12 +160,23 @@ export async function getFeaturedVendors(limit = 4) {
   if (cached) return cached;
 
   try {
-    const rows = await prisma.listing.findMany({
-      where: featuredVendorListingWhere,
-      select: listingCardSelect,
+    const vendors = await prisma.vendorProfile.findMany({
+      where: {
+        featured: true,
+        listings: { some: featuredVendorListingWhere },
+      },
+      select: {
+        listings: {
+          where: featuredVendorListingWhere,
+          select: listingCardSelect,
+          take: 1,
+          orderBy: [{ ratingAvg: "desc" }, { reviewCount: "desc" }],
+        },
+      },
       take: limit,
-      orderBy: { ratingAvg: "desc" },
+      orderBy: [{ ratingAvg: "desc" }, { reviewCount: "desc" }],
     });
+    const rows = vendors.flatMap((vendor) => vendor.listings);
     if (rows.length) {
       const listings = rows.map((l) => ({
         id: l.id,

@@ -8,7 +8,7 @@ import {
   computeCropArea,
   cropImageToFile,
   loadImage,
-  outputSizeForAspect,
+  outputSizeForCrop,
   type CropAspectKey,
   type CropState,
 } from "@/lib/image-crop";
@@ -89,7 +89,7 @@ export function ImageCropDialog({
         cropHeight,
         state
       );
-      const { width, height } = outputSizeForAspect(aspect);
+      const { width, height } = outputSizeForCrop(area, aspect);
       const cropped = await cropImageToFile(
         previewUrl,
         area,

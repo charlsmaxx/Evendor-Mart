@@ -150,6 +150,7 @@ export function ServiceVendorOnboardingForm() {
           onCoverChange={setCoverImageUrl}
           onFeaturedChange={setFeaturedSlots}
           onClipsChange={setClipSlots}
+          enhanceLowResolution
           title="Business photos & clips"
         />
         <div className="flex gap-3">
